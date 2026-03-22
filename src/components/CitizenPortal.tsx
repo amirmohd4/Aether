@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase, type Application } from '../lib/supabase';
-import { FileText, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { FileText, CircleCheck as CheckCircle, Clock, CircleAlert as AlertCircle } from 'lucide-react';
 
 type Props = {
   selectedState: string;

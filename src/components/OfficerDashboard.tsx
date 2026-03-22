@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase, type Application } from '../lib/supabase';
-import { CheckCircle, XCircle, Clock, Building2 } from 'lucide-react';
+import { CircleCheck as CheckCircle, Circle as XCircle, Clock, Building2 } from 'lucide-react';
 
 type Props = {
   selectedState: string;

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase, type Application, type FraudFlag } from '../lib/supabase';
-import { AlertTriangle, Shield, TrendingUp } from 'lucide-react';
+import { TriangleAlert as AlertTriangle, Shield, TrendingUp } from 'lucide-react';
 
 type FlaggedApplication = Application & {
   fraud_flags: FraudFlag[];
