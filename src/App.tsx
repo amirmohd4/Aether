@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { CitizenPortal } from './components/CitizenPortal';
-import { OfficerDashboard } from './components/OfficerDashboard';
-import { FraudDetectionPanel } from './components/FraudDetectionPanel';
-import { Building2, Users, Shield, Map } from 'lucide-react';
+import { EnhancedCitizenPortal } from './components/EnhancedCitizenPortal';
+import { EnhancedOfficerDashboard } from './components/EnhancedOfficerDashboard';
+import { AdvancedFraudDetection } from './components/AdvancedFraudDetection';
+import { Building2, Users, Shield, Map, Zap } from 'lucide-react';
 
 type View = 'citizen' | 'officer' | 'fraud';
 
@@ -75,7 +75,7 @@ function App() {
                   : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50'
               }`}
             >
-              <Shield className="w-5 h-5" />
+              <Zap className="w-5 h-5" />
               AI Fraud Detection
             </button>
           </div>
@@ -96,9 +96,9 @@ function App() {
           </div>
         </div>
 
-        {activeView === 'citizen' && <CitizenPortal selectedState={selectedState} />}
-        {activeView === 'officer' && <OfficerDashboard selectedState={selectedState} />}
-        {activeView === 'fraud' && <FraudDetectionPanel selectedState={selectedState} />}
+        {activeView === 'citizen' && <EnhancedCitizenPortal selectedState={selectedState} />}
+        {activeView === 'officer' && <EnhancedOfficerDashboard selectedState={selectedState} />}
+        {activeView === 'fraud' && <AdvancedFraudDetection selectedState={selectedState} />}
       </main>
 
       <footer className="bg-white border-t border-gray-200 mt-12">
