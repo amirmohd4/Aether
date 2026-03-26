@@ -1,14 +1,15 @@
 import { useState } from 'react';
-import { EnhancedCitizenPortal } from './components/EnhancedCitizenPortal';
-import { EnhancedOfficerDashboard } from './components/EnhancedOfficerDashboard';
-import { AdvancedFraudDetection } from './components/AdvancedFraudDetection';
-import { Building2, Users, Shield, Map, Zap } from 'lucide-react';
+import { PropertySearch } from './components/PropertySearch';
+import { OfficerDashboard } from './components/OfficerDashboard';
+import { FraudDetection } from './components/FraudDetection';
+import { APIMarketplace } from './components/APIMarketplace';
+import { Building2, Users, Shield, Map, Zap, Code } from 'lucide-react';
 
-type View = 'citizen' | 'officer' | 'fraud';
+type View = 'search' | 'officer' | 'fraud' | 'marketplace';
 
 function App() {
-  const [activeView, setActiveView] = useState<View>('citizen');
-  const [selectedState, setSelectedState] = useState('Karnataka');
+  const [activeView, setActiveView] = useState<View>('search');
+  const [selectedState, setSelectedState] = useState('karnataka');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-100">
@@ -21,7 +22,7 @@ function App() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Aether GovOS</h1>
-                <p className="text-sm text-gray-600">Government Service Platform</p>
+                <p className="text-sm text-gray-600">One API for all government services</p>
               </div>
             </div>
 
@@ -33,8 +34,8 @@ function App() {
                   onChange={(e) => setSelectedState(e.target.value)}
                   className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 font-medium focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="Karnataka">Karnataka</option>
-                  <option value="J&K">Jammu & Kashmir</option>
+                  <option value="karnataka">Karnataka</option>
+                  <option value="jk">Jammu & Kashmir</option>
                 </select>
               </div>
             </div>
@@ -46,15 +47,16 @@ function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex gap-1">
             <button
-              onClick={() => setActiveView('citizen')}
+              onClick={() => setActiveView('search')}
               className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors border-b-2 ${
-                activeView === 'citizen'
+                activeView === 'search'
                   ? 'border-blue-600 text-blue-600 bg-blue-50'
                   : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50'
               }`}
+              data-testid="property-search-tab"
             >
-              <Users className="w-5 h-5" />
-              Citizen Portal
+              <Shield className="w-5 h-5" />
+              Property Search
             </button>
             <button
               onClick={() => setActiveView('officer')}
@@ -63,8 +65,9 @@ function App() {
                   ? 'border-blue-600 text-blue-600 bg-blue-50'
                   : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50'
               }`}
+              data-testid="officer-dashboard-tab"
             >
-              <Building2 className="w-5 h-5" />
+              <Users className="w-5 h-5" />
               Officer Dashboard
             </button>
             <button
@@ -74,38 +77,39 @@ function App() {
                   ? 'border-blue-600 text-blue-600 bg-blue-50'
                   : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50'
               }`}
+              data-testid="fraud-detection-tab"
             >
               <Zap className="w-5 h-5" />
               AI Fraud Detection
+            </button>
+            <button
+              onClick={() => setActiveView('marketplace')}
+              className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors border-b-2 ${
+                activeView === 'marketplace'
+                  ? 'border-blue-600 text-blue-600 bg-blue-50'
+                  : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+              data-testid="api-marketplace-tab"
+            >
+              <Code className="w-5 h-5" />
+              API Marketplace
             </button>
           </div>
         </div>
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-800">
-              {selectedState} State Portal
-            </h2>
-            <p className="text-sm text-gray-600">
-              {activeView === 'citizen' && 'Apply for government services online'}
-              {activeView === 'officer' && 'Manage and process citizen applications'}
-              {activeView === 'fraud' && 'Monitor and detect suspicious applications'}
-            </p>
-          </div>
-        </div>
-
-        {activeView === 'citizen' && <EnhancedCitizenPortal selectedState={selectedState} />}
-        {activeView === 'officer' && <EnhancedOfficerDashboard selectedState={selectedState} />}
-        {activeView === 'fraud' && <AdvancedFraudDetection selectedState={selectedState} />}
+        {activeView === 'search' && <PropertySearch selectedState={selectedState} />}
+        {activeView === 'officer' && <OfficerDashboard selectedState={selectedState} />}
+        {activeView === 'fraud' && <FraudDetection selectedState={selectedState} />}
+        {activeView === 'marketplace' && <APIMarketplace />}
       </main>
 
       <footer className="bg-white border-t border-gray-200 mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="text-center text-sm text-gray-600">
-            <p>Aether GovOS - Government Service Platform Prototype</p>
-            <p className="mt-1">Powered by Supabase & React</p>
+            <p>Aether GovOS - Government Integration Operating System</p>
+            <p className="mt-1">Powered by FastAPI, PostgreSQL & React</p>
           </div>
         </div>
       </footer>
