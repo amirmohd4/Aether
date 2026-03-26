@@ -1,0 +1,71 @@
+{
+  "state": "karnataka",
+  "state_name": "Karnataka",
+  "languages": ["English", "Kannada"],
+  "default_language": "English",
+  "stamp_duty_rate": 0.05,
+  "registration_fee_rate": 0.01,
+  "processing_days": 14,
+  "connectors": {
+    "property_registration": "KaveriConnector",
+    "urban_property": "EAasthiConnector",
+    "rural_land": "BhoomiConnector",
+    "identity": "AadhaarConnector",
+    "documents": "DigiLockerConnector"
+  },
+  "workflow_steps": [
+    {
+      "step_name": "title_verification",
+      "display_name": "Title Verification",
+      "required_days": 2,
+      "connectors": ["KaveriConnector", "BhoomiConnector"]
+    },
+    {
+      "step_name": "encumbrance_check",
+      "display_name": "Encumbrance Certificate",
+      "required_days": 3,
+      "connectors": ["KaveriConnector", "EAasthiConnector"]
+    },
+    {
+      "step_name": "stamp_duty_calculation",
+      "display_name": "Stamp Duty Calculation",
+      "required_days": 1,
+      "connectors": []
+    },
+    {
+      "step_name": "payment",
+      "display_name": "Payment Processing",
+      "required_days": 1,
+      "connectors": []
+    },
+    {
+      "step_name": "registration",
+      "display_name": "Property Registration",
+      "required_days": 5,
+      "connectors": ["KaveriConnector"]
+    },
+    {
+      "step_name": "mutation",
+      "display_name": "Mutation of Records",
+      "required_days": 2,
+      "connectors": ["BhoomiConnector", "EAasthiConnector"]
+    }
+  ],
+  "document_requirements": [
+    "Sale Deed",
+    "Identity Proof (Aadhaar)",
+    "Address Proof",
+    "PAN Card",
+    "Property Tax Receipt",
+    "Encumbrance Certificate",
+    "Stamp Duty Receipt"
+  ],
+  "districts": [
+    "Bengaluru Urban",
+    "Bengaluru Rural",
+    "Mysuru",
+    "Hubballi-Dharwad",
+    "Mangaluru",
+    "Belagavi"
+  ]
+}
