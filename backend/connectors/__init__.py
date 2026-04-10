@@ -2,6 +2,8 @@ from .base_connector import BaseConnector
 from .karnataka_connectors import KaveriConnector, EAasthiConnector, BhoomiConnector
 from .jk_connectors import LRISConnector
 from .generic_connectors import AadhaarConnector, DigiLockerConnector
+from .municipal_connector import MunicipalZoningConnector
+from .court_connector import CourtRecordsConnector
 
 __all__ = [
     "BaseConnector",
@@ -10,5 +12,7 @@ __all__ = [
     "BhoomiConnector",
     "LRISConnector",
     "AadhaarConnector",
-    "DigiLockerConnector"
+    "DigiLockerConnector",
+    "MunicipalZoningConnector",
+    "CourtRecordsConnector"
 ]

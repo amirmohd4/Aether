@@ -124,6 +124,52 @@ export const systemAPI = {
     apiCall('/system/connectors/status'),
 };
 
+// Land Ecosystem APIs
+export const landEcosystemAPI = {
+  // Mutation
+  startMutation: (data: { property_id: string; new_owner: string; transfer_type?: string }) =>
+    apiCall('/workflow/mutation/start', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  
+  getMutationStatus: (mutationId: string) =>
+    apiCall(`/workflow/mutation/${mutationId}/status`),
+  
+  // Encumbrance Certificate
+  generateEC: (data: { property_id: string; years?: number }) =>
+    apiCall('/workflow/ec/generate', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  
+  getEC: (ecId: string) =>
+    apiCall(`/workflow/ec/${ecId}`),
+  
+  getECHistory: (propertyId: string) =>
+    apiCall(`/workflow/ec/property/${propertyId}/history`),
+  
+  // Land Use Conversion
+  startConversion: (data: { property_id: string; target_use: string }) =>
+    apiCall('/workflow/conversion/start', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  
+  getConversionStatus: (conversionId: string) =>
+    apiCall(`/workflow/conversion/${conversionId}/status`),
+  
+  // Title Verification
+  verifyTitle: (data: { property_id: string; owner_aadhaar?: string }) =>
+    apiCall('/workflow/title/verify', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  
+  getTitleVerification: (verificationId: string) =>
+    apiCall(`/workflow/title/${verificationId}`),
+};
+
 // Types
 export interface Property {
   property_id: string;
