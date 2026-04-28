@@ -1,0 +1,33 @@
+services:
+  - type: web
+    name: aether-backend
+    runtime: image
+    repo: https://github.com/amirmohd4/Aether
+    plan: free
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: aether-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: aether-redis
+          type: redis
+          property: connectionString
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+
+  - type: redis
+    name: aether-redis
+    plan: free
+
+  - type: web
+    name: aether-frontend
+    runtime: static
+    repo: https://github.com/amirmohd4/Aether
+    plan: free
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://aether-backend.onrender.com
