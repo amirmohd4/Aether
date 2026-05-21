@@ -21,18 +21,15 @@ services:
           name: aether-redis
           type: keyvalue
           property: connectionString
-    ipAllowList: []
 
   - type: keyvalue
     name: aether-redis
     plan: free
-    ipAllowList: []
 
   - type: web
     name: aether-frontend
     runtime: static
     repo: https://github.com/amirmohd4/Aether
-    plan: free
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
     envVars:
