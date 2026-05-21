@@ -17,7 +17,7 @@ services:
           type: redis
           property: connectionString
 
-  - type: database
+  - type: postgres
     name: aether-db
     plan: free
     databaseName: aether_govos
