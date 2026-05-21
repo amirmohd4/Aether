@@ -1,26 +1,16 @@
-# Aether GovOS - Render Blueprint Configuration
-
-# ==============================================
-# 1. Define the PostgreSQL Database
-# ==============================================
 databases:
   - name: aether-db
     plan: free
     databaseName: aether_govos
-    user: postgres
 
-# ==============================================
-# 2. Define the Services (Backend, Redis, Frontend)
-# ==============================================
 services:
-  # --- Backend API (FastAPI) ---
   - type: web
     name: aether-backend
-    runtime: docker          # Tells Render to build from a Dockerfile
+    runtime: docker
     repo: https://github.com/amirmohd4/Aether
     plan: free
     dockerfilePath: ./backend/Dockerfile
-    dockerContext: .         # Uses the root of your repo as the build context
+    dockerContext: .
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -31,13 +21,13 @@ services:
           name: aether-redis
           type: keyvalue
           property: connectionString
+    ipAllowList: []
 
-  # --- Redis Cache (Key-Value Store) ---
   - type: keyvalue
     name: aether-redis
     plan: free
+    ipAllowList: []
 
-  # --- Frontend (React Static Site) ---
   - type: web
     name: aether-frontend
     runtime: static
