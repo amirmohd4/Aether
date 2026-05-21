@@ -1,16 +1,25 @@
+# Aether GovOS - Render Blueprint Configuration (FINAL)
+
+# ==============================================
+# 1. Define the PostgreSQL Database
+# ==============================================
 databases:
   - name: aether-db
     plan: free
     databaseName: aether_govos
 
+# ==============================================
+# 2. Define the Services
+# ==============================================
 services:
+  # --- Backend API (FastAPI) ---
   - type: web
     name: aether-backend
     runtime: docker
     repo: https://github.com/amirmohd4/Aether
     plan: free
     dockerfilePath: ./backend/Dockerfile
-    dockerContext: .
+    dockerContext: .         
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -22,14 +31,18 @@ services:
           type: keyvalue
           property: connectionString
 
+  # --- Redis Cache (Key-Value Store) ---
   - type: keyvalue
     name: aether-redis
     plan: free
+    ipAllowList: []            # This resolves the 'must specify IP allow list' error
 
+  # --- Frontend (React Static Site) ---
   - type: web
     name: aether-frontend
     runtime: static
     repo: https://github.com/amirmohd4/Aether
+    # 'plan: free' line has been removed, as it's not valid for a static site
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
     envVars:
