@@ -1,9 +1,11 @@
 services:
   - type: web
     name: aether-backend
-    runtime: image
+    runtime: docker
     repo: https://github.com/amirmohd4/Aether
     plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -14,8 +16,12 @@ services:
           name: aether-redis
           type: redis
           property: connectionString
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: .
+
+  - type: database
+    name: aether-db
+    plan: free
+    databaseName: aether_govos
+    user: postgres
 
   - type: redis
     name: aether-redis
