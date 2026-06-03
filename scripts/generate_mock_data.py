@@ -6,13 +6,12 @@ Creates 5000 properties per state with fraud patterns
 
 import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'backend'))
-
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from faker import Faker
 import random
 import json
 from datetime import datetime, timedelta
-from database import SessionLocal, init_db
+from backend.database import SessionLocal, init_db
 from models.database_models import Property, Citizen, WorkflowState, WorkflowStatusEnum
 import uuid
 
