@@ -21,18 +21,18 @@ logger = logging.getLogger(__name__)
 # Import database and models
 from database import init_db, engine
 from models.database_models import Base
-
-# Import API routes
+from .database import init_db, engine
+from .models.database_models import Base
 from api.property_routes import router as property_router
-from api.workflow_routes import router as workflow_router
-from api.fraud_routes import router as fraud_router
-from api.certificate_routes import router as certificate_router
-from api.system_routes import router as system_router
-from api.land_ecosystem_routes import router as land_ecosystem_router
-
+from .api.property_routes import router as property_router
+from .api.workflow_routes import router as workflow_router
+from .api.fraud_routes import router as fraud_router
+from .api.certificate_routes import router as certificate_router
+from .api.system_routes import router as system_router
+from .api.land_ecosystem_routes import router as land_ecosystem_router
 # Import services
-from services import fraud_service
-from database import SessionLocal
+rom .services import fraud_service
+from .database import SessionLocal
 
 # Initialize FastAPI app
 app = FastAPI(
