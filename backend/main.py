@@ -67,7 +67,24 @@ async def startup_event():
         logger.info("📊 Initializing database...")
         init_db()
         logger.info("✅ Database initialized")
+                # Check if database has any properties
+        from database import SessionLocal
+        from models.database_models import Property
+        db = SessionLocal()
+        property_count = db.query(Property).count()
+        db.close()
         
+        if property_count == 0:
+            logger.info("📦 Database empty. Seeding mock data...")
+            import subprocess, sys
+            python_path = sys.executable
+            result = subprocess.run([python_path, "scripts/generate_mock_data.py"], capture_output=True, text=True)
+            if result.returncode == 0:
+                logger.info("✅ Mock data seeded successfully")
+            else:
+                logger.error(f"❌ Seeding failed: {result.stderr}")
+        else:
+            logger.info(f"📊 Database already contains {property_count} properties. Skipping seed.")
         # Train fraud detection model
         logger.info("🤖 Training fraud detection model...")
         try:
