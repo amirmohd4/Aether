@@ -31,7 +31,7 @@ from .api.certificate_routes import router as certificate_router
 from .api.system_routes import router as system_router
 from .api.land_ecosystem_routes import router as land_ecosystem_router
 # Import services
-rom .services import fraud_service
+from services import fraud_service
 from .database import SessionLocal
 
 # Initialize FastAPI app
