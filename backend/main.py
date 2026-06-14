@@ -18,15 +18,20 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-from .database import init_db, SessionLocal
-from .models.database_models import Base
-from .api.property_routes import router as property_router
-from .api.workflow_routes import router as workflow_router
-from .api.fraud_routes import router as fraud_router
-from .api.certificate_routes import router as certificate_router
-from .api.system_routes import router as system_router
-from .api.land_ecosystem_routes import router as land_ecosystem_router
-from .services import fraud_service
+# Import database and models (absolute imports – no dots)
+from database import init_db, SessionLocal
+from models.database_models import Base
+
+# Import API routes (absolute imports)
+from api.property_routes import router as property_router
+from api.workflow_routes import router as workflow_router
+from api.fraud_routes import router as fraud_router
+from api.certificate_routes import router as certificate_router
+from api.system_routes import router as system_router
+from api.land_ecosystem_routes import router as land_ecosystem_router
+
+# Import services
+from services import fraud_service
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -65,12 +70,11 @@ async def startup_event():
         
         # Train fraud detection model
         logger.info("🤖 Training fraud detection model...")
-        db = SessionLocal()
         try:
-            fraud_service.train_model(db)
+            fraud_service.train_model(SessionLocal())
             logger.info("✅ Fraud detection model trained")
-        finally:
-            db.close()
+        except Exception as e:
+            logger.warning(f"Fraud model training skipped: {e}")
         
         logger.info("✅ Aether GovOS started successfully")
         
@@ -81,7 +85,6 @@ async def startup_event():
 # Root endpoint
 @app.get("/")
 async def root():
-    """Root endpoint - API information"""
     return {
         "name": "Aether GovOS",
         "version": "1.0.0",
@@ -95,7 +98,6 @@ async def root():
 # Health check endpoint
 @app.get("/health")
 async def health_check():
-    """Simple health check"""
     return {"status": "healthy", "service": "Aether GovOS"}
 
 # Include API routers
@@ -141,4 +143,4 @@ async def log_requests(request: Request, call_next):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8001, log_level="info")
+    uvicorn.run(app, host="0.0.0.0", port=8001)
