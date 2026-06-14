@@ -116,7 +116,11 @@ async def root():
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "service": "Aether GovOS"}
-
+@app.get("/admin/seed")
+async def seed_database():
+    import subprocess, sys
+    result = subprocess.run([sys.executable, "scripts/generate_mock_data.py"], capture_output=True, text=True)
+    return {"status": "done", "stdout": result.stdout, "stderr": result.stderr}
 # Include API routers
 app.include_router(property_router, prefix="/api")
 app.include_router(workflow_router, prefix="/api")
