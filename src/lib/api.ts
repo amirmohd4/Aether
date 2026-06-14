@@ -1,6 +1,5 @@
 // API base URL - using relative path for same origin
-const API_BASE_URL = '/api';
-
+const API_BASE_URL = 'https://aether-backend.onrender.com/api';
 // Generic API call function
 async function apiCall<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
