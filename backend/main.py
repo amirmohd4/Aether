@@ -118,9 +118,78 @@ async def health_check():
     return {"status": "healthy", "service": "Aether GovOS"}
 @app.get("/admin/seed")
 async def seed_database():
-    import subprocess, sys
-    result = subprocess.run([sys.executable, "scripts/generate_mock_data.py"], capture_output=True, text=True)
-    return {"status": "done", "stdout": result.stdout, "stderr": result.stderr}
+    """Generate mock data directly using the database session (no subprocess)."""
+    from database import SessionLocal
+    from models.database_models import Property, Citizen
+    import random
+    from faker import Faker
+    from datetime import datetime, timedelta
+    import uuid
+
+    fake = Faker('en_IN')
+
+    db = SessionLocal()
+    try:
+        # Check if already seeded
+        if db.query(Property).count() > 0:
+            return {"status": "already_seeded", "count": db.query(Property).count()}
+
+        # Generate 100 citizens
+        citizens = []
+        for _ in range(100):
+            citizen = Citizen(
+                citizen_id=f"CIT-{uuid.uuid4().hex[:8].upper()}",
+                name=fake.name(),
+                email=fake.email(),
+                phone=fake.phone_number()[:15],
+                aadhaar_number=f"{random.randint(100000000000, 999999999999)}",
+                verified_attributes={
+                    "aadhaar_verified": random.choice([True, False]),
+                    "phone_verified": random.choice([True, False]),
+                    "email_verified": random.choice([True, False])
+                },
+                state=random.choice(["karnataka", "jk"]),
+                district=random.choice(["Bengaluru Urban", "Srinagar"]),
+                address=fake.address()
+            )
+            citizens.append(citizen)
+        db.bulk_save_objects(citizens)
+        db.commit()
+
+        # Generate 1000 properties (enough for demo)
+        properties = []
+        for i in range(1000):
+            prop_id = f"KAR-PROP-{i:04d}" if i < 500 else f"JK-PROP-{i-500:04d}"
+            state = "karnataka" if i < 500 else "jk"
+            prop = Property(
+                property_id=prop_id,
+                state=state,
+                location=fake.address(),
+                district=random.choice(["Bengaluru Urban", "Mysuru", "Srinagar", "Jammu"]),
+                tehsil=random.choice(["North", "South", "East", "West"]),
+                village=fake.city(),
+                owner=fake.name(),
+                owner_citizen_id=random.choice(citizens).citizen_id,
+                title_status=random.choice(["clear", "clear", "clear", "disputed"]),  # 75% clear
+                encumbrances=[{"type": "mortgage", "amount": random.uniform(100000, 5000000)}] if random.random() < 0.1 else [],
+                history=[{"date": (datetime.now() - timedelta(days=random.randint(365, 3650))).isoformat(),
+                          "transaction_type": random.choice(["sale", "inheritance"]),
+                          "previous_owner": fake.name()} for _ in range(random.randint(1, 3))],
+                property_value=random.uniform(500000, 50000000),
+                property_size=random.uniform(500, 5000),
+                property_type=random.choice(["residential", "commercial", "agricultural"]),
+                state_specific_data={"fraud_flags": {}}
+            )
+            properties.append(prop)
+        db.bulk_save_objects(properties)
+        db.commit()
+
+        return {"status": "success", "message": f"Seeded {len(properties)} properties and {len(citizens)} citizens."}
+    except Exception as e:
+        db.rollback()
+        return {"status": "error", "message": str(e)}
+    finally:
+        db.close()
 # Include API routers
 app.include_router(property_router, prefix="/api")
 app.include_router(workflow_router, prefix="/api")
