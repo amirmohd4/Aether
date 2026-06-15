@@ -1,7 +1,7 @@
 // ============================================================
 // HARDCODED BACKEND URL – DO NOT CHANGE UNLESS BACKEND URL CHANGES
 // ============================================================
-const BACKEND_URL = 'https://aether-backend.onrender.com/api';
+const BACKEND_URL = '/api';
 
 // ============================================================
 // Generic API call function
