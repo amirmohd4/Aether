@@ -2,7 +2,7 @@
 const API_BASE_URL = 'https://aether-backend.onrender.com/api';
 // Generic API call function
 async function apiCall<T>(endpoint: string, options?: RequestInit): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
+  const url = `https://aether-backend.onrender.com/api${endpoint}`;
   
   try {
     const response = await fetch(url, {
