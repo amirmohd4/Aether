@@ -230,7 +230,16 @@ async def log_requests(request: Request, call_next):
     response = await call_next(request)
     logger.info(f"Status: {response.status_code}")
     return response
+# ============================================================
+# SERVE REACT FRONTEND FROM BACKEND
+# ============================================================
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 
+frontend_dist = Path(__file__).parent.parent / "frontend" / "dist"
+if frontend_dist.exists():
+    app.mount("/", StaticFiles(directory=str(frontend_dist), html=True), name="frontend")
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
+# ============================================================
