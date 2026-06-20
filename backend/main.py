@@ -237,7 +237,7 @@ async def log_requests(request: Request, call_next):
 # ============================================================
 
 
-frontend_dist = Path(__file__).parent.parent / "frontend" / "dist"
+frontend_dist = Path(__file__).parent.parent / "dist"
 if frontend_dist.exists():
     app.mount("/", StaticFiles(directory=str(frontend_dist), html=True), name="frontend")
 if __name__ == "__main__":
