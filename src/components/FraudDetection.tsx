@@ -20,7 +20,7 @@ export function FraudDetection({ selectedState }: Props) {
     setLoading(true);
     try {
       const data = await fraudAPI.getHighRisk();
-      setHighRiskAlerts(data);
+      setHighRiskAlerts(Array.isArray(data) ? data : []);
     } catch (err: any) {
       setError(err.message);
     } finally {
