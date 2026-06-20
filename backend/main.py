@@ -6,6 +6,8 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 import logging
 import sys
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 
 # Configure logging
 logging.basicConfig(
@@ -233,8 +235,7 @@ async def log_requests(request: Request, call_next):
 # ============================================================
 # SERVE REACT FRONTEND FROM BACKEND
 # ============================================================
-from fastapi.staticfiles import StaticFiles
-from pathlib import Path
+
 
 frontend_dist = Path(__file__).parent.parent / "frontend" / "dist"
 if frontend_dist.exists():
