@@ -17,4 +17,4 @@ COPY scripts /app/scripts
 EXPOSE 8001
 
 # Only initialize database, skip mock data generation
-CMD ["sh", "-c", "python -c 'from database import init_db; init_db()' && uvicorn main:app --host 0.0.0.0 --port 8001"]
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port 8001"]
