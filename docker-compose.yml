@@ -21,32 +21,18 @@ services:
     networks:
       - aether-network
 
-  # Redis Cache
-  redis:
-    image: redis:7-alpine
-    container_name: aether-redis
-    ports:
-      - "6379:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
-    networks:
-      - aether-network
-
   # FastAPI Backend
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .                 # Project root (where configs/, scripts/ are)
+      dockerfile: backend/Dockerfile
     container_name: aether-backend
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/aether_govos
       REDIS_URL: redis://redis:6379/0
       ACTIVE_STATE: karnataka
       SECRET_KEY: aether-govos-production-secret-key
-      MOCK_FAILURE: false
+      MOCK_FAILURE: "false"
       API_RATE_LIMIT: 100
     ports:
       - "8001:8001"
@@ -59,6 +45,21 @@ services:
       - ./backend:/app/backend
       - ./configs:/app/configs
       - ./scripts:/app/scripts
+    networks:
+      - aether-network
+    restart: unless-stopped
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: aether-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - aether-network
     restart: unless-stopped
@@ -85,4 +86,4 @@ volumes:
 
 networks:
   aether-network:
-    driver: bridge
+    driver: bridge    
