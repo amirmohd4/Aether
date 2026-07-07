@@ -4,7 +4,7 @@ from datetime import datetime
 import uuid
 
 from database import SessionLocal
-from models.database_models import Property, WorkflowState, WorkflowStatusEnum
+from models.database_models import Property, Citizen, WorkflowState, WorkflowStatusEnum
 
 router = APIRouter(prefix="/workflow", tags=["Workflow"])
 
@@ -32,6 +32,25 @@ async def start_workflow(
     property = db.query(Property).filter(Property.property_id == property_id).first()
     if not property:
         raise HTTPException(status_code=404, detail=f"Property {property_id} not found")
+    
+    # --- Ensure citizen exists (create if not) ---
+    citizen = db.query(Citizen).filter(Citizen.citizen_id == citizen_id).first()
+    if not citizen:
+        citizen = Citizen(
+            citizen_id=citizen_id,
+            name="Demo User",
+            email="demo@example.com",
+            phone="9999999999",
+            aadhaar_number="123456789012",
+            verified_attributes={"aadhaar_verified": True, "phone_verified": True},
+            state="karnataka",
+            district="Bengaluru",
+            address="123 Demo Street, Bengaluru"
+        )
+        db.add(citizen)
+        db.commit()
+        db.refresh(citizen)
+    # --------------------------------------------
     
     # Check if there's already an active workflow
     existing = db.query(WorkflowState).filter(
@@ -86,7 +105,6 @@ async def get_workflow_status(
     if not workflow:
         raise HTTPException(status_code=404, detail="Workflow not found")
     
-    # Calculate progress (simplified)
     total_steps = len(workflow.steps_pending or []) + len(workflow.steps_completed or [])
     completed = len(workflow.steps_completed or [])
     progress = int((completed / total_steps) * 100) if total_steps > 0 else 0
