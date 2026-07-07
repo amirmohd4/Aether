@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from database import get_db
-from models.database_models import WorkflowState, WorkflowStatusEnum
+from models.database_models import WorkflowState, WorkflowStatusEnum, Property
 
 router = APIRouter(prefix="/noc", tags=["NOC"])
 
@@ -26,22 +26,16 @@ NOC_RULES = {
     }
 }
 
-@router.post("/auto-approve/{workflow_id}")
-async def auto_approve_noc(workflow_id: str, db: Session = Depends(get_db)):
+def auto_approve_nocs(workflow: WorkflowState, db: Session):
     """
-    Automatically approve NOCs based on rules.
+    Core logic for NOC auto‑approval. Updates workflow_metadata and returns status.
     """
-    workflow = db.query(WorkflowState).filter(WorkflowState.workflow_id == workflow_id).first()
-    if not workflow:
-        raise HTTPException(status_code=404, detail="Workflow not found")
-    
-    # Get property from workflow
-    property_id = workflow.property_id
-    prop = db.query(Property).filter(Property.property_id == property_id).first()
+    # Get property
+    prop = db.query(Property).filter(Property.property_id == workflow.property_id).first()
     if not prop:
-        raise HTTPException(status_code=404, detail="Property not found")
+        return {"error": "Property not found"}
     
-    # Get plan details from workflow_metadata (or assume default)
+    # Get plan details from workflow_metadata (or fallback to empty)
     plan_details = workflow.workflow_metadata.get("plan_details", {})
     
     approved_nocs = {}
@@ -59,7 +53,7 @@ async def auto_approve_noc(workflow_id: str, db: Session = Depends(get_db)):
                 "deemed_approval_date": (datetime.utcnow() + timedelta(days=rule["deemed_days"])).isoformat()
             }
     
-    # Update workflow_metadata with NOC status
+    # Update workflow_metadata
     if not workflow.workflow_metadata:
         workflow.workflow_metadata = {}
     workflow.workflow_metadata["noc_requests"] = {
@@ -68,21 +62,31 @@ async def auto_approve_noc(workflow_id: str, db: Session = Depends(get_db)):
     }
     db.commit()
     
-    # If all NOCs approved, advance workflow
     all_approved = len(pending_nocs) == 0
     if all_approved:
         workflow.current_step = "NOC Collection Complete"
     else:
         workflow.current_step = "Waiting for NOCs"
-    
     db.commit()
     
     return {
-        "workflow_id": workflow_id,
         "auto_approved": approved_nocs,
         "pending": pending_nocs,
         "all_approved": all_approved
     }
+
+@router.post("/auto-approve/{workflow_id}")
+async def auto_approve_noc_endpoint(workflow_id: str, db: Session = Depends(get_db)):
+    """
+    Endpoint to manually trigger NOC auto‑approval.
+    """
+    workflow = db.query(WorkflowState).filter(WorkflowState.workflow_id == workflow_id).first()
+    if not workflow:
+        raise HTTPException(status_code=404, detail="Workflow not found")
+    
+    result = auto_approve_nocs(workflow, db)
+    result["workflow_id"] = workflow_id
+    return result
 
 @router.get("/deemed-approval/{workflow_id}")
 async def check_deemed_approval(workflow_id: str, db: Session = Depends(get_db)):
@@ -102,12 +106,10 @@ async def check_deemed_approval(workflow_id: str, db: Session = Depends(get_db))
         deemed_date = datetime.fromisoformat(info.get("deemed_approval_date"))
         if now >= deemed_date:
             deemed_approved.append(dept)
-            # Auto‑approve
             pending[dept]["status"] = "deemed_approved"
             pending[dept]["deemed_approved_at"] = now.isoformat()
     
     if deemed_approved:
-        # Update workflow
         workflow.workflow_metadata["noc_requests"]["pending"] = pending
         workflow.current_step = "NOC Collection Complete"
         db.commit()
