@@ -221,3 +221,32 @@ async def clear_cache(pattern: str = "*"):
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+@router.get("/officer-dashboard")
+async def officer_dashboard(
+    db: Session = Depends(get_db)
+):
+    """
+    Enhanced officer dashboard with workload metrics.
+    """
+    from models.database_models import WorkflowState, WorkflowStatusEnum
+    
+    total = db.query(WorkflowState).count()
+    pending = db.query(WorkflowState).filter(WorkflowState.status == WorkflowStatusEnum.in_progress).count()
+    completed = db.query(WorkflowState).filter(WorkflowState.status == WorkflowStatusEnum.completed).count()
+    rejected = db.query(WorkflowState).filter(WorkflowState.status == WorkflowStatusEnum.rejected).count()
+    
+    # Breakdown by type
+    by_type = {}
+    types = db.query(WorkflowState.workflow_type).distinct().all()
+    for t in types:
+        if t[0]:
+            by_type[t[0]] = db.query(WorkflowState).filter(WorkflowState.workflow_type == t[0]).count()
+    
+    return {
+        "total_applications": total,
+        "pending_review": pending,
+        "completed": completed,
+        "rejected": rejected,
+        "by_type": by_type,
+        "completion_rate": round((completed / total * 100) if total > 0 else 0, 2)
+    }
