@@ -4,7 +4,7 @@ import { Search, Building, MapPin, DollarSign, FileText, AlertCircle, CheckCircl
 // ============================================================
 // DIRECT BACKEND URL – HARDCODED (NO DEPENDENCY ON api.ts)
 // ============================================================
-const BACKEND_URL = '/api';
+const BACKEND_URL = 'https://aether-backend-zaa9.onrender.com/api';
 
 // Helper to call backend directly
 async function directFetch<T>(endpoint: string, options?: RequestInit): Promise<T> {
