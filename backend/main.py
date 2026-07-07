@@ -31,7 +31,9 @@ from api.fraud_routes import router as fraud_router
 from api.certificate_routes import router as certificate_router
 from api.system_routes import router as system_router
 from api.land_ecosystem_routes import router as land_ecosystem_router
-
+from api.bank_routes import router as bank_router
+from api.developer_routes import router as developer_router
+from api.officer_routes import router as officer_router
 # Import services
 from services import fraud_service
 
@@ -199,7 +201,9 @@ app.include_router(fraud_router, prefix="/api")
 app.include_router(certificate_router, prefix="/api")
 app.include_router(system_router, prefix="/api")
 app.include_router(land_ecosystem_router, prefix="/api")
-
+app.include_router(bank_router)
+app.include_router(developer_router)
+app.include_router(officer_router)
 # Error handler for 404
 @app.exception_handler(404)
 async def not_found_handler(request: Request, exc: HTTPException):
