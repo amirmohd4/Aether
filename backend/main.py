@@ -34,6 +34,14 @@ from api.land_ecosystem_routes import router as land_ecosystem_router
 from api.bank_routes import router as bank_router
 from api.developer_routes import router as developer_router
 from api.officer_routes import router as officer_router
+from api.uli_routes import router as uli_router
+from api.cersai_routes import router as cersai_router
+from api.rera_routes import router as rera_router
+from api.plan_scrutiny_routes import router as plan_scrutiny_router
+from api.noc_routes import router as noc_router
+from api.construction_routes import router as construction_router
+from api.payment_routes import router as payment_router
+from api.public_search_routes import router as public_search_router
 # Import services
 from services import fraud_service
 
@@ -204,6 +212,14 @@ app.include_router(land_ecosystem_router, prefix="/api")
 app.include_router(bank_router)
 app.include_router(developer_router)
 app.include_router(officer_router)
+app.include_router(uli_router)
+app.include_router(cersai_router)
+app.include_router(rera_router)
+app.include_router(plan_scrutiny_router)
+app.include_router(noc_router)
+app.include_router(construction_router)
+app.include_router(payment_router)
+app.include_router(public_search_router)
 # Error handler for 404
 @app.exception_handler(404)
 async def not_found_handler(request: Request, exc: HTTPException):
