@@ -153,3 +153,40 @@ async def check_property_encumbrance(property_id: str, db: Session = Depends(get
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+@router.get("/stamp-duty")
+async def calculate_stamp_duty(
+    state: str,
+    city: str,
+    value: float,
+    db: Session = Depends(get_db)
+):
+    """
+    Dynamic stamp duty calculator based on state and city rules.
+    """
+    # Example rates: India state-wise (simplified)
+    rates = {
+        "karnataka": {"bangalore": 7.6, "mysore": 6.5, "default": 6.0},
+        "maharashtra": {"mumbai": 6.0, "pune": 5.5, "default": 5.0},
+        "delhi": {"default": 6.0},
+        "tamil_nadu": {"chennai": 7.0, "default": 6.0},
+        "kerala": {"default": 6.0},
+        "up": {"lucknow": 7.0, "default": 6.0},
+        "jk": {"srinagar": 5.0, "jammu": 5.0, "default": 4.5}
+    }
+    
+    state_data = rates.get(state.lower(), {"default": 5.0})
+    city_rate = state_data.get(city.lower(), state_data.get("default", 5.0))
+    
+    stamp_duty_amount = value * (city_rate / 100)
+    registration_fee = value * 0.01  # 1% registration fee (simplified)
+    
+    return {
+        "state": state,
+        "city": city,
+        "property_value": value,
+        "stamp_duty_percentage": city_rate,
+        "stamp_duty_amount": round(stamp_duty_amount, 2),
+        "registration_fee_percentage": 1.0,
+        "registration_fee_amount": round(registration_fee, 2),
+        "total": round(stamp_duty_amount + registration_fee, 2)
+    }
