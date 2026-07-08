@@ -7,8 +7,11 @@ import { APIMarketplace } from './components/APIMarketplace';
 import { TradeLicenseApplication } from './components/TradeLicenseApplication';
 import { BuildingPermitApplication } from './components/BuildingPermitApplication';
 import { WaterConnectionApplication } from './components/WaterConnectionApplication';
+import { BirthCertificateApplication } from './components/BirthCertificateApplication';
+import { DeathCertificateApplication } from './components/DeathCertificateApplication';
+import { MedicalLicenseApplication } from './components/MedicalLicenseApplication';
 
-type View = 'search' | 'officer' | 'fraud' | 'marketplace' | 'trade-license' | 'building-permit' | 'water-connection';
+type View = 'search' | 'officer' | 'fraud' | 'marketplace' | 'trade-license' | 'building-permit' | 'water-connection' | 'birth' | 'death' | 'medical-license';
 
 function App() {
   const [activeView, setActiveView] = useState<View>('search');
@@ -50,11 +53,36 @@ function App() {
           💧 Water Connection
         </button>
         <button
+  onClick={() => setActiveView('birth')}
+  className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
+    activeView === 'birth' ? 'bg-pink-600 text-white' : 'bg-gray-200'
+  }`}
+>
+  👶 Birth
+</button>
+<button
+  onClick={() => setActiveView('death')}
+  className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
+    activeView === 'death' ? 'bg-gray-700 text-white' : 'bg-gray-200'
+  }`}
+>
+  💀 Death
+</button>
+<button
+  onClick={() => setActiveView('medical-license')}
+  className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
+    activeView === 'medical-license' ? 'bg-teal-600 text-white' : 'bg-gray-200'
+  }`}
+>
+  🏥 Medical License
+</button>
+        <button
           onClick={() => setActiveView('officer')}
           className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
             activeView === 'officer' ? 'bg-red-600 text-white' : 'bg-gray-200'
           }`}
         >
+          
           <Users className="w-4 h-4" /> Officer
         </button>
         <button
@@ -84,9 +112,13 @@ function App() {
         {activeView === 'officer' && <OfficerDashboard />}
         {activeView === 'fraud' && <FraudDetection />}
         {activeView === 'marketplace' && <APIMarketplace />}
+        {activeView === 'birth' && <BirthCertificateApplication />}
+        {activeView === 'death' && <DeathCertificateApplication />}
+        {activeView === 'medical-license' && <MedicalLicenseApplication />}
       </div>
     </div>
   );
 }
+
 
 export default App;
