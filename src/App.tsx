@@ -10,8 +10,11 @@ import { WaterConnectionApplication } from './components/WaterConnectionApplicat
 import { BirthCertificateApplication } from './components/BirthCertificateApplication';
 import { DeathCertificateApplication } from './components/DeathCertificateApplication';
 import { MedicalLicenseApplication } from './components/MedicalLicenseApplication';
+import { ScholarshipApplication } from './components/ScholarshipApplication';
+import { AdmissionApplication } from './components/AdmissionApplication';
+import { TransferCertificateApplication } from './components/TransferCertificateApplication';
 
-type View = 'search' | 'officer' | 'fraud' | 'marketplace' | 'trade-license' | 'building-permit' | 'water-connection' | 'birth' | 'death' | 'medical-license';
+type View = 'search' | 'officer' | 'fraud' | 'marketplace' | 'trade-license' | 'building-permit' | 'water-connection' | 'birth' | 'death' | 'medical-license' | 'scholarship' | 'admission' | 'transfer-certificate';
 
 function App() {
   const [activeView, setActiveView] = useState<View>('search');
@@ -77,6 +80,30 @@ function App() {
   🏥 Medical License
 </button>
         <button
+  onClick={() => setActiveView('scholarship')}
+  className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
+    activeView === 'scholarship' ? 'bg-indigo-600 text-white' : 'bg-gray-200'
+  }`}
+>
+  🎓 Scholarship
+</button>
+<button
+  onClick={() => setActiveView('admission')}
+  className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
+    activeView === 'admission' ? 'bg-cyan-600 text-white' : 'bg-gray-200'
+  }`}
+>
+  📚 Admission
+</button>
+<button
+  onClick={() => setActiveView('transfer-certificate')}
+  className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
+    activeView === 'transfer-certificate' ? 'bg-amber-600 text-white' : 'bg-gray-200'
+  }`}
+>
+  📄 Transfer Certificate
+</button>
+        <button
           onClick={() => setActiveView('officer')}
           className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
             activeView === 'officer' ? 'bg-red-600 text-white' : 'bg-gray-200'
@@ -115,6 +142,9 @@ function App() {
         {activeView === 'birth' && <BirthCertificateApplication />}
         {activeView === 'death' && <DeathCertificateApplication />}
         {activeView === 'medical-license' && <MedicalLicenseApplication />}
+        {activeView === 'scholarship' && <ScholarshipApplication />}
+        {activeView === 'admission' && <AdmissionApplication />}
+        {activeView === 'transfer-certificate' && <TransferCertificateApplication />}
       </div>
     </div>
   );
