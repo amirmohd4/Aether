@@ -48,6 +48,9 @@ from api.water_connection_routes import router as water_connection_router
 from api.birth_routes import router as birth_router
 from api.death_routes import router as death_router
 from api.medical_license_routes import router as medical_license_router
+from api.scholarship_routes import router as scholarship_router
+from api.admission_routes import router as admission_router
+from api.transfer_certificate_routes import router as transfer_certificate_router
 # Import services
 from services import fraud_service
 
@@ -232,6 +235,9 @@ app.include_router(water_connection_router)
 app.include_router(birth_router)
 app.include_router(death_router)
 app.include_router(medical_license_router)
+app.include_router(scholarship_router)
+app.include_router(admission_router)
+app.include_router(transfer_certificate_router)
 # Error handler for 404
 @app.exception_handler(404)
 async def not_found_handler(request: Request, exc: HTTPException):
