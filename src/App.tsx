@@ -4,6 +4,9 @@ import { OfficerDashboard } from './components/OfficerDashboard';
 import { FraudDetection } from './components/FraudDetection';
 import { APIMarketplace } from './components/APIMarketplace';
 import { Building2, Users, Shield, Map, Zap, Code } from 'lucide-react';
+import { TradeLicenseApplication } from './components/TradeLicenseApplication';
+import { BuildingPermitApplication } from './components/BuildingPermitApplication';
+import { WaterConnectionApplication } from './components/WaterConnectionApplication';
 
 type View = 'search' | 'officer' | 'fraud' | 'marketplace';
 
