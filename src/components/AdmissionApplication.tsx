@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { School, Search, AlertCircle } from 'lucide-react';
+import { School, Search, CircleAlert as AlertCircle } from 'lucide-react';
 
 const BACKEND_URL = 'https://aether-backend-zaa9.onrender.com/api';
 

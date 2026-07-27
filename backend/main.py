@@ -51,6 +51,24 @@ from api.medical_license_routes import router as medical_license_router
 from api.scholarship_routes import router as scholarship_router
 from api.admission_routes import router as admission_router
 from api.transfer_certificate_routes import router as transfer_certificate_router
+from api.factory_license_routes import router as factory_license_router
+from api.pf_esi_routes import router as pf_esi_router
+from api.gst_routes import router as gst_router
+from api.company_routes import router as company_router
+from api.ration_card_routes import router as ration_card_router
+from api.pds_subsidy_routes import router as pds_subsidy_router
+from api.police_clearance_routes import router as police_clearance_router
+from api.fir_routes import router as fir_router
+from api.farmer_routes import router as farmer_router
+from api.crop_insurance_routes import router as crop_insurance_router
+from api.pmay_routes import router as pmay_router
+from api.housing_routes import router as housing_router
+from api.rera_project_routes import router as rera_project_router
+from api.rera_certificate_routes import router as rera_certificate_router
+from api.court_case_routes import router as court_case_router
+from api.e_court_routes import router as e_court_router
+from api.passport_routes import router as passport_router
+from api.visa_routes import router as visa_router
 # Import services
 from services import fraud_service
 
@@ -238,6 +256,24 @@ app.include_router(medical_license_router)
 app.include_router(scholarship_router)
 app.include_router(admission_router)
 app.include_router(transfer_certificate_router)
+app.include_router(factory_license_router)
+app.include_router(pf_esi_router)
+app.include_router(gst_router)
+app.include_router(company_router)
+app.include_router(ration_card_router)
+app.include_router(pds_subsidy_router)
+app.include_router(police_clearance_router)
+app.include_router(fir_router)
+app.include_router(farmer_router)
+app.include_router(crop_insurance_router)
+app.include_router(pmay_router)
+app.include_router(housing_router)
+app.include_router(rera_project_router)
+app.include_router(rera_certificate_router)
+app.include_router(court_case_router)
+app.include_router(e_court_router)
+app.include_router(passport_router)
+app.include_router(visa_router)
 # Error handler for 404
 @app.exception_handler(404)
 async def not_found_handler(request: Request, exc: HTTPException):
