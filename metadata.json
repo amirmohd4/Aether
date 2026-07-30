@@ -1,0 +1,6 @@
+{
+  "name": "Aether - Global Governance Engine",
+  "description": "Configurable digital government service engine, multi-language catalog, GovStack building blocks, developer portal, and global demo for any nation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

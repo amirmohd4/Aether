@@ -1,0 +1,76 @@
+{
+  "country_code": "US",
+  "country_name": "United States",
+  "flag": "🇺🇸",
+  "currency": {
+    "code": "USD",
+    "symbol": "$",
+    "name": "US Dollar"
+  },
+  "id_system": {
+    "name": "SSN / Login.gov / State ID",
+    "format": "XXX-XX-XXXX Social Security Number",
+    "verification_endpoint": "/api/v1/identity/verify/ssn"
+  },
+  "default_language": "en",
+  "supported_languages": ["en", "es"],
+  "departments": [
+    {
+      "id": "dept_county_recorder",
+      "name": "County Assessor & Deed Recorder",
+      "code": "RECORDER",
+      "icon": "Landmark"
+    },
+    {
+      "id": "dept_sec_state",
+      "name": "Secretary of State Business Division",
+      "code": "SOS",
+      "icon": "Building2"
+    },
+    {
+      "id": "dept_dmv",
+      "name": "Department of Motor Vehicles",
+      "code": "DMV",
+      "icon": "Car"
+    }
+  ],
+  "services": [
+    {
+      "id": "srv_usa_deed",
+      "department_id": "dept_county_recorder",
+      "name": "Property Deed Recording & Title Guarantee",
+      "description": "County clerk automated title search, tax lien check, and digital deed recordation.",
+      "processing_time": "< 30 seconds",
+      "fees": {
+        "base_fee": 150,
+        "stamp_duty_percentage": 1.25,
+        "registration_fee_percentage": 0.1
+      },
+      "required_documents": ["Grant/Warranty Deed", "Property APN (Assessor Parcel Number)", "Notarized Acknowledgement"],
+      "workflow_steps": [
+        {"id": "apn_check", "name": "Assessor Parcel APN Verification"},
+        {"id": "lien_search", "name": "Municipal & Tax Lien Audit"},
+        {"id": "county_record", "name": "Digital County Recorder Book Entry"},
+        {"id": "certificate", "name": "Recorded Grant Deed Certificate Issued"}
+      ]
+    },
+    {
+      "id": "srv_usa_llc",
+      "department_id": "dept_sec_state",
+      "name": "Delaware / State LLC Formation & EIN",
+      "description": "Instant Articles of Organization filing, Registered Agent verification, and IRS EIN linkage.",
+      "processing_time": "< 45 seconds",
+      "fees": {
+        "base_fee": 300,
+        "stamp_duty_percentage": 0.0,
+        "registration_fee_percentage": 0.0
+      },
+      "required_documents": ["Organizer Name", "Business Purpose Statement", "Registered Agent Address"],
+      "workflow_steps": [
+        {"id": "name_check", "name": "SOS Corporate Name Availability Check"},
+        {"id": "ein_link", "name": "IRS Employer Identification Number Allocation"},
+        {"id": "certificate", "name": "Stamped Certificate of Formation"}
+      ]
+    }
+  ]
+}

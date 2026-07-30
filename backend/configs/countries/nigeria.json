@@ -1,0 +1,70 @@
+{
+  "country_code": "NG",
+  "country_name": "Nigeria",
+  "flag": "🇳🇬",
+  "currency": {
+    "code": "NGN",
+    "symbol": "₦",
+    "name": "Nigerian Naira"
+  },
+  "id_system": {
+    "name": "NIN / BVN Digital ID",
+    "format": "11-digit National Identification Number",
+    "verification_endpoint": "/api/v1/identity/verify/nin"
+  },
+  "default_language": "en",
+  "supported_languages": ["en"],
+  "departments": [
+    {
+      "id": "dept_lands_ng",
+      "name": "Ministry of Lands & Housing (GIS Registry)",
+      "code": "MLH",
+      "icon": "Landmark"
+    },
+    {
+      "id": "dept_cac",
+      "name": "Corporate Affairs Commission (CAC)",
+      "code": "CAC",
+      "icon": "Building2"
+    }
+  ],
+  "services": [
+    {
+      "id": "srv_ng_cofo",
+      "department_id": "dept_lands_ng",
+      "name": "Certificate of Occupancy (C of O) & Land Search",
+      "description": "Geospatial GIS boundary audit, governor consent validation, and e-Certificate of Occupancy registration.",
+      "processing_time": "< 30 seconds",
+      "fees": {
+        "base_fee": 50000,
+        "stamp_duty_percentage": 3.0,
+        "registration_fee_percentage": 1.0
+      },
+      "required_documents": ["NIN Verification Slip", "Survey Plan", "Deed of Assignment"],
+      "workflow_steps": [
+        {"id": "nin_check", "name": "NIN Biometric Sync"},
+        {"id": "gis_survey", "name": "Geospatial GIS Cadastral Boundary Check"},
+        {"id": "governor_consent", "name": "Automated Governor's Consent Verification"},
+        {"id": "certificate", "name": "Digital Certificate of Occupancy (C of O)"}
+      ]
+    },
+    {
+      "id": "srv_ng_cac",
+      "department_id": "dept_cac",
+      "name": "CAC Business Incorporation & Tax Identification",
+      "description": "Instant CAC business name reservation, FIRS TIN linkage, and status portal generation.",
+      "processing_time": "< 45 seconds",
+      "fees": {
+        "base_fee": 15000,
+        "stamp_duty_percentage": 0.0,
+        "registration_fee_percentage": 0.0
+      },
+      "required_documents": ["NIN Number", "Proposed Business Name", "Director Particulars"],
+      "workflow_steps": [
+        {"id": "name_availability", "name": "CAC Name Availability Search"},
+        {"id": "firs_tin", "name": "FIRS Tax Identification Provisioning"},
+        {"id": "certificate", "name": "CAC Certificate of Registration"}
+      ]
+    }
+  ]
+}

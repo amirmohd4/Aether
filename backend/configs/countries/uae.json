@@ -1,0 +1,76 @@
+{
+  "country_code": "AE",
+  "country_name": "United Arab Emirates",
+  "flag": "🇦🇪",
+  "currency": {
+    "code": "AED",
+    "symbol": "AED",
+    "name": "UAE Dirham"
+  },
+  "id_system": {
+    "name": "Emirates ID / UAE Pass",
+    "format": "784-YYYY-XXXXXXX-Z Digital Pass Biometric",
+    "verification_endpoint": "/api/v1/identity/verify/uaepass"
+  },
+  "default_language": "ar",
+  "supported_languages": ["ar", "en"],
+  "departments": [
+    {
+      "id": "dept_dld",
+      "name": "Dubai Land Department (DLD)",
+      "code": "DLD",
+      "icon": "Landmark"
+    },
+    {
+      "id": "dept_ded",
+      "name": "Department of Economy and Tourism (DET)",
+      "code": "DET",
+      "icon": "Building2"
+    },
+    {
+      "id": "dept_moei",
+      "name": "Ministry of Energy and Infrastructure",
+      "code": "MOEI",
+      "icon": "ShieldCheck"
+    }
+  ],
+  "services": [
+    {
+      "id": "srv_dld_title",
+      "department_id": "dept_dld",
+      "name": "Instant Title Deed Issuance & Transfer",
+      "description": "Smart blockchain-backed real estate registry verification, escrow clearance, and instant Title Deed issuance.",
+      "processing_time": "< 15 seconds",
+      "fees": {
+        "base_fee": 4000,
+        "stamp_duty_percentage": 2.0,
+        "registration_fee_percentage": 0.25
+      },
+      "required_documents": ["UAE Pass Authentication", "Ejari / Makani Number", "Sales Purchase Agreement (SPA)"],
+      "workflow_steps": [
+        {"id": "uaepass_verify", "name": "UAE Pass Instant Biometric Verification"},
+        {"id": "escrow_audit", "name": "Real Estate Escrow Account Verification"},
+        {"id": "dld_ledger", "name": "Dubai Land Department Smart Registry Ledger"},
+        {"id": "certificate", "name": "e-Title Deed Certificate Issued"}
+      ]
+    },
+    {
+      "id": "srv_det_licence",
+      "department_id": "dept_ded",
+      "name": "Instant Commercial Trade Licence",
+      "description": "Zero-paperwork business setup in Dubai Mainland or Free Zones.",
+      "processing_time": "< 30 seconds",
+      "fees": {
+        "base_fee": 12000,
+        "stamp_duty_percentage": 0.0,
+        "registration_fee_percentage": 0.0
+      },
+      "required_documents": ["Emirates ID", "Trade Name Approval", "Lease Contract / Virtual Office"],
+      "workflow_steps": [
+        {"id": "trade_name", "name": "Trade Name Allocation"},
+        {"id": "economic_clearance", "name": "Department of Economy Clearance"},
+        {"id": "certificate", "name": "Commercial License Generation"}
+      ]
+    }
+  ]
+}

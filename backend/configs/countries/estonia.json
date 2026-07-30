@@ -1,0 +1,70 @@
+{
+  "country_code": "EE",
+  "country_name": "Estonia",
+  "flag": "🇪🇪",
+  "currency": {
+    "code": "EUR",
+    "symbol": "€",
+    "name": "Euro"
+  },
+  "id_system": {
+    "name": "e-Residency / Smart-ID / Isikukood",
+    "format": "11-digit Personal Identification Code",
+    "verification_endpoint": "/api/v1/identity/verify/xroad"
+  },
+  "default_language": "en",
+  "supported_languages": ["en", "ru"],
+  "departments": [
+    {
+      "id": "dept_mkm",
+      "name": "Ministry of Economic Affairs and Communications",
+      "code": "MKM",
+      "icon": "Cpu"
+    },
+    {
+      "id": "dept_rik",
+      "name": "Centre of Registers and Information Systems",
+      "code": "RIK",
+      "icon": "Database"
+    }
+  ],
+  "services": [
+    {
+      "id": "srv_estonia_e_res",
+      "department_id": "dept_mkm",
+      "name": "e-Residency Digital Identity & EU Company Formation",
+      "description": "X-Road protocol enabled borderless digital business creation and e-Residency digital identity verification.",
+      "processing_time": "< 20 seconds",
+      "fees": {
+        "base_fee": 265,
+        "stamp_duty_percentage": 0.0,
+        "registration_fee_percentage": 0.0
+      },
+      "required_documents": ["e-ID / Passport", "Smart-ID Digital Signature", "Business Plan Brief"],
+      "workflow_steps": [
+        {"id": "xroad_auth", "name": "X-Road Data Exchange Protocol Verification"},
+        {"id": "police_check", "name": "Police and Border Guard Clearance"},
+        {"id": "e_business", "name": "e-Business Register Company Provisioning"},
+        {"id": "certificate", "name": "EU Digital Company ID Issued"}
+      ]
+    },
+    {
+      "id": "srv_estonia_land",
+      "department_id": "dept_rik",
+      "name": "e-Land Register Property Transfer",
+      "description": "100% digital property ownership transfer via e-Notary system.",
+      "processing_time": "< 10 seconds",
+      "fees": {
+        "base_fee": 150,
+        "stamp_duty_percentage": 0.5,
+        "registration_fee_percentage": 0.0
+      },
+      "required_documents": ["Isikukood Digital Signature", "Cadastral Unit Code"],
+      "workflow_steps": [
+        {"id": "land_register", "name": "e-Land Register Real-time Query"},
+        {"id": "digital_notary", "name": "e-Notary Automated Seal"},
+        {"id": "certificate", "name": "e-Land Title Certificate Issued"}
+      ]
+    }
+  ]
+}

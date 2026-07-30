@@ -1,0 +1,105 @@
+{
+  "country_code": "IN",
+  "country_name": "India",
+  "flag": "🇮🇳",
+  "currency": {
+    "code": "INR",
+    "symbol": "₹",
+    "name": "Indian Rupee"
+  },
+  "id_system": {
+    "name": "Aadhaar / PAN",
+    "format": "12-digit UIDAI / 10-char Alphanumeric PAN",
+    "verification_endpoint": "/api/v1/identity/verify/aadhaar"
+  },
+  "default_language": "en",
+  "supported_languages": ["en", "hi"],
+  "departments": [
+    {
+      "id": "dept_revenue",
+      "name": "Department of Revenue & Land Records",
+      "code": "REV",
+      "icon": "Landmark"
+    },
+    {
+      "id": "dept_transport",
+      "name": "Ministry of Road Transport & Highways",
+      "code": "MORTH",
+      "icon": "Car"
+    },
+    {
+      "id": "dept_corporate",
+      "name": "Ministry of Corporate Affairs",
+      "code": "MCA",
+      "icon": "Building2"
+    },
+    {
+      "id": "dept_health",
+      "name": "Ministry of Health & Family Welfare",
+      "code": "MOHFW",
+      "icon": "Activity"
+    }
+  ],
+  "services": [
+    {
+      "id": "srv_prop_reg",
+      "department_id": "dept_revenue",
+      "name": "Property Registration & Conveyance Deed",
+      "description": "Instant title verification, encumbrance audit, stamp duty calculation, and conveyance deed registration.",
+      "processing_time": "< 30 seconds",
+      "fees": {
+        "base_fee": 1000,
+        "stamp_duty_percentage": 5.0,
+        "registration_fee_percentage": 1.0
+      },
+      "required_documents": ["Identity Proof (Aadhaar)", "Previous Title Deed", "Encumbrance Certificate", "Property Tax Receipt"],
+      "workflow_steps": [
+        {"id": "title_check", "name": "Title Check & Registry Audit"},
+        {"id": "encumbrance", "name": "Encumbrance & Lien Search"},
+        {"id": "fraud_detection", "name": "AI Land Fraud Risk Scoring"},
+        {"id": "stamp_payment", "name": "Stamp Duty & Fee Settlement"},
+        {"id": "registration", "name": "Digital Land Registry Ledger Entry"},
+        {"id": "certificate", "name": "e-Title Ownership Certificate Issued"}
+      ]
+    },
+    {
+      "id": "srv_dl_renewal",
+      "department_id": "dept_transport",
+      "name": "Driving Licence Renewal & Vehicle Transfer",
+      "description": "Automated driving licence validation, biometric sync, and mParivahan digital pass issuance.",
+      "processing_time": "< 15 seconds",
+      "fees": {
+        "base_fee": 400,
+        "stamp_duty_percentage": 0.0,
+        "registration_fee_percentage": 0.0
+      },
+      "required_documents": ["Existing Driving Licence", "Medical Fitness Form 1A", "Aadhaar Card"],
+      "workflow_steps": [
+        {"id": "identity_check", "name": "Biometric Aadhaar Authentication"},
+        {"id": "challan_check", "name": "Traffic Challan & Impound Verification"},
+        {"id": "fee_payment", "name": "Portal Processing Fee Payment"},
+        {"id": "approval", "name": "Automated RTO Approval"},
+        {"id": "certificate", "name": "e-DL Pass Generation"}
+      ]
+    },
+    {
+      "id": "srv_biz_inc",
+      "department_id": "dept_corporate",
+      "name": "SPICe+ Company Incorporation",
+      "description": "Single-window incorporation covering DIN allocation, PAN/TAN generation, and GSTIN registration.",
+      "processing_time": "< 60 seconds",
+      "fees": {
+        "base_fee": 2500,
+        "stamp_duty_percentage": 0.1,
+        "registration_fee_percentage": 0.0
+      },
+      "required_documents": ["DIN Application", "MOA & AOA Drafts", "Registered Office Proof"],
+      "workflow_steps": [
+        {"id": "name_reservation", "name": "RUN Corporate Name Availability Search"},
+        {"id": "din_allocation", "name": "Director Identification Number Check"},
+        {"id": "tax_id_issue", "name": "PAN, TAN & GSTIN Cross-Agency Provisioning"},
+        {"id": "certificate", "name": "Certificate of Incorporation Issued"}
+      ]
+    }
+  ]
+}

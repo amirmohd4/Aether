@@ -1,0 +1,52 @@
+{
+  "country_code": "BR",
+  "country_name": "Brazil",
+  "flag": "🇧🇷",
+  "currency": {
+    "code": "BRL",
+    "symbol": "R$",
+    "name": "Brazilian Real"
+  },
+  "id_system": {
+    "name": "CPF / Gov.br Digital Signature",
+    "format": "XXX.XXX.XXX-XX Individual Registry Number",
+    "verification_endpoint": "/api/v1/identity/verify/cpf"
+  },
+  "default_language": "pt",
+  "supported_languages": ["pt", "en"],
+  "departments": [
+    {
+      "id": "dept_cartorio",
+      "name": "Cartório de Registro de Imóveis (RI)",
+      "code": "RI",
+      "icon": "Landmark"
+    },
+    {
+      "id": "dept_receita",
+      "name": "Receita Federal do Brasil",
+      "code": "RFB",
+      "icon": "Building2"
+    }
+  ],
+  "services": [
+    {
+      "id": "srv_br_imovel",
+      "department_id": "dept_cartorio",
+      "name": "Registro Digital de Imóveis & ITBI Tax",
+      "description": "Digital real estate registry lookup, Municipal ITBI tax calculation, and e-Notary signature.",
+      "processing_time": "< 30 seconds",
+      "fees": {
+        "base_fee": 1200,
+        "stamp_duty_percentage": 3.0,
+        "registration_fee_percentage": 0.5
+      },
+      "required_documents": ["CPF / CNPJ", "Matrícula do Imóvel", "Certidão Negativa de Débitos"],
+      "workflow_steps": [
+        {"id": "cpf_verify", "name": "Gov.br CPF Biometric Verification"},
+        {"id": "matricula_check", "name": "Matrícula Imobiliária On-line Audit"},
+        {"id": "itbi_payment", "name": "Municipal ITBI Tax Clearance"},
+        {"id": "certificate", "name": "Certidão de Property Title Issued"}
+      ]
+    }
+  ]
+}

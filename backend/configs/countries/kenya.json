@@ -1,0 +1,76 @@
+{
+  "country_code": "KE",
+  "country_name": "Kenya",
+  "flag": "🇰🇪",
+  "currency": {
+    "code": "KES",
+    "symbol": "KSh",
+    "name": "Kenyan Shilling"
+  },
+  "id_system": {
+    "name": "Huduma Namba / National ID",
+    "format": "8-digit Serial National ID Number",
+    "verification_endpoint": "/api/v1/identity/verify/huduma"
+  },
+  "default_language": "en",
+  "supported_languages": ["en", "sw"],
+  "departments": [
+    {
+      "id": "dept_lands",
+      "name": "Ministry of Lands & Physical Planning (Ardhisasa)",
+      "code": "ARDHI",
+      "icon": "Landmark"
+    },
+    {
+      "id": "dept_transport",
+      "name": "National Transport and Safety Authority (NTSA)",
+      "code": "NTSA",
+      "icon": "Car"
+    },
+    {
+      "id": "dept_business",
+      "name": "Business Registration Service (BRS)",
+      "code": "BRS",
+      "icon": "Building2"
+    }
+  ],
+  "services": [
+    {
+      "id": "srv_kenya_land",
+      "department_id": "dept_lands",
+      "name": "Ardhisasa Title Search & Land Transfer",
+      "description": "Seamless digital land search, valuation, stamp duty payment via M-Pesa, and title transfer.",
+      "processing_time": "< 30 seconds",
+      "fees": {
+        "base_fee": 500,
+        "stamp_duty_percentage": 4.0,
+        "registration_fee_percentage": 0.5
+      },
+      "required_documents": ["National ID / Huduma Namba", "Title Number", "KRA PIN Certificate"],
+      "workflow_steps": [
+        {"id": "title_check", "name": "Ardhisasa Registry Title Verification"},
+        {"id": "valuation", "name": "Government Valuer Assessment"},
+        {"id": "mpesa_payment", "name": "M-Pesa / Bank Stamp Duty Payment"},
+        {"id": "certificate", "name": "Digital Land Title Grant Issued"}
+      ]
+    },
+    {
+      "id": "srv_kenya_biz",
+      "department_id": "dept_business",
+      "name": "BRS Business Name & Company Registration",
+      "description": "eCitizen linked Instant Business Registration and KRA PIN linkage.",
+      "processing_time": "< 45 seconds",
+      "fees": {
+        "base_fee": 8500,
+        "stamp_duty_percentage": 0.0,
+        "registration_fee_percentage": 0.0
+      },
+      "required_documents": ["National ID", "KRA PIN", "Passport Photo"],
+      "workflow_steps": [
+        {"id": "name_reservation", "name": "Name Search & Reservation"},
+        {"id": "kra_pin_link", "name": "KRA Tax Account Linkage"},
+        {"id": "certificate", "name": "BRS Incorporation Certificate"}
+      ]
+    }
+  ]
+}

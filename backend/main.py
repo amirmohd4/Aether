@@ -1,320 +1,41 @@
-from fastapi import FastAPI, Request, HTTPException, Depends
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
-from slowapi.errors import RateLimitExceeded
-import logging
-import sys
-from fastapi.staticfiles import StaticFiles
-from pathlib import Path
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout)
-    ]
-)
+from backend.api.config_routes import router as config_router
+from backend.api.language_routes import router as language_router
+from backend.api.api_key_routes import router as api_key_router
+from backend.api.billing_routes import router as billing_router
 
-logger = logging.getLogger(__name__)
-
-# Import database and models (absolute imports – no dots)
-from database import init_db, SessionLocal
-from models.database_models import Base
-
-# Import API routes (absolute imports)
-from api.property_routes import router as property_router
-from api.workflow_routes import router as workflow_router
-from api.fraud_routes import router as fraud_router
-from api.certificate_routes import router as certificate_router
-from api.system_routes import router as system_router
-from api.land_ecosystem_routes import router as land_ecosystem_router
-from api.bank_routes import router as bank_router
-from api.developer_routes import router as developer_router
-from api.officer_routes import router as officer_router
-from api.uli_routes import router as uli_router
-from api.cersai_routes import router as cersai_router
-from api.rera_routes import router as rera_router
-from api.plan_scrutiny_routes import router as plan_scrutiny_router
-from api.noc_routes import router as noc_router
-from api.construction_routes import router as construction_router
-from api.payment_routes import router as payment_router
-from api.public_search_routes import router as public_search_router
-from api.trade_license_routes import router as trade_license_router
-from api.building_permit_routes import router as building_permit_router
-from api.water_connection_routes import router as water_connection_router
-from api.birth_routes import router as birth_router
-from api.death_routes import router as death_router
-from api.medical_license_routes import router as medical_license_router
-from api.scholarship_routes import router as scholarship_router
-from api.admission_routes import router as admission_router
-from api.transfer_certificate_routes import router as transfer_certificate_router
-from api.factory_license_routes import router as factory_license_router
-from api.pf_esi_routes import router as pf_esi_router
-from api.gst_routes import router as gst_router
-from api.company_routes import router as company_router
-from api.ration_card_routes import router as ration_card_router
-from api.pds_subsidy_routes import router as pds_subsidy_router
-from api.police_clearance_routes import router as police_clearance_router
-from api.fir_routes import router as fir_router
-from api.farmer_routes import router as farmer_router
-from api.crop_insurance_routes import router as crop_insurance_router
-from api.pmay_routes import router as pmay_router
-from api.housing_routes import router as housing_router
-from api.rera_project_routes import router as rera_project_router
-from api.rera_certificate_routes import router as rera_certificate_router
-from api.court_case_routes import router as court_case_router
-from api.e_court_routes import router as e_court_router
-from api.passport_routes import router as passport_router
-from api.visa_routes import router as visa_router
-# Import services
-from services import fraud_service
-
-# Initialize FastAPI app
 app = FastAPI(
-    title="Aether GovOS API",
-    description="Government Integration Operating System - Unified API for property and certificate services",
-    version="1.0.0",
-    docs_url="/api/docs",
-    redoc_url="/api/redoc"
+    title="Aether - Global Digital Governance Engine",
+    description="Configurable sovereign government service API, GovStack 2.0 building blocks, and developer portal",
+    version="2.0.0"
 )
 
-# Rate limiter
-limiter = Limiter(key_func=get_remote_address, default_limits=["100/minute"])
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-
-# CORS middleware
+# Enable CORS for all origins for global frontend integration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify exact origins
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Startup event
-@app.on_event("startup")
-async def startup_event():
-    """Initialize database and services on startup"""
-    logger.info("🚀 Starting Aether GovOS...")
-    
-    try:
-        # Initialize database
-        logger.info("📊 Initializing database...")
-        init_db()
-        logger.info("✅ Database initialized")
-                # Check if database has any properties
-        from database import SessionLocal
-        from models.database_models import Property
-        db = SessionLocal()
-        property_count = db.query(Property).count()
-        db.close()
-        
-        if property_count == 0:
-            logger.info("📦 Database empty. Seeding mock data...")
-            import subprocess, sys
-            python_path = sys.executable
-            result = subprocess.run([python_path, "scripts/generate_mock_data.py"], capture_output=True, text=True)
-            if result.returncode == 0:
-                logger.info("✅ Mock data seeded successfully")
-            else:
-                logger.error(f"❌ Seeding failed: {result.stderr}")
-        else:
-            logger.info(f"📊 Database already contains {property_count} properties. Skipping seed.")
-        # Train fraud detection model
-        logger.info("🤖 Training fraud detection model...")
-        try:
-            fraud_service.train_model(SessionLocal())
-            logger.info("✅ Fraud detection model trained")
-        except Exception as e:
-            logger.warning(f"Fraud model training skipped: {e}")
-        
-        logger.info("✅ Aether GovOS started successfully")
-        
-    except Exception as e:
-        logger.error(f"❌ Startup failed: {e}")
-        raise
+# Register routers
+app.include_router(config_router)
+app.include_router(language_router)
+app.include_router(api_key_router)
+app.include_router(billing_router)
 
-# Root endpoint
 @app.get("/")
-async def root():
+def root():
     return {
-        "name": "Aether GovOS",
-        "version": "1.0.0",
-        "description": "Government Integration Operating System",
-        "tagline": "One API for all government services",
-        "documentation": "/api/docs",
-        "health": "/api/system/health",
-        "marketplace": "/api/system/api-marketplace"
+        "engine": "Aether Sovereign Global Layer",
+        "version": "2.0.0",
+        "status": "HEALTHY",
+        "govstack_compliance": "GovStack 2.0 Certified"
     }
 
-# Health check endpoint
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy", "service": "Aether GovOS"}
-@app.get("/admin/seed")
-async def seed_database():
-    """Generate mock data directly using the database session (no subprocess)."""
-    from database import SessionLocal
-    from models.database_models import Property, Citizen
-    import random
-    from faker import Faker
-    from datetime import datetime, timedelta
-    import uuid
-
-    fake = Faker('en_IN')
-
-    db = SessionLocal()
-    try:
-        # Check if already seeded
-        if db.query(Property).count() > 0:
-            return {"status": "already_seeded", "count": db.query(Property).count()}
-
-        # Generate 100 citizens
-        citizens = []
-        for _ in range(100):
-            citizen = Citizen(
-                citizen_id=f"CIT-{uuid.uuid4().hex[:8].upper()}",
-                name=fake.name(),
-                email=fake.email(),
-                phone=fake.phone_number()[:15],
-                aadhaar_number=f"{random.randint(100000000000, 999999999999)}",
-                verified_attributes={
-                    "aadhaar_verified": random.choice([True, False]),
-                    "phone_verified": random.choice([True, False]),
-                    "email_verified": random.choice([True, False])
-                },
-                state=random.choice(["karnataka", "jk"]),
-                district=random.choice(["Bengaluru Urban", "Srinagar"]),
-                address=fake.address()
-            )
-            citizens.append(citizen)
-        db.bulk_save_objects(citizens)
-        db.commit()
-
-        # Generate 1000 properties (enough for demo)
-        properties = []
-        for i in range(1000):
-            prop_id = f"KAR-PROP-{i:04d}" if i < 500 else f"JK-PROP-{i-500:04d}"
-            state = "karnataka" if i < 500 else "jk"
-            prop = Property(
-                property_id=prop_id,
-                state=state,
-                location=fake.address(),
-                district=random.choice(["Bengaluru Urban", "Mysuru", "Srinagar", "Jammu"]),
-                tehsil=random.choice(["North", "South", "East", "West"]),
-                village=fake.city(),
-                owner=fake.name(),
-                owner_citizen_id=random.choice(citizens).citizen_id,
-                title_status=random.choice(["clear", "clear", "clear", "disputed"]),  # 75% clear
-                encumbrances=[{"type": "mortgage", "amount": random.uniform(100000, 5000000)}] if random.random() < 0.1 else [],
-                history=[{"date": (datetime.now() - timedelta(days=random.randint(365, 3650))).isoformat(),
-                          "transaction_type": random.choice(["sale", "inheritance"]),
-                          "previous_owner": fake.name()} for _ in range(random.randint(1, 3))],
-                property_value=random.uniform(500000, 50000000),
-                property_size=random.uniform(500, 5000),
-                property_type=random.choice(["residential", "commercial", "agricultural"]),
-                state_specific_data={"fraud_flags": {}}
-            )
-            properties.append(prop)
-        db.bulk_save_objects(properties)
-        db.commit()
-
-        return {"status": "success", "message": f"Seeded {len(properties)} properties and {len(citizens)} citizens."}
-    except Exception as e:
-        db.rollback()
-        return {"status": "error", "message": str(e)}
-    finally:
-        db.close()
-# Include API routers
-app.include_router(property_router, prefix="/api")
-app.include_router(workflow_router, prefix="/api")
-app.include_router(fraud_router, prefix="/api")
-app.include_router(certificate_router, prefix="/api")
-app.include_router(system_router, prefix="/api")
-app.include_router(land_ecosystem_router, prefix="/api")
-app.include_router(bank_router)
-app.include_router(developer_router)
-app.include_router(officer_router)
-app.include_router(uli_router)
-app.include_router(cersai_router)
-app.include_router(rera_router)
-app.include_router(plan_scrutiny_router)
-app.include_router(noc_router)
-app.include_router(construction_router)
-app.include_router(payment_router)
-app.include_router(public_search_router)
-app.include_router(trade_license_router)
-app.include_router(building_permit_router)
-app.include_router(water_connection_router)
-app.include_router(birth_router)
-app.include_router(death_router)
-app.include_router(medical_license_router)
-app.include_router(scholarship_router)
-app.include_router(admission_router)
-app.include_router(transfer_certificate_router)
-app.include_router(factory_license_router)
-app.include_router(pf_esi_router)
-app.include_router(gst_router)
-app.include_router(company_router)
-app.include_router(ration_card_router)
-app.include_router(pds_subsidy_router)
-app.include_router(police_clearance_router)
-app.include_router(fir_router)
-app.include_router(farmer_router)
-app.include_router(crop_insurance_router)
-app.include_router(pmay_router)
-app.include_router(housing_router)
-app.include_router(rera_project_router)
-app.include_router(rera_certificate_router)
-app.include_router(court_case_router)
-app.include_router(e_court_router)
-app.include_router(passport_router)
-app.include_router(visa_router)
-# Error handler for 404
-@app.exception_handler(404)
-async def not_found_handler(request: Request, exc: HTTPException):
-    return JSONResponse(
-        status_code=404,
-        content={
-            "error": "Not Found",
-            "message": f"The requested resource was not found: {request.url.path}",
-            "documentation": "/api/docs"
-        }
-    )
-
-# Global error handler
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    logger.error(f"Unhandled exception: {exc}", exc_info=True)
-    return JSONResponse(
-        status_code=500,
-        content={
-            "error": "Internal Server Error",
-            "message": "An unexpected error occurred",
-            "detail": str(exc) if app.debug else None
-        }
-    )
-
-# Middleware for logging requests
-@app.middleware("http")
-async def log_requests(request: Request, call_next):
-    logger.info(f"{request.method} {request.url.path}")
-    response = await call_next(request)
-    logger.info(f"Status: {response.status_code}")
-    return response
-# ============================================================
-# SERVE REACT FRONTEND FROM BACKEND
-# ============================================================
-
-
-frontend_dist = Path(__file__).parent.parent / "dist"
-if frontend_dist.exists():
-    app.mount("/", StaticFiles(directory=str(frontend_dist), html=True), name="frontend")
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8001)
-# ============================================================
+    uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=True)

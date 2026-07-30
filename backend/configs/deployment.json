@@ -1,0 +1,18 @@
+{
+  "sovereign_deployment": {
+    "deployment_mode": "hybrid_sovereign_cloud",
+    "cloud_providers": ["AWS", "Azure", "GCP", "On-Premise GovCloud"],
+    "data_residency_enforced": true,
+    "encryption_at_rest": "AES-256-GCM",
+    "encryption_in_transit": "TLS 1.3",
+    "gdpr_dpdp_compliant": true,
+    "audit_trail_immutability": "SHA-256 Ledger Chain",
+    "supported_regions": [
+      {"code": "in-south-1", "name": "India (Mumbai)", "status": "active"},
+      {"code": "af-south-1", "name": "Africa (Cape Town / Nairobi)", "status": "active"},
+      {"code": "me-central-1", "name": "UAE (Abu Dhabi / Dubai)", "status": "active"},
+      {"code": "eu-north-1", "name": "Europe (Tallinn / Frankfurt)", "status": "active"},
+      {"code": "us-east-1", "name": "USA (GovCloud East)", "status": "active"}
+    ]
+  }
+}
