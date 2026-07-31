@@ -5,6 +5,7 @@ from backend.api.config_routes import router as config_router
 from backend.api.language_routes import router as language_router
 from backend.api.api_key_routes import router as api_key_router
 from backend.api.billing_routes import router as billing_router
+from backend.api.workflow_routes import router as workflow_router
 
 app = FastAPI(
     title="Aether - Global Digital Governance Engine",
