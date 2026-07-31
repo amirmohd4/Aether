@@ -1,12 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.config_routes import router as config_router
-from api.language_routes import router as language_router
-from api.api_key_routes import router as api_key_router
-from api.billing_routes import router as billing_router
-from api.workflow_routes import router as workflow_router
-
+from backend.api.config_routes import router as config_router
+from backend.api.language_routes import router as language_router
+from backend.api.api_key_routes import router as api_key_router
+from backend.api.billing_routes import router as billing_router
+from backend.api.workflow_routes import router as workflow_router
 app = FastAPI(
     title="Aether - Global Digital Governance Engine",
     description="Configurable sovereign government service API, GovStack 2.0 building blocks, and developer portal",
