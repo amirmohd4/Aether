@@ -81,8 +81,8 @@ class WorkflowState(Base):
     __tablename__ = "workflow_states"
     
     workflow_id = Column(String, primary_key=True, index=True)
-    property_id = Column(String, ForeignKey("properties.property_id"))
-    citizen_id = Column(String, ForeignKey("citizens.citizen_id"))
+    property_id = Column(String, ForeignKey("properties.property_id"), nullable=True)
+    citizen_id = Column(String, ForeignKey("citizens.citizen_id"), nullable=True)
     workflow_type = Column(String)  # property_registration, certificate_request
     current_step = Column(String)
     status = Column(Enum(WorkflowStatusEnum))
