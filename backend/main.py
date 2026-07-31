@@ -27,6 +27,7 @@ app.include_router(config_router)
 app.include_router(language_router)
 app.include_router(api_key_router)
 app.include_router(billing_router)
+app.include_router(workflow_router)
 
 @app.get("/")
 def root():
