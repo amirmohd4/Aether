@@ -17,4 +17,4 @@ COPY scripts /app/scripts
 EXPOSE 8001
 
 # Only initialize database, skip mock data generation
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port 8001"]
+CMD ["sh", "-c", "uvicorn backend.main:app --host 0.0.0.0 --port 8001"]
