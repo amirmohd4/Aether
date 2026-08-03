@@ -10,6 +10,7 @@ export function GlobalDemo() {
   const [workflowId, setWorkflowId] = useState(null);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
+  const [currentStep, setCurrentStep] = useState(0);
 
   const steps = [
     'Title Audit & Registry Verification',
@@ -19,7 +20,6 @@ export function GlobalDemo() {
     'Digital Registry Ledger Recordation',
     'e-Ownership Certificate Issued'
   ];
-  const [currentStep, setCurrentStep] = useState(0);
 
   const startWorkflow = async () => {
     if (!nationalId || nationalId.length < 6) {
@@ -30,8 +30,10 @@ export function GlobalDemo() {
     setError('');
     setResult(null);
     setCurrentStep(0);
+    setWorkflowId(null);
 
     try {
+      // 1. Start the workflow
       const res = await fetch(`${BACKEND_URL}/api/workflow/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -40,25 +42,29 @@ export function GlobalDemo() {
           country: 'india',
           state: 'karnataka',
           national_id: nationalId,
-          property_id: 'KAR-PROP-0001'
+          property_id: 'KAR-PROP-0001' // optional
         })
       });
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || 'Failed to start workflow');
       setWorkflowId(data.workflow_id);
 
-      // Poll for status
+      // 2. Poll for status
       let stepIndex = 0;
       const interval = setInterval(async () => {
         try {
           const statusRes = await fetch(`${BACKEND_URL}/api/workflow/${data.workflow_id}`);
           const statusData = await statusRes.json();
+          
+          // Calculate progress based on steps
           const progress = statusData.progress_percentage || 0;
           const newStep = Math.floor((progress / 100) * (steps.length - 1));
           if (newStep > stepIndex) {
             stepIndex = newStep;
             setCurrentStep(stepIndex);
           }
+
           if (statusData.status === 'completed') {
             clearInterval(interval);
             setIsRunning(false);
