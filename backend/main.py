@@ -6,6 +6,7 @@ from backend.api.language_routes import router as language_router
 from backend.api.api_key_routes import router as api_key_router
 from backend.api.billing_routes import router as billing_router
 from backend.api.workflow_routes import router as workflow_router
+from backend.database import init_db
 
 app = FastAPI(
     title="Aether - Global Digital Governance Engine",
@@ -32,9 +33,18 @@ def root():
     return {
         "name": "Aether GovOS",
         "version": "1.0.0",
-        "description": "Government Integration Operating System"
+        "description": "Government Integration Operating System",
+        "tagline": "One API for all government services",
+        "documentation": "/api/docs",
+        "health": "/api/system/health"
     }
 
 @app.get("/health")
 def health():
-    return {"status": "healthy"}
+    return {"status": "healthy", "service": "Aether GovOS"}
+
+@app.on_event("startup")
+def startup():
+    print("🚀 Starting Aether GovOS...")
+    init_db()
+    print("✅ Aether GovOS started successfully")
