@@ -2,8 +2,7 @@ from sqlalchemy import Column, String, Integer, Float, DateTime, Boolean, Text, 
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import enum
-from database import Base
-
+from ..database import Base
 class Property(Base):
     __tablename__ = "properties"
     
