@@ -4,25 +4,6 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 import enum
 
-# ============ CITIZEN ============
-class Citizen(Base):
-    __tablename__ = "citizens"
-    citizen_id = Column(String, primary_key=True, index=True)
-    name = Column(String)
-    email = Column(String, unique=True, index=True)
-    phone = Column(String)
-    aadhaar_number = Column(String, unique=True, index=True)
-    verified_attributes = Column(JSON)
-    state = Column(String)
-    district = Column(String)
-    address = Column(Text)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    
-    properties = relationship("Property", back_populates="owner_citizen")
-    certificates = relationship("Certificate", back_populates="citizen")
-    workflow_states = relationship("WorkflowState", back_populates="citizen")
-
-# ============ PROPERTY ============
 class Property(Base):
     __tablename__ = "properties"
     property_id = Column(String, primary_key=True, index=True)
@@ -32,7 +13,7 @@ class Property(Base):
     tehsil = Column(String)
     village = Column(String)
     owner = Column(String)
-    owner_citizen_id = Column(String, ForeignKey("citizens.citizen_id"))
+    owner_citizen_id = Column(String)
     title_status = Column(String)
     encumbrances = Column(JSON)
     history = Column(JSON)
@@ -42,17 +23,25 @@ class Property(Base):
     state_specific_data = Column(JSON)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    owner_citizen = relationship("Citizen", back_populates="properties")
-    workflow_states = relationship("WorkflowState", back_populates="property")
-    fraud_logs = relationship("FraudDetectionLog", back_populates="property")
 
-# ============ CERTIFICATE ============
+class Citizen(Base):
+    __tablename__ = "citizens"
+    citizen_id = Column(String, primary_key=True, index=True)
+    name = Column(String)
+    email = Column(String)
+    phone = Column(String)
+    aadhaar_number = Column(String)
+    verified_attributes = Column(JSON)
+    state = Column(String)
+    district = Column(String)
+    address = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 class Certificate(Base):
     __tablename__ = "certificates"
     certificate_id = Column(String, primary_key=True, index=True)
     certificate_type = Column(String)
-    citizen_id = Column(String, ForeignKey("citizens.citizen_id"))
+    citizen_id = Column(String)
     issuing_authority = Column(String)
     status = Column(String)
     issue_date = Column(DateTime)
@@ -60,10 +49,7 @@ class Certificate(Base):
     state = Column(String)
     certificate_data = Column(JSON)
     created_at = Column(DateTime, default=datetime.utcnow)
-    
-    citizen = relationship("Citizen", back_populates="certificates")
 
-# ============ WORKFLOW ============
 class WorkflowStatusEnum(enum.Enum):
     pending = "pending"
     in_progress = "in_progress"
@@ -74,8 +60,8 @@ class WorkflowStatusEnum(enum.Enum):
 class WorkflowState(Base):
     __tablename__ = "workflow_states"
     workflow_id = Column(String, primary_key=True, index=True)
-    property_id = Column(String, ForeignKey("properties.property_id"), nullable=True)
-    citizen_id = Column(String, ForeignKey("citizens.citizen_id"), nullable=True)
+    property_id = Column(String, nullable=True)
+    citizen_id = Column(String, nullable=True)
     workflow_type = Column(String)
     current_step = Column(String)
     status = Column(Enum(WorkflowStatusEnum))
@@ -85,12 +71,7 @@ class WorkflowState(Base):
     started_at = Column(DateTime, default=datetime.utcnow)
     completed_at = Column(DateTime, nullable=True)
     workflow_metadata = Column(JSON)
-    
-    property = relationship("Property", back_populates="workflow_states")
-    citizen = relationship("Citizen", back_populates="workflow_states")
-    fraud_logs = relationship("FraudDetectionLog", back_populates="workflow")
 
-# ============ FRAUD ============
 class FraudSeverityEnum(enum.Enum):
     low = "low"
     medium = "medium"
@@ -100,8 +81,8 @@ class FraudSeverityEnum(enum.Enum):
 class FraudDetectionLog(Base):
     __tablename__ = "fraud_detection_logs"
     fraud_id = Column(String, primary_key=True, index=True)
-    property_id = Column(String, ForeignKey("properties.property_id"), nullable=True)
-    workflow_id = Column(String, ForeignKey("workflow_states.workflow_id"), nullable=True)
+    property_id = Column(String, nullable=True)
+    workflow_id = Column(String, nullable=True)
     fraud_type = Column(String)
     severity = Column(Enum(FraudSeverityEnum))
     fraud_score = Column(Float)
@@ -111,11 +92,7 @@ class FraudDetectionLog(Base):
     flagged_at = Column(DateTime, default=datetime.utcnow)
     resolved = Column(Boolean, default=False)
     resolution_notes = Column(Text, nullable=True)
-    
-    property = relationship("Property", back_populates="fraud_logs")
-    workflow = relationship("WorkflowState", back_populates="fraud_logs")
 
-# ============ API KEY ============
 class ApiKey(Base):
     __tablename__ = "api_keys"
     id = Column(Integer, primary_key=True, index=True)
