@@ -1,5 +1,5 @@
 from sqlalchemy import Column, String, Float, DateTime, Boolean
-from database import Base
+from backend.database import Base
 from datetime import datetime
 
 class WaterConnection(Base):
