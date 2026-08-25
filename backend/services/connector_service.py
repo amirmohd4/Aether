@@ -2,7 +2,7 @@ import json
 import os
 from typing import Dict, Any, List
 from backend.connectors import (
-    KaveriConnector, EAssthiConnector, BhoomiConnector,
+    KaveriConnector, EAssthiConnectorr, BhoomiConnector,
     LRISConnector, AadhaarConnector, DigilockerConnector
 )
 from ..config import settings
@@ -42,7 +42,7 @@ class ConnectorService:
         # Map connector names to classes
         connector_classes = {
             'KaveriConnector': KaveriConnector,
-            'EAasthiConnector': EAasthiConnector,
+            'EAssthiConnector': EAasthiConnector,
             'BhoomiConnector': BhoomiConnector,
             'LRISConnector': LRISConnector,
             'AadhaarConnector': AadhaarConnector,
