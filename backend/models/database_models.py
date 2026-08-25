@@ -1,105 +1,50 @@
-from ..database import Base
-from sqlalchemy import Column, String, Integer, Float, DateTime, Boolean, Text, ForeignKey, JSON, Enum
-from sqlalchemy.orm import relationship
 from datetime import datetime
+from typing import Optional
 import enum
 
-class Property(Base):
-    __tablename__ = "properties"
-    property_id = Column(String, primary_key=True, index=True)
-    state = Column(String, index=True)
-    location = Column(String)
-    district = Column(String)
-    tehsil = Column(String)
-    village = Column(String)
-    owner = Column(String)
-    owner_citizen_id = Column(String)
-    title_status = Column(String)
-    encumbrances = Column(JSON)
-    history = Column(JSON)
-    property_value = Column(Float)
-    property_size = Column(Float)
-    property_type = Column(String)
-    state_specific_data = Column(JSON)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+class WorkflowStatusEnum(str, enum.Enum):
+    INITIATED = "initiated"
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
 
-class Citizen(Base):
-    __tablename__ = "citizens"
-    citizen_id = Column(String, primary_key=True, index=True)
-    name = Column(String)
-    email = Column(String)
-    phone = Column(String)
-    aadhaar_number = Column(String)
-    verified_attributes = Column(JSON)
-    state = Column(String)
-    district = Column(String)
-    address = Column(Text)
-    created_at = Column(DateTime, default=datetime.utcnow)
+class FraudSeverityEnum(str, enum.Enum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
 
-class Certificate(Base):
-    __tablename__ = "certificates"
-    certificate_id = Column(String, primary_key=True, index=True)
-    certificate_type = Column(String)
-    citizen_id = Column(String)
-    issuing_authority = Column(String)
-    status = Column(String)
-    issue_date = Column(DateTime)
-    expiry_date = Column(DateTime, nullable=True)
-    state = Column(String)
-    certificate_data = Column(JSON)
-    created_at = Column(DateTime, default=datetime.utcnow)
+class Property:
+    """Property model"""
+    def __init__(self, property_id: str, owner_name: str, property_value: float, 
+                 area_sqft: float, address: str, state: str):
+        self.property_id = property_id
+        self.owner_name = owner_name
+        self.property_value = property_value
+        self.area_sqft = area_sqft
+        self.address = address
+        self.state = state
+        self.created_at = datetime.now()
+        self.updated_at = datetime.now()
 
-class WorkflowStatusEnum(enum.Enum):
-    pending = "pending"
-    in_progress = "in_progress"
-    completed = "completed"
-    rejected = "rejected"
-    manual_review = "manual_review"
+class WorkflowState:
+    """Workflow state model"""
+    def __init__(self, workflow_id: str, property_id: str, status: WorkflowStatusEnum):
+        self.workflow_id = workflow_id
+        self.property_id = property_id
+        self.status = status
+        self.current_step = None
+        self.steps = {}
+        self.created_at = datetime.now()
+        self.updated_at = datetime.now()
 
-class WorkflowState(Base):
-    __tablename__ = "workflow_states"
-    workflow_id = Column(String, primary_key=True, index=True)
-    property_id = Column(String, nullable=True)
-    citizen_id = Column(String, nullable=True)
-    workflow_type = Column(String)
-    current_step = Column(String)
-    status = Column(Enum(WorkflowStatusEnum))
-    steps_completed = Column(JSON)
-    steps_pending = Column(JSON)
-    failure_reason = Column(Text, nullable=True)
-    started_at = Column(DateTime, default=datetime.utcnow)
-    completed_at = Column(DateTime, nullable=True)
-    workflow_metadata = Column(JSON)
-
-class FraudSeverityEnum(enum.Enum):
-    low = "low"
-    medium = "medium"
-    high = "high"
-    critical = "critical"
-
-class FraudDetectionLog(Base):
-    __tablename__ = "fraud_detection_logs"
-    fraud_id = Column(String, primary_key=True, index=True)
-    property_id = Column(String, nullable=True)
-    workflow_id = Column(String, nullable=True)
-    fraud_type = Column(String)
-    severity = Column(Enum(FraudSeverityEnum))
-    fraud_score = Column(Float)
-    description = Column(Text)
-    explanation = Column(Text)
-    evidence = Column(JSON)
-    flagged_at = Column(DateTime, default=datetime.utcnow)
-    resolved = Column(Boolean, default=False)
-    resolution_notes = Column(Text, nullable=True)
-
-class ApiKey(Base):
-    __tablename__ = "api_keys"
-    id = Column(Integer, primary_key=True, index=True)
-    key = Column(String, unique=True, index=True)
-    owner = Column(String)
-    rate_limit = Column(Integer, default=100)
-    usage_count = Column(Integer, default=0)
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    last_used_at = Column(DateTime, nullable=True)
+class FraudDetectionLog:
+    """Fraud detection log model"""
+    def __init__(self, property_id: str, is_fraud: bool, score: float, severity: FraudSeverityEnum):
+        self.property_id = property_id
+        self.is_fraud = is_fraud
+        self.score = score
+        self.severity = severity
+        self.detected_at = datetime.now()
+        self.checks = []
