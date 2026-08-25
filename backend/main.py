@@ -1,19 +1,19 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import logging
 
-from backend.api.config_routes import router as config_router
-from backend.api.language_routes import router as language_router
-from backend.api.api_key_routes import router as api_key_router
-from backend.api.billing_routes import router as billing_router
-from backend.api.workflow_routes import router as workflow_router
-from backend.database import init_db
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
+# Create FastAPI app FIRST
 app = FastAPI(
-    title="Aether - Global Digital Governance Engine",
-    description="Configurable sovereign government service API, GovStack 2.0 building blocks, and developer portal",
-    version="2.0.0"
+    title="Aether GovOS API",
+    description="Sovereign Government Operating System Backend",
+    version="0.1.0"
 )
 
+# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -22,29 +22,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(config_router)
-app.include_router(language_router)
-app.include_router(api_key_router)
-app.include_router(billing_router)
-app.include_router(workflow_router)
+# Import routers AFTER app is created (breaks circular imports)
+from backend.api.billing_routes import router as billing_router
+from backend.api.workflow_routes import router as workflow_router
+from backend.api.fraud_routes import router as fraud_router
+from backend.api.connector_routes import router as connector_router
+
+# Register routers
+app.include_router(billing_router, prefix="/api/billing", tags=["Billing"])
+app.include_router(workflow_router, prefix="/api/workflow", tags=["Workflow"])
+app.include_router(fraud_router, prefix="/api/fraud", tags=["Fraud"])
+app.include_router(connector_router, prefix="/api/connectors", tags=["Connectors"])
 
 @app.get("/")
-def root():
+async def root():
     return {
-        "name": "Aether GovOS",
-        "version": "1.0.0",
-        "description": "Government Integration Operating System",
-        "tagline": "One API for all government services",
-        "documentation": "/api/docs",
-        "health": "/api/system/health"
+        "service": "Aether GovOS",
+        "status": "running",
+        "version": "0.1.0"
     }
 
 @app.get("/health")
-def health():
-    return {"status": "healthy", "service": "Aether GovOS"}
-
-@app.on_event("startup")
-def startup():
-    print("🚀 Starting Aether GovOS...")
-    init_db()
-    print("✅ Aether GovOS started successfully")
+async def health_check():
+    return {"status": "healthy"}
