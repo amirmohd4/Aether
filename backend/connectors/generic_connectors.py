@@ -1,42 +1,66 @@
 import random
-import json
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Dict, Any
-from .base_connector import BaseConnector
+from backend.connectors.base_connector import BaseConnector
 
 
 class AadhaarConnector(BaseConnector):
     """Aadhaar API Connector for identity verification"""
 
-    def verify_identity(self, aadhaar_number: str, name: str) -> Dict[str, Any]:
-        self._simulate_network_delay()
-        self._check_mock_failure()
-
-        # Simulate Aadhaar verification
-        is_valid = len(aadhaar_number) == 12 and aadhaar_number.isdigit()
-
+    def verify_title(self, property_id: str) -> Dict[str, Any]:
+        """Verify property title"""
         return {
             "source": "Aadhaar",
-            "aadhaar_number": aadhaar_number[-4:],
-            "name": name,
-            "verified": is_valid,
-            "timestamp": datetime.now().isoformat()
+            "property_id": property_id,
+            "title_verified": True,
+            "verified_at": datetime.now().isoformat()
+        }
+
+    def fetch_property_data(self, property_id: str) -> Dict[str, Any]:
+        """Fetch property data"""
+        return {
+            "source": "Aadhaar",
+            "property_id": property_id,
+            "data": {"status": "available"},
+            "fetched_at": datetime.now().isoformat()
+        }
+
+    def check_encumbrance(self, property_id: str) -> Dict[str, Any]:
+        """Check encumbrance"""
+        return {
+            "source": "Aadhaar",
+            "property_id": property_id,
+            "has_encumbrance": False,
+            "checked_at": datetime.now().isoformat()
         }
 
 
 class DigiLockerConnector(BaseConnector):
     """DigiLocker API Connector for document retrieval"""
 
-    def fetch_document(self, document_id: str, user_id: str) -> Dict[str, Any]:
-        self._simulate_network_delay()
-        self._check_mock_failure()
-
-        # Simulate document fetch
+    def verify_title(self, property_id: str) -> Dict[str, Any]:
+        """Verify property title"""
         return {
             "source": "DigiLocker",
-            "document_id": document_id,
-            "user_id": user_id,
-            "document_name": f"document_{document_id}.pdf",
-            "size_kb": random.randint(100, 5000),
+            "property_id": property_id,
+            "title_verified": True,
+            "verified_at": datetime.now().isoformat()
+        }
+
+    def fetch_property_data(self, property_id: str) -> Dict[str, Any]:
+        """Fetch property data"""
+        return {
+            "source": "DigiLocker",
+            "property_id": property_id,
+            "data": {"document_id": property_id},
             "fetched_at": datetime.now().isoformat()
+        }
+
+    def check_encumbrance(self, property_id: str) -> Dict[str, Any]:
+        """Check encumbrance"""
+        return {
+            "source": "DigiLocker",
+            "property_id": property_id,
+            "has_encumbrance": False,
+            "checked_at": datetime.now().isoformat()
         }
