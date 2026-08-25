@@ -67,7 +67,7 @@ class KaveriConnector(BaseConnector):
         }
 
 
-class EAasthiConnector(BaseConnector):
+class EAssthiConnector(BaseConnector):
     """Karnataka eAasthi - Urban Property Tax System"""
     
     def fetch_property_data(self, property_id: str) -> Dict[str, Any]:
