@@ -1,70 +1,68 @@
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
-from typing import Optional
-import uuid
-from datetime import datetime
+from fastapi import APIRouter, Depends, HTTPException, status
+from typing import List, Dict, Any
 from sqlalchemy.orm import Session
-from database import SessionLocal
-from models.database_models import WorkflowState, WorkflowStatusEnum
+from backend.database import SessionLocal  # <-- FIXED IMPORT
+from backend.services.workflow_service import workflow_engine
+from backend.services.fraud_service import fraud_service
+import logging
 
-router = APIRouter(prefix="/workflow", tags=["workflow"])
+logger = logging.getLogger(__name__)
 
-class WorkflowStartRequest(BaseModel):
-    service_id: str
-    country: str
-    state: str
-    national_id: str
-    property_id: Optional[str] = None
-    citizen_id: Optional[str] = None
+router = APIRouter()
+
+# Dependency to get DB session
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 @router.post("/start")
-async def start_workflow(request: WorkflowStartRequest):
-    db = SessionLocal()
+async def start_workflow(property_data: Dict[str, Any], db: Session = Depends(get_db)):
+    """Start a new workflow for property registration"""
     try:
-        workflow_id = f"wf-{uuid.uuid4().hex[:8]}"
-        workflow = WorkflowState(
-            workflow_id=workflow_id,
-            property_id=request.property_id,
-            citizen_id=request.citizen_id,
-            workflow_type=request.service_id,
-            current_step="started",
-            status=WorkflowStatusEnum.in_progress,
-            steps_completed=[],
-            steps_pending=[],
-            started_at=datetime.utcnow(),
-            workflow_metadata={
-                "country": request.country,
-                "state": request.state,
-                "national_id": request.national_id
-            }
-        )
-        db.add(workflow)
-        db.commit()
-        db.refresh(workflow)
-        return {
-            "workflow_id": workflow_id,
-            "status": "started",
-            "current_step": "title_verification",
-            "message": "Workflow started successfully"
-        }
+        property_id = property_data.get("property_id", "unknown")
+        workflow = workflow_engine.create_workflow(property_id, property_data)
+        return {"status": "success", "workflow": workflow}
     except Exception as e:
-        db.rollback()
+        logger.error(f"Workflow start error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        db.close()
+
+@router.post("/advance")
+async def advance_workflow(workflow_id: str, step: str, result: Dict[str, Any]):
+    """Advance workflow to next step"""
+    try:
+        # In a real app, you'd fetch workflow from DB
+        # For now, we simulate with a minimal workflow dict
+        mock_workflow = {
+            "workflow_id": workflow_id,
+            "steps": {step: {"status": "pending"} for step in workflow_engine.steps},
+            "status": "in_progress",
+            "updated_at": None
+        }
+        updated = workflow_engine.advance_step(mock_workflow, step, result)
+        return {"status": "success", "workflow": updated}
+    except Exception as e:
+        logger.error(f"Workflow advance error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/{workflow_id}")
-async def get_workflow_status(workflow_id: str):
-    db = SessionLocal()
+async def get_workflow(workflow_id: str):
+    """Get workflow status by ID"""
+    # In a real app, you'd fetch from DB
+    return {
+        "workflow_id": workflow_id,
+        "status": "in_progress",
+        "message": "Workflow retrieval not fully implemented"
+    }
+
+@router.post("/{workflow_id}/fraud-check")
+async def check_fraud(workflow_id: str, property_data: Dict[str, Any]):
+    """Run fraud detection on the property"""
     try:
-        workflow = db.query(WorkflowState).filter(WorkflowState.workflow_id == workflow_id).first()
-        if not workflow:
-            raise HTTPException(status_code=404, detail="Workflow not found")
-        return {
-            "workflow_id": workflow.workflow_id,
-            "status": workflow.status.value if workflow.status else "unknown",
-            "current_step": workflow.current_step,
-            "progress_percentage": len(workflow.steps_completed or []) / max(1, len(workflow.steps_pending or []) + len(workflow.steps_completed or [])) * 100
-        }
-    finally:
-        db.close()
+        result = fraud_service.detect_fraud(property_data)
+        return {"status": "success", "fraud_check": result}
+    except Exception as e:
+        logger.error(f"Fraud check error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
