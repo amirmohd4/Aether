@@ -1,5 +1,5 @@
 from .base_connector import BaseConnector
-from .karnataka_connectors import KaveriConnector, EAasthiConnector, BhoomiConnector
+from .karnataka_connectors import KaveriConnector, EAssthiConnector, BhoomiConnector
 from .jk_connectors import LRISConnector
 from .generic_connectors import AadhaarConnector, DigiLockerConnector
 from .municipal_connector import MunicipalZoningConnector
