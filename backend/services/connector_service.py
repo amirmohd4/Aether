@@ -1,7 +1,7 @@
 import json
 import os
 from typing import Dict, Any, List
-from ..connectors import (
+from backend.connectors import (
     KaveriConnector, EAasthiConnector, BhoomiConnector,
     LRISConnector, AadhaarConnector, DigilockerConnector
 )
