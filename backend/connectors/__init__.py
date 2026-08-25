@@ -8,7 +8,7 @@ from .court_connector import CourtRecordsConnector
 __all__ = [
     "BaseConnector",
     "KaveriConnector",
-    "EAasthiConnector",
+    "EAssthiConnector",
     "BhoomiConnector",
     "LRISConnector",
     "AadhaarConnector",
