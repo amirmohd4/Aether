@@ -1,33 +1,19 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-import os
 
-# Get DATABASE_URL from environment variable
-DATABASE_URL = os.environ.get("DATABASE_URL")
+# Use SQLite for development (change this to your actual DB URL)
+SQLALCHEMY_DATABASE_URL = "sqlite:///./aether.db"
 
-if not DATABASE_URL:
-    # Fallback for local development
-    DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/aether_govos"
-
-# Create engine
-engine = create_engine(DATABASE_URL)
-
-# Create SessionLocal
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Create Base class for models
 Base = declarative_base()
 
-# Dependency to get DB session
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+# You can import your models here to create tables
+# from backend.models.database_models import Property, WorkflowState, FraudDetectionLog
 
-# Initialize database (creates all tables)
-def init_db():
-    Base.metadata.create_all(bind=engine)
-    print("[Aether Database] Initialized successfully")
+# Uncomment to create tables on startup (optional)
+# Base.metadata.create_all(bind=engine)
