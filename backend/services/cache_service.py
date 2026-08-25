@@ -1,54 +1,53 @@
-from typing import Any
-from backend.config import settings
-import redis
 import json
+import os
+from typing import Dict, Any, List
+from backend.connectors import (
+    KaveriConnector,
+    EAssthiConnector,
+    BhoomiConnector,
+    LRISConnector,
+    AadhaarConnector,
+    DigiLockerConnector
+)
+from backend.config import settings
+from backend.services.cache_service import cache
 import logging
 
 logger = logging.getLogger(__name__)
 
-class CacheService:
+class ConnectorService:
+    """Service to manage state-specific connectors"""
+
     def __init__(self):
-        self.redis_client = None
-        self.enabled = settings.redis_enabled if hasattr(settings, 'redis_enabled') else False
-        if self.enabled:
-            try:
-                self.redis_client = redis.Redis(
-                    host=settings.redis_host,
-                    port=settings.redis_port,
-                    db=settings.redis_db,
-                    decode_responses=True
-                )
-                self.redis_client.ping()
-                logger.info("Redis cache connected")
-            except Exception as e:
-                logger.error(f"Redis connection failed: {e}")
-                self.enabled = False
+        self.active_state = settings.active_state
+        self.mock_failure = settings.mock_failure
+        self.state_config = self._load_state_config()
 
-    def get(self, key: str):
-        if not self.enabled:
-            return None
-        try:
-            data = self.redis_client.get(key)
-            return json.loads(data) if data else None
-        except Exception as e:
-            logger.error(f"Cache get error: {e}")
-            return None
+    def _load_state_config(self):
+        """Load state-specific configuration"""
+        return {
+            "karnataka": {
+                "kaveri": KaveriConnector(),
+                "eassthi": EAssthiConnector(),
+                "bhoomi": BhoomiConnector()
+            },
+            "jammu_kashmir": {
+                "lris": LRISConnector()
+            },
+            "generic": {
+                "aadhaar": AadhaarConnector(),
+                "digilocker": DigiLockerConnector()
+            }
+        }
 
-    def set(self, key: str, value: Any, expire: int = 300):
-        if not self.enabled:
-            return
-        try:
-            self.redis_client.setex(key, expire, json.dumps(value))
-        except Exception as e:
-            logger.error(f"Cache set error: {e}")
+    def get_connector(self, state: str, service: str):
+        """Get a specific connector by state and service"""
+        state_config = self.state_config.get(state.lower(), {})
+        return state_config.get(service.lower())
 
-    def delete(self, key: str):
-        if not self.enabled:
-            return
-        try:
-            self.redis_client.delete(key)
-        except Exception as e:
-            logger.error(f"Cache delete error: {e}")
+    def get_all_connectors_for_state(self, state: str):
+        """Get all connectors for a given state"""
+        return self.state_config.get(state.lower(), {})
 
-# Singleton
-cache = CacheService()
+# Singleton instance
+connector_service = ConnectorService()
