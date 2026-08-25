@@ -1,7 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from typing import List, Dict, Any
-from sqlalchemy.orm import Session
-from backend.database import SessionLocal  # <-- FIXED IMPORT
+from fastapi import APIRouter, Depends, HTTPException
+from typing import Dict, Any
+from backend.database import get_db  # <-- FIXED
 from backend.services.workflow_service import workflow_engine
 from backend.services.fraud_service import fraud_service
 import logging
@@ -10,16 +9,8 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# Dependency to get DB session
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
 @router.post("/start")
-async def start_workflow(property_data: Dict[str, Any], db: Session = Depends(get_db)):
+async def start_workflow(property_data: Dict[str, Any]):
     """Start a new workflow for property registration"""
     try:
         property_id = property_data.get("property_id", "unknown")
@@ -33,8 +24,6 @@ async def start_workflow(property_data: Dict[str, Any], db: Session = Depends(ge
 async def advance_workflow(workflow_id: str, step: str, result: Dict[str, Any]):
     """Advance workflow to next step"""
     try:
-        # In a real app, you'd fetch workflow from DB
-        # For now, we simulate with a minimal workflow dict
         mock_workflow = {
             "workflow_id": workflow_id,
             "steps": {step: {"status": "pending"} for step in workflow_engine.steps},
@@ -50,7 +39,6 @@ async def advance_workflow(workflow_id: str, step: str, result: Dict[str, Any]):
 @router.get("/{workflow_id}")
 async def get_workflow(workflow_id: str):
     """Get workflow status by ID"""
-    # In a real app, you'd fetch from DB
     return {
         "workflow_id": workflow_id,
         "status": "in_progress",
