@@ -28,16 +28,16 @@ class ConnectorService:
         try:
             return {
                 "karnataka": {
-                    "kaveri": KaveriConnector(),
-                    "eassthi": EAssthiConnector(),
-                    "bhoomi": BhoomiConnector()
+                    "kaveri": KaveriConnector(config={}),      # <-- FIXED
+                    "eassthi": EAssthiConnector(config={}),    # <-- FIXED
+                    "bhoomi": BhoomiConnector(config={})       # <-- FIXED
                 },
                 "jammu_kashmir": {
-                    "lris": LRISConnector()
+                    "lris": LRISConnector(config={})           # <-- FIXED
                 },
                 "generic": {
-                    "aadhaar": AadhaarConnector(),
-                    "digilocker": DigiLockerConnector()
+                    "aadhaar": AadhaarConnector(config={}),    # <-- FIXED
+                    "digilocker": DigiLockerConnector(config={}) # <-- FIXED
                 }
             }
         except Exception as e:
