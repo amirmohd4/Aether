@@ -7,7 +7,7 @@ from backend.connectors import (
     BhoomiConnector,
     LRISConnector,
     AadhaarConnector,
-    DigilockerConnector
+    DigiLockerConnector
 )
 from backend.config import settings
 from backend.services.cache_service import cache
@@ -24,7 +24,7 @@ class ConnectorService:
         self.state_config = self._load_state_config()
 
     def _load_state_config(self):
-        # Load state-specific configuration
+        """Load state-specific configuration"""
         return {
             "karnataka": {
                 "kaveri": KaveriConnector(),
@@ -36,7 +36,7 @@ class ConnectorService:
             },
             "generic": {
                 "aadhaar": AadhaarConnector(),
-                "digilocker": DigilockerConnector()
+                "digilocker": DigiLockerConnector()
             }
         }
 
