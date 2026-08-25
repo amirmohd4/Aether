@@ -2,7 +2,7 @@ import json
 import os
 from typing import Dict, Any, List
 from ..connectors import (
-    KaveriConnector, EaasthConnector, BhoomiConnector,
+    KaveriConnector, EAasthiConnector, BhoomiConnector,
     LRISConnector, AadhaarConnector, DigilockerConnector
 )
 from ..config import settings
