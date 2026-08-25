@@ -1,12 +1,12 @@
 import json
 import os
 from typing import Dict, Any, List
-from connectors import (
-    KaveriConnector, EAasthiConnector, BhoomiConnector,
-    LRISConnector, AadhaarConnector, DigiLockerConnector
+from ..connectors import (
+    KaveriConnector, EaasthConnector, BhoomiConnector,
+    LRISConnector, AadhaarConnector, DigilockerConnector
 )
 from ..config import settings
-from services.cache_service import cache
+from .cache_service import cache   # <-- '.' means same folder
 import logging
 
 logger = logging.getLogger(__name__)
