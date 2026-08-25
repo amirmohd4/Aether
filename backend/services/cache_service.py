@@ -1,93 +1,53 @@
+from backend.config import settings
 import redis
 import json
-from typing import Any, Optional
-from backend.config import settings
 import logging
 
 logger = logging.getLogger(__name__)
 
-class RedisCache:
-    """Redis caching service with fallback support"""
-    
+class CacheService:
     def __init__(self):
-        try:
-            self.redis_client = redis.from_url(
-                settings.redis_url,
-                decode_responses=True,
-                socket_connect_timeout=5
-            )
-            # Test connection
-            self.redis_client.ping()
-            self.available = True
-            logger.info("✅ Redis connection established")
-        except Exception as e:
-            logger.warning(f"⚠️  Redis unavailable: {e}. Running without cache.")
-            self.available = False
-            self.redis_client = None
-    
-    def get(self, key: str) -> Optional[Any]:
-        """Get value from cache"""
-        if not self.available:
+        self.redis_client = None
+        self.enabled = settings.redis_enabled if hasattr(settings, 'redis_enabled') else False
+        if self.enabled:
+            try:
+                self.redis_client = redis.Redis(
+                    host=settings.redis_host,
+                    port=settings.redis_port,
+                    db=settings.redis_db,
+                    decode_responses=True
+                )
+                self.redis_client.ping()
+                logger.info("Redis cache connected")
+            except Exception as e:
+                logger.error(f"Redis connection failed: {e}")
+                self.enabled = False
+
+    def get(self, key: str):
+        if not self.enabled:
             return None
-        
         try:
-            value = self.redis_client.get(key)
-            if value:
-                return json.loads(value)
-            return None
+            data = self.redis_client.get(key)
+            return json.loads(data) if data else None
         except Exception as e:
-            logger.error(f"Redis GET error for key {key}: {e}")
+            logger.error(f"Cache get error: {e}")
             return None
-    
-    def set(self, key: str, value: Any, ttl: int = 300):
-        """Set value in cache with TTL (default 5 minutes)"""
-        if not self.available:
-            return False
-        
+
+    def set(self, key: str, value: Any, expire: int = 300):
+        if not self.enabled:
+            return
         try:
-            serialized = json.dumps(value, default=str)
-            self.redis_client.setex(key, ttl, serialized)
-            return True
+            self.redis_client.setex(key, expire, json.dumps(value))
         except Exception as e:
-            logger.error(f"Redis SET error for key {key}: {e}")
-            return False
-    
+            logger.error(f"Cache set error: {e}")
+
     def delete(self, key: str):
-        """Delete key from cache"""
-        if not self.available:
-            return False
-        
+        if not self.enabled:
+            return
         try:
             self.redis_client.delete(key)
-            return True
         except Exception as e:
-            logger.error(f"Redis DELETE error for key {key}: {e}")
-            return False
-    
-    def clear_pattern(self, pattern: str):
-        """Clear all keys matching pattern"""
-        if not self.available:
-            return False
-        
-        try:
-            keys = self.redis_client.keys(pattern)
-            if keys:
-                self.redis_client.delete(*keys)
-            return True
-        except Exception as e:
-            logger.error(f"Redis CLEAR PATTERN error for {pattern}: {e}")
-            return False
-    
-    def health_check(self) -> dict:
-        """Check Redis health status"""
-        if not self.available:
-            return {"status": "unavailable", "message": "Redis not connected"}
-        
-        try:
-            self.redis_client.ping()
-            return {"status": "healthy", "message": "Redis operational"}
-        except Exception as e:
-            return {"status": "unhealthy", "error": str(e)}
+            logger.error(f"Cache delete error: {e}")
 
-# Global cache instance
-cache = RedisCache()
+# Singleton
+cache = CacheService()
