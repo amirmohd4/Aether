@@ -5,7 +5,7 @@ from connectors import (
     KaveriConnector, EAasthiConnector, BhoomiConnector,
     LRISConnector, AadhaarConnector, DigiLockerConnector
 )
-from config import settings
+from ..config import settings
 from services.cache_service import cache
 import logging
 
