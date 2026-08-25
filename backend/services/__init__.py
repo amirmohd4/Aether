@@ -1,4 +1,5 @@
 # Services package
+from ..config import settings   # <-- Add two dots to go up one folder
 from .cache_service import cache
 from .connector_service import connector_service
 from .workflow_service import workflow_engine
