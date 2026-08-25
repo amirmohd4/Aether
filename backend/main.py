@@ -22,17 +22,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Import routers AFTER app is created (breaks circular imports)
+# Import ONLY the routers that ACTUALLY exist in your folder
 from backend.api.billing_routes import router as billing_router
 from backend.api.workflow_routes import router as workflow_router
 from backend.api.fraud_routes import router as fraud_router
-from backend.api.connector_routes import router as connector_router
+from backend.api.water_connection_routes import router as water_router  # <-- THIS EXISTS
+# from backend.api.connector_routes import router as connector_router  # <-- COMMENT THIS - DOESN'T EXIST
 
-# Register routers
+# Register routers that exist
 app.include_router(billing_router, prefix="/api/billing", tags=["Billing"])
 app.include_router(workflow_router, prefix="/api/workflow", tags=["Workflow"])
 app.include_router(fraud_router, prefix="/api/fraud", tags=["Fraud"])
-app.include_router(connector_router, prefix="/api/connectors", tags=["Connectors"])
+app.include_router(water_router, prefix="/api/water-connection", tags=["Water Connection"])
+# app.include_router(connector_router, prefix="/api/connectors", tags=["Connectors"])  # <-- COMMENT THIS
 
 @app.get("/")
 async def root():
