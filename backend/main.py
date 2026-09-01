@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from api.property_routes import router as property_router
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 
@@ -31,6 +32,7 @@ from backend.api.water_connection_routes import router as water_router  # <-- TH
 
 # Register routers that exist
 app.include_router(billing_router, prefix="/api/billing", tags=["Billing"])
+app.include_router(property_router)
 app.include_router(workflow_router, prefix="/api/workflow", tags=["Workflow"])
 app.include_router(fraud_router, prefix="/api/fraud", tags=["Fraud"])
 app.include_router(water_router, prefix="/api/water-connection", tags=["Water Connection"])
