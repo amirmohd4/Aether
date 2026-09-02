@@ -5,7 +5,6 @@ services:
     plan: free
     dockerContext: ./backend
     dockerfilePath: ./backend/Dockerfile
-    ipAllowList: []
     envVars:
       - key: DATABASE_URL
         sync: false
