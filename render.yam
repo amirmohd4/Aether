@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: aether-backend
+    runtime: docker
+    repo: https://github.com/amirmohd4/Aether
+    plan: free
+    dockerContext: ./backend
+    dockerfilePath: ./backend/Dockerfile
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: PORT
+        value: 8081
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
