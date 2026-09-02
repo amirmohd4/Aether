@@ -3,7 +3,7 @@ services:
     name: aether-backend
     runtime: docker
     plan: free
-    dockerContext: ./backend
+    dockerContext: .
     dockerfilePath: ./backend/Dockerfile
     envVars:
       - key: DATABASE_URL
