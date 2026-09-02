@@ -10,10 +10,10 @@ RUN apt-get update && apt-get install -y \
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . /app/backend/
+COPY backend /app/backend/
 COPY configs /app/configs
 COPY scripts /app/scripts
 
-EXPOSE 8001
+EXPOSE 8081
 
-CMD ["sh", "-c", "uvicorn backend.main:app --host 0.0.0.0 --port 8001"]
+CMD ["sh", "-c", "uvicorn backend.main:app --host 0.0.0.0 --port 8081"]
