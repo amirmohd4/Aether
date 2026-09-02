@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from api.property_routes import router as property_router
+from .api.property_routes import router as property_router
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 
