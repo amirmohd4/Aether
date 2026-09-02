@@ -1,38 +1,19 @@
-databases:
-  - name: aether-db
-    plan: free
-    databaseName: aether_govos
-
 services:
   - type: web
     name: aether-backend
     runtime: docker
-    repo: https://github.com/amirmohd4/Aether
     plan: free
-    dockerfilePath: ./Dockerfile
-    dockerContext: .
+    dockerContext: ./backend
+    dockerfilePath: ./backend/Dockerfile
+    ipAllowList: []
     envVars:
       - key: DATABASE_URL
-        fromDatabase:
-          name: aether-db
-          property: connectionString
-      - key: REDIS_URL
-        fromService:
-          name: aether-redis
-          type: keyvalue
-          property: connectionString
-
-  - type: keyvalue
-    name: aether-redis
-    plan: free
-
-  - type: web
-    name: aether-frontend
-    runtime: static
-    repo: https://github.com/amirmohd4/Aether
-    plan: free
-    buildCommand: npm install && npm run build
-    staticPublishPath: ./dist
-    envVars:
-      - key: VITE_API_URL
-        value: https://aether-backend.onrender.com
+        sync: false
+      - key: PORT
+        value: 8081
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
