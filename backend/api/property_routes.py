@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from database import get_db
-from models.schemas import PropertyResponse
-from models.database_models import Property
-from services import connector_service, cache
+from ..database import get_db
+from ..models.schemas import PropertyResponse
+from ..models.database_models import Property
+from ..services import connector_service, cache
 from typing import List
 
 router = APIRouter(prefix="/property", tags=["Property"])
@@ -40,8 +40,8 @@ async def get_property(property_id: str, db: Session = Depends(get_db)):
             "encumbrances": db_property.encumbrances,
             "history": db_property.history,
             "state_specific_data": db_property.state_specific_data,
-            "created_at": db_property.created_at.isoformat(),
-            "updated_at": db_property.updated_at.isoformat(),
+            "created_at": db_property.created_at.isoformat() if db_property.created_at else None,
+            "updated_at": db_property.updated_at.isoformat() if db_property.updated_at else None,
             "connector_data": connector_data
         }
         
@@ -123,7 +123,6 @@ async def search_properties_by_district(
 async def verify_property_title(property_id: str, db: Session = Depends(get_db)):
     """Verify property title across all relevant connectors"""
     try:
-        # Check if property exists
         db_property = db.query(Property).filter(Property.property_id == property_id).first()
         if not db_property:
             raise HTTPException(status_code=404, detail=f"Property {property_id} not found")
@@ -141,7 +140,6 @@ async def verify_property_title(property_id: str, db: Session = Depends(get_db))
 async def check_property_encumbrance(property_id: str, db: Session = Depends(get_db)):
     """Check property encumbrances across all relevant connectors"""
     try:
-        # Check if property exists
         db_property = db.query(Property).filter(Property.property_id == property_id).first()
         if not db_property:
             raise HTTPException(status_code=404, detail=f"Property {property_id} not found")
@@ -153,6 +151,8 @@ async def check_property_encumbrance(property_id: str, db: Session = Depends(get
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/stamp-duty")
 async def calculate_stamp_duty(
     state: str,
@@ -163,7 +163,6 @@ async def calculate_stamp_duty(
     """
     Dynamic stamp duty calculator based on state and city rules.
     """
-    # Example rates: India state-wise (simplified)
     rates = {
         "karnataka": {"bangalore": 7.6, "mysore": 6.5, "default": 6.0},
         "maharashtra": {"mumbai": 6.0, "pune": 5.5, "default": 5.0},
@@ -178,7 +177,7 @@ async def calculate_stamp_duty(
     city_rate = state_data.get(city.lower(), state_data.get("default", 5.0))
     
     stamp_duty_amount = value * (city_rate / 100)
-    registration_fee = value * 0.01  # 1% registration fee (simplified)
+    registration_fee = value * 0.01
     
     return {
         "state": state,
