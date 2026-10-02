@@ -4,33 +4,22 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Dict, Iterable
 from uuid import uuid4
 
-from .domain import Case, TaskDefinition, TaskState, TaskStatus, now_iso
+from .domain import Case, TaskState, TaskStatus, now_iso
 from .synthetic_government import SyntheticGovernmentSystem
 from .templates import TEMPLATES, infer_template
 
 
 class AetherExecutionEngine:
-    """Core case executor for the Aether MVP.
-
-    The engine is connector-agnostic: production government connectors can replace
-    the synthetic connector without changing case/dependency semantics.
-    """
+    """Core case executor for the Aether MVP."""
 
     def __init__(self) -> None:
         self.cases: Dict[str, Case] = {}
         self.gov = SyntheticGovernmentSystem()
 
-    def create_case(
-        self,
-        objective: str,
-        customer_type: str,
-        jurisdiction: Dict[str, str],
-        inputs: Dict[str, Any] | None = None,
-    ) -> Case:
+    def create_case(self, objective: str, customer_type: str, jurisdiction: Dict[str, str], inputs: Dict[str, Any] | None = None) -> Case:
         template = infer_template(objective, customer_type)
         requirements_fn, tasks_fn = TEMPLATES[template]
-        definitions = tasks_fn()
-        tasks = {d.id: TaskState(definition=d) for d in definitions}
+        tasks = {d.id: TaskState(definition=d) for d in tasks_fn()}
         case = Case(
             case_id=f"A-{uuid4().hex[:10].upper()}",
             objective=objective,
@@ -65,25 +54,21 @@ class AetherExecutionEngine:
     def execute_until_pause(self, case_id: str) -> Case:
         case = self.get_case(case_id)
         case.status = "executing"
-
         while True:
             self._refresh_ready(case)
             ready = list(self.ready_tasks(case))
             if not ready:
                 break
-
-            # Independent work is intentionally executed concurrently.
             with ThreadPoolExecutor(max_workers=min(8, len(ready))) as pool:
                 futures = {pool.submit(self._execute_task, case, task): task for task in ready}
                 for future in as_completed(futures):
                     task = futures[future]
                     try:
                         future.result()
-                    except Exception as exc:  # keep one task failure from killing the case
+                    except Exception as exc:
                         task.status = TaskStatus.EXCEPTION
                         task.error = str(exc)
                         case.exceptions.append({"task_id": task.definition.id, "error": str(exc)})
-
             self._refresh_ready(case)
             if any(t.status == TaskStatus.HUMAN_REVIEW for t in case.tasks.values()):
                 case.status = "waiting_for_human"
@@ -106,7 +91,6 @@ class AetherExecutionEngine:
         task.started_at = now_iso()
         task.attempts += 1
         definition = task.definition
-
         if definition.authority_required or definition.physical_action:
             task.status = TaskStatus.HUMAN_REVIEW
             case.human_actions.append({
@@ -114,21 +98,14 @@ class AetherExecutionEngine:
                 "task": definition.name,
                 "reason": "Legal authority or physical action is required.",
             })
-            task.completed_at = None
             return
 
         operation = self._operation_for(definition.id)
         result = self.gov.execute(
             definition.department,
             operation,
-            {
-                **case.inputs,
-                "jurisdiction": case.jurisdiction,
-                "case_id": case.case_id,
-            },
+            {**case.inputs, "jurisdiction": case.jurisdiction, "case_id": case.case_id},
         )
-
-        # Deliberately support a realistic data-conflict demo.
         if definition.id == "registration_record" and case.inputs.get("simulate_conflict"):
             result["result"]["area"] = case.inputs.get("conflicting_registration_area", 2.08)
 
@@ -145,7 +122,7 @@ class AetherExecutionEngine:
 
         if definition.id == "risk_reconciliation":
             self._reconcile_property(case)
-        if definition.id == "cross_record_reconciliation":
+        elif definition.id == "cross_record_reconciliation":
             self._reconcile_restaurant(case)
 
     def _reconcile_property(self, case: Case) -> None:
@@ -158,18 +135,18 @@ class AetherExecutionEngine:
                 "type": "record_conflict",
                 "severity": "high",
                 "message": "Property area differs between land and registration records.",
-                "evidence": {
-                    "land_area": land.result.get("area"),
-                    "registration_area": registration.result.get("area"),
-                },
+                "evidence": {"land_area": land.result.get("area"), "registration_area": registration.result.get("area")},
             })
             legal = case.tasks.get("legal_review")
             if legal and legal.status == TaskStatus.PENDING:
-                legal.status = TaskStatus.READY
+                legal.status = TaskStatus.HUMAN_REVIEW
+                case.human_actions.append({
+                    "task_id": "legal_review",
+                    "task": "Review material exceptions",
+                    "reason": "Aether detected conflicting property records.",
+                })
 
     def _reconcile_restaurant(self, case: Case) -> None:
-        # The MVP flags missing/ambiguous premises data rather than pretending to
-        # make a statutory determination. The human authority boundary remains explicit.
         if not case.inputs.get("premises_verified", True):
             case.exceptions.append({
                 "type": "premises_exception",
@@ -180,30 +157,13 @@ class AetherExecutionEngine:
     @staticmethod
     def _operation_for(task_id: str) -> str:
         mapping = {
-            "identity_check": "identity",
-            "land_record": "land_record",
-            "registration_record": "registration_record",
-            "court_search": "court_search",
-            "tax_dues": "tax_dues",
-            "tax_check": "tax_dues",
-            "premises_check": "land_record",
-            "zoning_check": "zoning",
-            "business_check": "business",
-            "food_application": "food",
-            "food_review": "food",
-            "fire_application": "fire",
-            "fire_review": "fire",
-            "municipal_application": "municipal",
-            "municipal_review": "municipal",
-            "zoning": "zoning",
-            "building": "building",
-            "fire": "fire",
-            "environment": "environment",
-            "rera": "rera",
-            "utility": "utility",
-            "document_intake": "document",
-            "encumbrance": "registration_record",
-            "inspection": "inspection",
+            "identity_check": "identity", "land_record": "land_record", "registration_record": "registration_record",
+            "court_search": "court_search", "tax_dues": "tax_dues", "tax_check": "tax_dues",
+            "premises_check": "land_record", "zoning_check": "zoning", "business_check": "business",
+            "food_application": "food", "food_review": "food", "fire_application": "fire", "fire_review": "fire",
+            "municipal_application": "municipal", "municipal_review": "municipal", "zoning": "zoning",
+            "building": "building", "fire": "fire", "environment": "environment", "rera": "rera",
+            "utility": "utility", "document_intake": "document", "encumbrance": "registration_record", "inspection": "inspection",
         }
         return mapping.get(task_id, "generic")
 
