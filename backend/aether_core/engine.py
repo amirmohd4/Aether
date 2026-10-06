@@ -11,7 +11,7 @@ from .workers import WorkerContext, WorkerRegistry
 
 
 class AetherExecutionEngine:
-    """Core case executor for the Aether MVP."""
+    """Objective-driven, dependency-aware execution engine for the Aether MVP."""
 
     def __init__(self) -> None:
         self.cases: Dict[str, Case] = {}
@@ -41,7 +41,7 @@ class AetherExecutionEngine:
             if task.status in {TaskStatus.COMPLETED, TaskStatus.RUNNING, TaskStatus.EXCEPTION, TaskStatus.HUMAN_REVIEW}:
                 continue
             deps = [case.tasks[d] for d in task.definition.dependencies if d in case.tasks]
-            if any(d.status in {TaskStatus.EXCEPTION, TaskStatus.HUMAN_REVIEW} for d in deps):
+            if any(d.status in {TaskStatus.EXCEPTION, TaskStatus.BLOCKED, TaskStatus.HUMAN_REVIEW} for d in deps):
                 task.status = TaskStatus.BLOCKED
             elif all(d.status == TaskStatus.COMPLETED for d in deps):
                 task.status = TaskStatus.READY
@@ -59,8 +59,24 @@ class AetherExecutionEngine:
             ready = list(self.ready_tasks(case))
             if not ready:
                 break
-            with ThreadPoolExecutor(max_workers=min(8, len(ready))) as pool:
-                futures = {pool.submit(self._execute_task, case, task): task for task in ready}
+
+            # Physical actions and statutory authority are hard boundaries.
+            executable = [t for t in ready if not t.definition.authority_required and not t.definition.physical_action]
+            boundaries = [t for t in ready if t.definition.authority_required or t.definition.physical_action]
+            for task in boundaries:
+                task.status = TaskStatus.HUMAN_REVIEW
+                case.human_actions.append({
+                    "task_id": task.definition.id,
+                    "task": task.definition.name,
+                    "reason": "Legal authority or physical action is required.",
+                    "created_at": now_iso(),
+                })
+
+            if not executable:
+                break
+
+            with ThreadPoolExecutor(max_workers=min(8, len(executable))) as pool:
+                futures = {pool.submit(self._execute_task, case, task): task for task in executable}
                 for future in as_completed(futures):
                     task = futures[future]
                     try:
@@ -68,18 +84,19 @@ class AetherExecutionEngine:
                     except Exception as exc:
                         task.status = TaskStatus.EXCEPTION
                         task.error = str(exc)
-                        case.exceptions.append({"task_id": task.definition.id, "error": str(exc)})
+                        case.exceptions.append({"task_id": task.definition.id, "error": str(exc), "timestamp": now_iso()})
+
             self._refresh_ready(case)
             if any(t.status == TaskStatus.HUMAN_REVIEW for t in case.tasks.values()):
-                case.status = "waiting_for_human"
                 break
 
-        if all(t.status == TaskStatus.COMPLETED for t in case.tasks.values()):
+        statuses = [t.status for t in case.tasks.values()]
+        if statuses and all(s == TaskStatus.COMPLETED for s in statuses):
             case.status = "completed"
             case.outcome = {"status": "completed", "message": "Case completed by Aether."}
-        elif any(t.status == TaskStatus.EXCEPTION for t in case.tasks.values()):
+        elif any(s == TaskStatus.EXCEPTION for s in statuses):
             case.status = "exception"
-        elif any(t.status == TaskStatus.HUMAN_REVIEW for t in case.tasks.values()):
+        elif any(s == TaskStatus.HUMAN_REVIEW for s in statuses):
             case.status = "waiting_for_human"
         else:
             case.status = "waiting"
@@ -91,29 +108,28 @@ class AetherExecutionEngine:
         task.started_at = now_iso()
         task.attempts += 1
         definition = task.definition
-        if definition.authority_required or definition.physical_action:
-            task.status = TaskStatus.HUMAN_REVIEW
-            case.human_actions.append({
-                "task_id": definition.id, "task": definition.name,
-                "reason": "Legal authority or physical action is required.",
-            })
-            return
-
         operation = self._operation_for(definition.id)
         worker = self.workers.get(definition.worker)
         result = worker.execute(WorkerContext(
-            case_id=case.case_id, department=definition.department, operation=operation,
+            case_id=case.case_id,
+            department=definition.department,
+            operation=operation,
             payload={**case.inputs, "jurisdiction": case.jurisdiction, "case_id": case.case_id},
         ))
+
         if definition.id == "registration_record" and case.inputs.get("simulate_conflict"):
             result["result"]["area"] = case.inputs.get("conflicting_registration_area", 2.08)
 
         task.result = result["result"]
-        task.evidence.append({
+        evidence = {
             "source": result["result"].get("source", definition.department),
-            "request_id": result["request_id"], "operation": operation, "verified": True,
-        })
-        case.evidence.extend(task.evidence)
+            "request_id": result["request_id"],
+            "operation": operation,
+            "verified": True,
+            "timestamp": now_iso(),
+        }
+        task.evidence.append(evidence)
+        case.evidence.append(evidence)
         task.status = TaskStatus.COMPLETED
         task.completed_at = now_iso()
 
@@ -127,11 +143,18 @@ class AetherExecutionEngine:
         if not land or not registration or not land.result or not registration.result:
             return
         if land.result.get("area") != registration.result.get("area"):
-            case.exceptions.append({"type": "record_conflict", "severity": "high", "message": "Property area differs between land and registration records.", "evidence": {"land_area": land.result.get("area"), "registration_area": registration.result.get("area")}})
+            case.exceptions.append({
+                "type": "record_conflict", "severity": "high",
+                "message": "Property area differs between land and registration records.",
+                "evidence": {"land_area": land.result.get("area"), "registration_area": registration.result.get("area")},
+            })
             legal = case.tasks.get("legal_review")
             if legal and legal.status == TaskStatus.PENDING:
                 legal.status = TaskStatus.HUMAN_REVIEW
-                case.human_actions.append({"task_id": "legal_review", "task": "Review material exceptions", "reason": "Aether detected conflicting property records."})
+                case.human_actions.append({
+                    "task_id": "legal_review", "task": "Review material exceptions",
+                    "reason": "Aether detected conflicting property records.", "created_at": now_iso(),
+                })
 
     def _reconcile_restaurant(self, case: Case) -> None:
         if not case.inputs.get("premises_verified", True):
@@ -146,6 +169,8 @@ class AetherExecutionEngine:
             "fire_application": "fire", "fire_review": "fire", "municipal_application": "municipal", "municipal_review": "municipal",
             "zoning": "zoning", "building": "building", "fire": "fire", "environment": "environment", "rera": "rera",
             "utility": "utility", "document_intake": "document", "encumbrance": "registration_record", "inspection": "inspection",
+            "risk_reconciliation": "reconciliation", "cross_record_reconciliation": "reconciliation", "decision_package": "decision_package",
+            "evidence_package": "decision_package", "outcome": "outcome", "record_update": "record_update", "certificate": "certificate",
         }.get(task_id, "generic")
 
     def complete_human_task(self, case_id: str, task_id: str, decision: str, note: str = "") -> Case:
@@ -155,11 +180,16 @@ class AetherExecutionEngine:
         task = case.tasks[task_id]
         if task.status != TaskStatus.HUMAN_REVIEW:
             raise ValueError(f"Task {task_id} is not awaiting human action")
-        task.result = {"decision": decision, "note": note, "authority": "authorised_human"}
-        task.evidence.append({"source": "authorised_human", "decision": decision, "note": note})
-        task.status = TaskStatus.COMPLETED
-        task.completed_at = now_iso()
-        case.human_actions = [a for a in case.human_actions if a["task_id"] != task_id]
+        if decision.lower() not in {"approve", "approved", "pass", "passed", "accept", "accepted"}:
+            task.status = TaskStatus.EXCEPTION
+            task.error = note or "Human authority rejected the action."
+            case.exceptions.append({"task_id": task_id, "error": task.error, "timestamp": now_iso()})
+        else:
+            task.result = {"decision": "approved", "note": note, "authority": "authorised_human"}
+            task.evidence.append({"source": "authorised_human", "decision": "approved", "note": note, "timestamp": now_iso()})
+            task.status = TaskStatus.COMPLETED
+            task.completed_at = now_iso()
+        case.human_actions = [a for a in case.human_actions if a.get("task_id") != task_id]
         case.updated_at = now_iso()
         return self.execute_until_pause(case_id)
 
