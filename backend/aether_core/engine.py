@@ -7,6 +7,7 @@ from uuid import uuid4
 from .domain import Case, TaskState, TaskStatus, now_iso
 from .synthetic_government import SyntheticGovernmentSystem
 from .templates import TEMPLATES, infer_template
+from .workers import WorkerContext, WorkerRegistry
 
 
 class AetherExecutionEngine:
@@ -15,19 +16,16 @@ class AetherExecutionEngine:
     def __init__(self) -> None:
         self.cases: Dict[str, Case] = {}
         self.gov = SyntheticGovernmentSystem()
+        self.workers = WorkerRegistry(self.gov)
 
     def create_case(self, objective: str, customer_type: str, jurisdiction: Dict[str, str], inputs: Dict[str, Any] | None = None) -> Case:
         template = infer_template(objective, customer_type)
         requirements_fn, tasks_fn = TEMPLATES[template]
         tasks = {d.id: TaskState(definition=d) for d in tasks_fn()}
         case = Case(
-            case_id=f"A-{uuid4().hex[:10].upper()}",
-            objective=objective,
-            customer_type=customer_type,
-            jurisdiction=jurisdiction,
-            inputs=inputs or {},
-            requirements=requirements_fn(),
-            tasks=tasks,
+            case_id=f"A-{uuid4().hex[:10].upper()}", objective=objective,
+            customer_type=customer_type, jurisdiction=jurisdiction, inputs=inputs or {},
+            requirements=requirements_fn(), tasks=tasks,
         )
         self.cases[case.case_id] = case
         self._refresh_ready(case)
@@ -39,9 +37,6 @@ class AetherExecutionEngine:
         return self.cases[case_id]
 
     def _refresh_ready(self, case: Case) -> None:
-        # Recompute pending/blocked tasks after every execution wave. This is
-        # essential when a human resolves a gate: previously blocked work must
-        # become runnable again without rebuilding the case.
         for task in case.tasks.values():
             if task.status in {TaskStatus.COMPLETED, TaskStatus.RUNNING, TaskStatus.EXCEPTION, TaskStatus.HUMAN_REVIEW}:
                 continue
@@ -99,27 +94,24 @@ class AetherExecutionEngine:
         if definition.authority_required or definition.physical_action:
             task.status = TaskStatus.HUMAN_REVIEW
             case.human_actions.append({
-                "task_id": definition.id,
-                "task": definition.name,
+                "task_id": definition.id, "task": definition.name,
                 "reason": "Legal authority or physical action is required.",
             })
             return
 
         operation = self._operation_for(definition.id)
-        result = self.gov.execute(
-            definition.department,
-            operation,
-            {**case.inputs, "jurisdiction": case.jurisdiction, "case_id": case.case_id},
-        )
+        worker = self.workers.get(definition.worker)
+        result = worker.execute(WorkerContext(
+            case_id=case.case_id, department=definition.department, operation=operation,
+            payload={**case.inputs, "jurisdiction": case.jurisdiction, "case_id": case.case_id},
+        ))
         if definition.id == "registration_record" and case.inputs.get("simulate_conflict"):
             result["result"]["area"] = case.inputs.get("conflicting_registration_area", 2.08)
 
         task.result = result["result"]
         task.evidence.append({
             "source": result["result"].get("source", definition.department),
-            "request_id": result["request_id"],
-            "operation": operation,
-            "verified": True,
+            "request_id": result["request_id"], "operation": operation, "verified": True,
         })
         case.evidence.extend(task.evidence)
         task.status = TaskStatus.COMPLETED
@@ -131,46 +123,30 @@ class AetherExecutionEngine:
             self._reconcile_restaurant(case)
 
     def _reconcile_property(self, case: Case) -> None:
-        land = case.tasks.get("land_record")
-        registration = case.tasks.get("registration_record")
+        land, registration = case.tasks.get("land_record"), case.tasks.get("registration_record")
         if not land or not registration or not land.result or not registration.result:
             return
         if land.result.get("area") != registration.result.get("area"):
-            case.exceptions.append({
-                "type": "record_conflict",
-                "severity": "high",
-                "message": "Property area differs between land and registration records.",
-                "evidence": {"land_area": land.result.get("area"), "registration_area": registration.result.get("area")},
-            })
+            case.exceptions.append({"type": "record_conflict", "severity": "high", "message": "Property area differs between land and registration records.", "evidence": {"land_area": land.result.get("area"), "registration_area": registration.result.get("area")}})
             legal = case.tasks.get("legal_review")
             if legal and legal.status == TaskStatus.PENDING:
                 legal.status = TaskStatus.HUMAN_REVIEW
-                case.human_actions.append({
-                    "task_id": "legal_review",
-                    "task": "Review material exceptions",
-                    "reason": "Aether detected conflicting property records.",
-                })
+                case.human_actions.append({"task_id": "legal_review", "task": "Review material exceptions", "reason": "Aether detected conflicting property records."})
 
     def _reconcile_restaurant(self, case: Case) -> None:
         if not case.inputs.get("premises_verified", True):
-            case.exceptions.append({
-                "type": "premises_exception",
-                "severity": "medium",
-                "message": "Premises verification needs human review.",
-            })
+            case.exceptions.append({"type": "premises_exception", "severity": "medium", "message": "Premises verification needs human review."})
 
     @staticmethod
     def _operation_for(task_id: str) -> str:
-        mapping = {
+        return {
             "identity_check": "identity", "land_record": "land_record", "registration_record": "registration_record",
-            "court_search": "court_search", "tax_dues": "tax_dues", "tax_check": "tax_dues",
-            "premises_check": "land_record", "zoning_check": "zoning", "business_check": "business",
-            "food_application": "food", "food_review": "food", "fire_application": "fire", "fire_review": "fire",
-            "municipal_application": "municipal", "municipal_review": "municipal", "zoning": "zoning",
-            "building": "building", "fire": "fire", "environment": "environment", "rera": "rera",
+            "court_search": "court_search", "tax_dues": "tax_dues", "tax_check": "tax_dues", "premises_check": "land_record",
+            "zoning_check": "zoning", "business_check": "business", "food_application": "food", "food_review": "food",
+            "fire_application": "fire", "fire_review": "fire", "municipal_application": "municipal", "municipal_review": "municipal",
+            "zoning": "zoning", "building": "building", "fire": "fire", "environment": "environment", "rera": "rera",
             "utility": "utility", "document_intake": "document", "encumbrance": "registration_record", "inspection": "inspection",
-        }
-        return mapping.get(task_id, "generic")
+        }.get(task_id, "generic")
 
     def complete_human_task(self, case_id: str, task_id: str, decision: str, note: str = "") -> Case:
         case = self.get_case(case_id)
