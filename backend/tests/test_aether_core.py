@@ -1,5 +1,5 @@
-from backend.aether_core.engine import AetherExecutionEngine
-from backend.aether_core.domain import TaskStatus
+from aether_core.engine import AetherExecutionEngine
+from aether_core.domain import TaskStatus
 
 
 def test_restaurant_case_runs_parallel_work_until_human_boundary():
