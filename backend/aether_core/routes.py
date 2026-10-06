@@ -4,9 +4,11 @@ from fastapi import APIRouter, HTTPException
 
 from .api_models import HumanDecisionRequest, StartCaseRequest
 from .engine import AetherExecutionEngine
+from .requirements_engine import RequirementEngine
 
 router = APIRouter(prefix="/api/aether/v2", tags=["Aether V2"])
 engine = AetherExecutionEngine()
+requirements_engine = RequirementEngine()
 
 
 def serialize(case):
@@ -35,14 +37,55 @@ def serialize(case):
     }
 
 
+@router.post("/requirements")
+def discover_requirements(request: StartCaseRequest):
+    requirements = requirements_engine.discover(
+        request.objective,
+        request.customer_type,
+        request.jurisdiction,
+        request.inputs,
+    )
+    required_documents = requirements_engine.document_request(requirements)
+    submitted = set(request.inputs.get("documents", []))
+    missing = [doc for doc in required_documents["documents"] if doc not in submitted]
+    return {
+        "requirements": [r.__dict__ for r in requirements],
+        "documents": required_documents["documents"],
+        "submitted_documents": sorted(submitted),
+        "missing_documents": missing,
+        "ready_to_execute": not missing,
+    }
+
+
 @router.post("/cases")
 def start_case(request: StartCaseRequest):
+    requirements = requirements_engine.discover(
+        request.objective,
+        request.customer_type,
+        request.jurisdiction,
+        request.inputs,
+    )
+    required_documents = requirements_engine.document_request(requirements)
+    submitted = set(request.inputs.get("documents", []))
+    missing = [doc for doc in required_documents["documents"] if doc not in submitted]
+
+    # Aether should not launch downstream government work when required intake is incomplete.
+    if missing:
+        return {
+            "status": "needs_documents",
+            "objective": request.objective,
+            "requirements": [r.__dict__ for r in requirements],
+            "documents": required_documents["documents"],
+            "missing_documents": missing,
+        }
+
     case = engine.create_case(
         request.objective,
         request.customer_type,
         request.jurisdiction,
         request.inputs,
     )
+    case.requirements = [r.__dict__ for r in requirements]
     case = engine.execute_until_pause(case.case_id)
     return serialize(case)
 
