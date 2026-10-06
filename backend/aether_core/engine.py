@@ -39,14 +39,19 @@ class AetherExecutionEngine:
         return self.cases[case_id]
 
     def _refresh_ready(self, case: Case) -> None:
+        # Recompute pending/blocked tasks after every execution wave. This is
+        # essential when a human resolves a gate: previously blocked work must
+        # become runnable again without rebuilding the case.
         for task in case.tasks.values():
-            if task.status != TaskStatus.PENDING:
+            if task.status in {TaskStatus.COMPLETED, TaskStatus.RUNNING, TaskStatus.EXCEPTION, TaskStatus.HUMAN_REVIEW}:
                 continue
             deps = [case.tasks[d] for d in task.definition.dependencies if d in case.tasks]
-            if any(d.status in {TaskStatus.EXCEPTION, TaskStatus.HUMAN_REVIEW, TaskStatus.BLOCKED} for d in deps):
+            if any(d.status in {TaskStatus.EXCEPTION, TaskStatus.HUMAN_REVIEW} for d in deps):
                 task.status = TaskStatus.BLOCKED
             elif all(d.status == TaskStatus.COMPLETED for d in deps):
                 task.status = TaskStatus.READY
+            else:
+                task.status = TaskStatus.BLOCKED
 
     def ready_tasks(self, case: Case) -> Iterable[TaskState]:
         return [t for t in case.tasks.values() if t.status == TaskStatus.READY]
