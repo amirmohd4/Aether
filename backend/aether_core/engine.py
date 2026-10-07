@@ -4,6 +4,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Dict, Iterable
 from uuid import uuid4
 
+from .audit import AuditTrail
 from .domain import Case, TaskState, TaskStatus, now_iso
 from .dependency_engine import DependencyEngine
 from .ontology import GovernmentOntologyBuilder, WorkGraphBuilder
@@ -26,6 +27,7 @@ class AetherExecutionEngine:
         self.work_graph_builder = WorkGraphBuilder()
         self.dependencies = DependencyEngine()
         self.retry_policy = RetryPolicy(max_attempts=3)
+        self.audit = AuditTrail()
 
     def create_case(self, objective: str, customer_type: str, jurisdiction: Dict[str, str], inputs: Dict[str, Any] | None = None) -> Case:
         service = self.services.resolve(objective, customer_type)
@@ -171,10 +173,12 @@ class AetherExecutionEngine:
 
     @staticmethod
     def _emit(case: Case, action: str, actor: str, data: Dict[str, Any] | None = None) -> None:
-        case.execution_events.append({
+        entry = {
             "sequence": len(case.execution_events) + 1, "timestamp": now_iso(),
             "action": action, "actor": actor, "data": data or {},
-        })
+        }
+        case.execution_events.append(entry)
+        self.audit.record(action, actor, case.case_id, data)
     def _reconcile_property(self, case: Case) -> None:
         land, registration = case.tasks.get("land_record"), case.tasks.get("registration_record")
         if not land or not registration or not land.result or not registration.result:
