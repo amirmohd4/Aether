@@ -121,6 +121,10 @@ export const AetherCommandCenter: React.FC = () => {
   const [authPassword, setAuthPassword] = useState('');
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const [authMessage, setAuthMessage] = useState('');
+  const [useDemoEvidence, setUseDemoEvidence] = useState(true);
+  const [missingDocuments, setMissingDocuments] = useState<string[]>([]);
+  const [selectedDocuments, setSelectedDocuments] = useState<string[]>([]);
+  const [intakeNotice, setIntakeNotice] = useState('');
   const { session, loading: authLoading, required: authRequired, signIn, signUp, signOut } = useAuth();
 
   React.useEffect(() => {
@@ -197,13 +201,13 @@ export const AetherCommandCenter: React.FC = () => {
           customer_type: customerType,
           jurisdiction: { country, state, district },
           inputs: {
-            documents: DEMO_DOCUMENTS,
+            documents: useDemoEvidence ? DEMO_DOCUMENTS : selectedDocuments,
             owner_name: 'Demo Owner',
             parcel_id: 'PARCEL-DEMO-001',
             property_id: 'PROPERTY-DEMO-001',
             company_id: 'COMPANY-DEMO-001',
             project_id: 'PROJECT-DEMO-001',
-            demo_mode: true,
+            demo_mode: useDemoEvidence,
           },
         }),
       });
@@ -211,9 +215,47 @@ export const AetherCommandCenter: React.FC = () => {
       if (!response.ok) throw new Error(body.detail || `Aether API returned ${response.status}`);
       setCaseData(body);
       setUnderstanding(body.understanding || analyzed);
+      setMissingDocuments(body.missing_documents || []);
+      setSelectedDocuments([]);
+      setIntakeNotice(
+        body.status === 'needs_documents'
+          ? 'Aether created a durable intake case. Supply the missing document types to continue.'
+          : ''
+      );
       await loadRecentCases();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to start Aether case');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function submitDocuments() {
+    if (!caseData || selectedDocuments.length === 0) return;
+    setLoading(true);
+    setError('');
+    try {
+      const response = await fetch(
+        `${API_BASE}/api/aether/v2/cases/${caseData.summary.case_id}/documents`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...authHeaders() },
+          body: JSON.stringify({ documents: selectedDocuments }),
+        }
+      );
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.detail || `Document submission returned ${response.status}`);
+      setCaseData(body);
+      setMissingDocuments(body.missing_documents || []);
+      setSelectedDocuments([]);
+      setIntakeNotice(
+        body.status === 'needs_documents'
+          ? 'Some required evidence is still missing.'
+          : 'Required intake evidence recorded. Aether continued the case.'
+      );
+      await loadRecentCases();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to submit documents');
     } finally {
       setLoading(false);
     }
@@ -385,6 +427,7 @@ export const AetherCommandCenter: React.FC = () => {
               <option value="bank">Bank / Lender</option>
               <option value="developer">Developer</option>
               <option value="insurer">Insurer</option>
+              <option value="enterprise">Enterprise</option>
               <option value="citizen">Citizen</option>
             </select>
 
@@ -394,8 +437,26 @@ export const AetherCommandCenter: React.FC = () => {
               <input value={district} onChange={(e) => setDistrict(e.target.value)} className="rounded-lg border border-white/10 bg-slate-900 p-2 text-xs" />
             </div>
 
-            <div className="mt-4 rounded-xl border border-cyan-300/10 bg-cyan-300/5 p-3 text-[11px] text-cyan-100">
-              Demo evidence is supplied automatically so the prototype can exercise the execution engine. Production Aether will collect and verify real documents instead.
+            <label className="mt-4 flex items-center gap-2 text-xs text-slate-300">
+              <input
+                type="checkbox"
+                checked={useDemoEvidence}
+                onChange={(e) => {
+                  setUseDemoEvidence(e.target.checked);
+                  if (e.target.checked) {
+                    setSelectedDocuments([]);
+                    setMissingDocuments([]);
+                    setIntakeNotice('');
+                  }
+                }}
+                className="h-4 w-4 rounded border-white/20 bg-slate-900"
+              />
+              Use demo evidence for a full synthetic run
+            </label>
+            <div className="mt-3 rounded-xl border border-cyan-300/10 bg-cyan-300/5 p-3 text-[11px] text-cyan-100">
+              {useDemoEvidence
+                ? 'Demo mode supplies synthetic document types so the execution graph can be exercised end-to-end.'
+                : 'Guided intake mode creates the real case first and lets you record required document types before Aether executes.'}
             </div>
 
             <button
@@ -417,6 +478,7 @@ export const AetherCommandCenter: React.FC = () => {
               </button>
             )}
 
+            {intakeNotice && <div className="mt-4 rounded-xl border border-cyan-300/20 bg-cyan-300/5 p-3 text-xs text-cyan-100">{intakeNotice}</div>}
             {error && <div className="mt-4 rounded-xl border border-red-400/20 bg-red-400/10 p-3 text-xs text-red-200">{error}</div>}
 
             <div className="mt-6 border-t border-white/10 pt-5">
@@ -486,6 +548,46 @@ export const AetherCommandCenter: React.FC = () => {
                     <div>Human work remaining: <span className="text-slate-200">{caseData.summary.human_work_remaining} min (demo estimate)</span></div>
                   </div>
                 </div>
+
+                {caseData.summary.status === 'needs_documents' && missingDocuments.length > 0 && (
+                  <div className="rounded-2xl border border-amber-300/20 bg-amber-300/5 p-5">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <h3 className="font-semibold">Guided document intake</h3>
+                        <p className="mt-1 text-xs text-slate-400">
+                          Select the document types you have supplied. This MVP records intake metadata; binary file storage/OCR remains a later release layer.
+                        </p>
+                      </div>
+                      <span className="text-xs text-amber-200">{missingDocuments.length} missing</span>
+                    </div>
+                    <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                      {missingDocuments.map((document) => (
+                        <label key={document} className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/10 p-2 text-xs">
+                          <input
+                            type="checkbox"
+                            checked={selectedDocuments.includes(document)}
+                            onChange={(e) => {
+                              setSelectedDocuments((current) =>
+                                e.target.checked
+                                  ? [...current, document]
+                                  : current.filter((item) => item !== document)
+                              );
+                            }}
+                            className="h-4 w-4 rounded border-white/20 bg-slate-900"
+                          />
+                          <span className="truncate">{document}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <button
+                      onClick={submitDocuments}
+                      disabled={loading || selectedDocuments.length === 0}
+                      className="mt-4 rounded-lg bg-cyan-400 px-4 py-2 text-xs font-bold text-slate-950 disabled:opacity-50"
+                    >
+                      Record selected documents
+                    </button>
+                  </div>
+                )}
 
                 {caseData.requirements.length > 0 && (
                   <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
