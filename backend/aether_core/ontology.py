@@ -67,5 +67,6 @@ class WorkGraphBuilder:
                 authority_required=task.authority_required,
                 physical_action=task.physical_action,
                 reason=f"Required by service {service.id}" if service else "Required by selected process",
+                operation=getattr(task, "operation", ""),
             ))
         return graph
