@@ -7,6 +7,9 @@ from typing import Optional
 
 import httpx
 from fastapi import Depends, HTTPException, Request
+from sqlalchemy import text
+
+from backend.database import SessionLocal
 
 
 @dataclass(frozen=True)
@@ -59,11 +62,32 @@ def _supabase_principal(request: Request) -> Principal:
     except httpx.HTTPError as exc:
         raise HTTPException(status_code=503, detail="Authentication service unavailable") from exc
 
-    app_metadata = user.get("app_metadata") or {}
+    subject = str(user.get("id", ""))
+    if not subject:
+        raise HTTPException(status_code=401, detail="Authenticated user identity missing")
+
+    # Authorization is server-controlled. Do not trust user-editable metadata
+    # for role or tenant membership; resolve the active membership record on the
+    # server before any case data is returned or mutated.
+    try:
+        with SessionLocal() as db:
+            row = db.execute(
+                text(
+                    "SELECT role, tenant_id FROM public.aether_memberships "
+                    "WHERE user_id = :user_id AND status = 'active' LIMIT 1"
+                ),
+                {"user_id": subject},
+            ).mappings().first()
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="Authorization membership store unavailable") from exc
+
+    if not row:
+        raise HTTPException(status_code=403, detail="No active Aether membership")
+
     return Principal(
-        subject=user.get("id", ""),
-        role=str(app_metadata.get("role", "user")),
-        tenant_id=app_metadata.get("tenant_id"),
+        subject=subject,
+        role=str(row["role"]),
+        tenant_id=str(row["tenant_id"]) if row["tenant_id"] is not None else None,
         auth_mode="supabase",
     )
 
