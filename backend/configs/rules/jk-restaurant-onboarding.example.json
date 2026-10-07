@@ -1,0 +1,44 @@
+{
+  "pack_id": "jk-restaurant-onboarding-example",
+  "version": "0.1.0",
+  "jurisdiction": {
+    "country": "India",
+    "state": "Jammu and Kashmir"
+  },
+  "authority_status": "registry_baseline",
+  "source_document": null,
+  "verified_at": null,
+  "effective_from": null,
+  "rules": [
+    {
+      "rule_id": "EXAMPLE-FOOD-001",
+      "title": "Food business information",
+      "jurisdiction": {
+        "country": "India",
+        "state": "Jammu and Kashmir"
+      },
+      "requirement": "food_business_details",
+      "authority_status": "registry_baseline",
+      "source_url": null,
+      "source_title": null,
+      "verified_at": null,
+      "effective_date": null,
+      "notes": "Example schema only. Replace with an authorized, source-backed rule before production."
+    },
+    {
+      "rule_id": "EXAMPLE-FIRE-001",
+      "title": "Fire-safety information",
+      "jurisdiction": {
+        "country": "India",
+        "state": "Jammu and Kashmir"
+      },
+      "requirement": "fire_safety_details",
+      "authority_status": "registry_baseline",
+      "source_url": null,
+      "source_title": null,
+      "verified_at": null,
+      "effective_date": null,
+      "notes": "Example schema only. Replace with an authorized, source-backed rule before production."
+    }
+  ]
+}
