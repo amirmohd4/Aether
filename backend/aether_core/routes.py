@@ -132,6 +132,16 @@ def start_case(request: StartCaseRequest, principal: Principal = Depends(require
         request.customer_type,
         request.jurisdiction,
     )
+
+    if understanding.service_id is None or understanding.ambiguous:
+        return {
+            "status": "needs_clarification",
+            "objective": request.objective,
+            "understanding": understanding.as_dict(),
+            "candidates": understanding.candidates,
+            "requirements": [],
+        }
+
     requirements = requirements_engine.discover(
         request.objective,
         request.customer_type,
@@ -141,15 +151,6 @@ def start_case(request: StartCaseRequest, principal: Principal = Depends(require
     required_documents = requirements_engine.document_request(requirements)
     submitted = set(request.inputs.get("documents", []))
     missing = [doc for doc in required_documents["documents"] if doc not in submitted]
-
-    if understanding.service_id is None or understanding.ambiguous:
-        return {
-            "status": "needs_clarification",
-            "objective": request.objective,
-            "understanding": understanding.as_dict(),
-            "candidates": understanding.candidates,
-            "requirements": [r.__dict__ for r in requirements],
-        }
 
     if missing:
         return {
