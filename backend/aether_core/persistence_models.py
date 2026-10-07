@@ -99,9 +99,25 @@ class AetherDocumentRecord(Base):
     created_at = Column(DateTime(timezone=True), nullable=False)
 
 
+class AetherCaseLeaseRecord(Base):
+    __tablename__ = "aether_v2_case_leases"
+    __table_args__ = {"schema": PERSISTENCE_SCHEMA}
+
+    case_id = Column(String(64), primary_key=True)
+    locked_by = Column(String(128), nullable=False, index=True)
+    lease_until = Column(DateTime(timezone=True), nullable=False, index=True)
+    heartbeat_at = Column(DateTime(timezone=True), nullable=False)
+
+
 class AetherNotificationRecord(Base):
     __tablename__ = "aether_v2_notifications"
-    __table_args__ = {"schema": PERSISTENCE_SCHEMA}
+    __table_args__ = (
+        UniqueConstraint(
+            "tenant_id", "idempotency_key",
+            name="uq_aether_notification_tenant_key",
+        ),
+        {"schema": PERSISTENCE_SCHEMA},
+    )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     tenant_id = Column(String(128), nullable=True, index=True)
@@ -112,6 +128,11 @@ class AetherNotificationRecord(Base):
     destination = Column(String(512), nullable=True)
     status = Column(String(32), nullable=False, index=True)
     payload = Column(JSON, nullable=False, default=dict)
+    idempotency_key = Column(String(256), nullable=True, index=True)
+    attempts = Column(Integer, nullable=False, default=0)
+    locked_by = Column(String(128), nullable=True, index=True)
+    lease_until = Column(DateTime(timezone=True), nullable=True, index=True)
+    last_error = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False)
     sent_at = Column(DateTime(timezone=True), nullable=True)
 
