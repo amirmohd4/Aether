@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Any, Dict, List
 from threading import Lock
 from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 
 from backend.database import SessionLocal, engine
 from .domain import Case, TaskDefinition, TaskState, TaskStatus
@@ -13,6 +14,7 @@ from .persistence_models import (
     AetherTaskQueueRecord,
     AetherTaskCheckpointRecord,
     AetherUsageRecord,
+    AetherCaseLeaseRecord,
     AetherDocumentRecord,
     AetherNotificationRecord,
     AetherPaymentRecord,
@@ -47,6 +49,7 @@ class DatabaseCaseStore:
                 AetherTaskQueueRecord,
                 AetherTaskCheckpointRecord,
                 AetherUsageRecord,
+                AetherCaseLeaseRecord,
                 AetherDocumentRecord,
                 AetherNotificationRecord,
                 AetherPaymentRecord,
@@ -219,7 +222,7 @@ class DatabaseCaseStore:
                 size_bytes=document.size_bytes,
                 sha256=document.sha256,
                 storage_key=document.storage_key,
-                extracted_text=document.extracted_text,
+                extracted_text=self._protect_document_text(document.extracted_text),
                 extraction_mode=document.extraction_mode,
                 created_at=self._to_datetime(document.created_at),
             )
@@ -246,6 +249,73 @@ class DatabaseCaseStore:
                 "extraction_mode": row.extraction_mode,
                 "created_at": row.created_at.isoformat() if row.created_at else None,
             } for row in rows]
+
+    def document_texts(self, case_id: str, tenant_id: str | None = None) -> Dict[str, str]:
+        """Return extracted document text to trusted workers only."""
+        self._ensure_schema()
+        with SessionLocal() as db:
+            query = db.query(AetherDocumentRecord).filter(
+                AetherDocumentRecord.case_id == case_id
+            )
+            if tenant_id is not None:
+                query = query.filter(AetherDocumentRecord.tenant_id == tenant_id)
+            rows = query.all()
+            return {
+                row.document_id: self._unprotect_document_text(row.extracted_text or "")
+                for row in rows
+                if row.extracted_text
+            }
+
+    def try_claim_case(self, case_id: str, worker_id: str, lease_seconds: int = 120) -> bool:
+        """Claim a durable case lease so multiple worker processes do not execute the same case."""
+        self._ensure_schema()
+        now = datetime.utcnow()
+        lease_until = now + timedelta(seconds=max(10, lease_seconds))
+        with SessionLocal() as db:
+            row = db.get(AetherCaseLeaseRecord, case_id)
+            if row is None:
+                row = AetherCaseLeaseRecord(
+                    case_id=case_id,
+                    locked_by=worker_id,
+                    lease_until=lease_until,
+                    heartbeat_at=now,
+                )
+                db.add(row)
+                try:
+                    db.commit()
+                    return True
+                except IntegrityError:
+                    db.rollback()
+                    return False
+
+            if row.locked_by != worker_id and row.lease_until > now:
+                return False
+
+            row.locked_by = worker_id
+            row.lease_until = lease_until
+            row.heartbeat_at = now
+            db.commit()
+            return True
+
+    def release_case(self, case_id: str, worker_id: str) -> None:
+        self._ensure_schema()
+        with SessionLocal() as db:
+            row = db.get(AetherCaseLeaseRecord, case_id)
+            if row and row.locked_by == worker_id:
+                db.delete(row)
+                db.commit()
+
+    def heartbeat_case(self, case_id: str, worker_id: str, lease_seconds: int = 120) -> bool:
+        self._ensure_schema()
+        now = datetime.utcnow()
+        with SessionLocal() as db:
+            row = db.get(AetherCaseLeaseRecord, case_id)
+            if not row or row.locked_by != worker_id:
+                return False
+            row.lease_until = now + timedelta(seconds=max(10, lease_seconds))
+            row.heartbeat_at = now
+            db.commit()
+            return True
 
     def put_task_checkpoint(self, case_id: str, task: TaskState) -> None:
         """Persist the latest state of one task independently of the case blob.
@@ -465,6 +535,16 @@ class DatabaseCaseStore:
             created_at=payload.get("created_at") or datetime.utcnow().isoformat() + "Z",
             updated_at=payload.get("updated_at") or datetime.utcnow().isoformat() + "Z",
         )
+
+    @staticmethod
+    def _protect_document_text(value: str) -> str:
+        from .document_crypto import encrypt_text
+        return encrypt_text(value)
+
+    @staticmethod
+    def _unprotect_document_text(value: str) -> str:
+        from .document_crypto import decrypt_text
+        return decrypt_text(value)
 
     @staticmethod
     def _to_optional_datetime(value: str | None) -> datetime | None:
