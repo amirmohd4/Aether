@@ -93,7 +93,7 @@ def case_analytics(principal: Principal = Depends(require_scope("analytics:read"
 
 
 @router.get("/notifications")
-def notifications(principal: Principal = Depends(require_principal)):
+def notifications(principal: Principal = Depends(require_scope("cases:read"))):
     if not principal.tenant_id:
         raise HTTPException(status_code=403, detail="Active tenant is required")
     return {"notifications": notification_service.list_for_tenant(principal.tenant_id)}
@@ -145,7 +145,7 @@ def create_case_payment(
 
 
 @router.get("/cases/{case_id}/intake")
-def case_intake(case_id: str, principal: Principal = Depends(require_principal)):
+def case_intake(case_id: str, principal: Principal = Depends(require_scope("cases:read"))):
     try:
         case = engine.get_case(case_id)
         _authorize_case(case, principal)
@@ -185,7 +185,7 @@ def rules_readiness():
 
 
 @router.post("/api-keys")
-def create_api_key(data: Dict[str, Any] | None = None, principal: Principal = Depends(require_principal)):
+def create_api_key(data: Dict[str, Any] | None = None, principal: Principal = Depends(require_scope("cases:write"))):
     """Create one tenant-scoped developer key; the raw secret is returned once."""
     if principal.auth_mode == "none":
         tenant_id = principal.tenant_id or "demo"
@@ -246,7 +246,7 @@ def create_api_key(data: Dict[str, Any] | None = None, principal: Principal = De
 
 
 @router.get("/api-keys")
-def list_api_keys(principal: Principal = Depends(require_principal)):
+def list_api_keys(principal: Principal = Depends(require_scope("cases:read"))):
     if not principal.tenant_id:
         raise HTTPException(status_code=403, detail="Active tenant is required")
     try:
@@ -638,7 +638,7 @@ def resume_case(case_id: str, principal: Principal = Depends(require_scope("case
 
 
 @router.get("/cases/{case_id}/audit")
-def case_audit_integrity(case_id: str, principal: Principal = Depends(require_principal)):
+def case_audit_integrity(case_id: str, principal: Principal = Depends(require_scope("cases:read"))):
     try:
         case = engine.get_case(case_id)
         _authorize_case(case, principal)
@@ -653,7 +653,7 @@ def case_audit_integrity(case_id: str, principal: Principal = Depends(require_pr
 
 
 @router.get("/cases/{case_id}/events")
-def case_events(case_id: str, principal: Principal = Depends(require_principal)):
+def case_events(case_id: str, principal: Principal = Depends(require_scope("cases:read"))):
     try:
         case = engine.get_case(case_id)
         _authorize_case(case, principal)
