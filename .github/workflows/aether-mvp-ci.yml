@@ -27,6 +27,7 @@ jobs:
         env:
           DATABASE_URL: sqlite:///./aether_ci.db
           AETHER_AUTH_MODE: none
+          PYTHONPATH: .:..
         run: pytest -q
 
   frontend:
