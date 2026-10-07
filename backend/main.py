@@ -1,7 +1,14 @@
 from fastapi import FastAPI
-from .api.property_routes import router as property_router
 from fastapi.middleware.cors import CORSMiddleware
 import logging
+
+from backend.api.property_routes import router as property_router
+from backend.api.billing_routes import router as billing_router
+from backend.api.workflow_routes import router as workflow_router
+from backend.api.fraud_routes import router as fraud_router
+from backend.api.water_connection_routes import router as water_router
+from backend.api.aether_routes import router as aether_router
+from backend.aether_core.routes import router as aether_v2_router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -9,9 +16,11 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="Aether GovOS API",
     description="Outcome-driven government execution platform",
-    version="0.3.0-aether-v2",
+    version="0.4.0-aether-mvp",
 )
 
+# Production configuration will replace this wildcard with the explicit
+# Netlify/domain allow-list during the final release hardening pass.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -19,13 +28,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-from backend.api.billing_routes import router as billing_router
-from backend.api.workflow_routes import router as workflow_router
-from backend.api.fraud_routes import router as fraud_router
-from backend.api.water_connection_routes import router as water_router
-from backend.api.aether_routes import router as aether_router
-from backend.aether_core.routes import router as aether_v2_router
 
 app.include_router(billing_router, prefix="/api/billing", tags=["Billing"])
 app.include_router(property_router)
@@ -41,7 +43,7 @@ async def root():
     return {
         "service": "Aether GovOS",
         "status": "running",
-        "version": "0.3.0-aether-v2",
+        "version": "0.4.0-aether-mvp",
         "core": "objective -> requirements -> case -> parallel work graph -> execution -> human authority -> outcome",
     }
 
