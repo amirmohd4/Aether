@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List
 from threading import Lock
 from sqlalchemy import text
@@ -60,7 +60,7 @@ class DatabaseCaseStore:
     def append_event(self, case_id: str, action: str, actor: str, data: Dict[str, Any] | None = None) -> Dict[str, Any]:
         self._ensure_schema()
         entry = {
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             "action": action,
             "actor": actor,
             "case_id": case_id,
