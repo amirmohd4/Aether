@@ -477,7 +477,8 @@ class AetherExecutionEngine:
         }.get(task_id, "generic")
 
     def complete_human_task(
-        self, case_id: str, task_id: str, decision: str, note: str = ""
+        self, case_id: str, task_id: str, decision: str, note: str = "",
+        actor_id: str = "authorised_human", actor_role: str = "authorised_officer",
     ) -> Case:
         case = self.get_case(case_id)
         with self._lock_for(case_id):
@@ -498,7 +499,7 @@ class AetherExecutionEngine:
                     "error": task.error,
                     "timestamp": now_iso(),
                 })
-                self._emit(case, "human_action.rejected", "authorised_human", {
+                self._emit(case, "human_action.rejected", actor_id, {
                     "task_id": task_id,
                     "note": note,
                 })
@@ -506,7 +507,8 @@ class AetherExecutionEngine:
                 task.result = {
                     "decision": "approved",
                     "note": note,
-                    "authority": "authorised_human",
+                    "authority": actor_id,
+                    "role": actor_role,
                 }
                 task.evidence.append({
                     "source": "authorised_human",
@@ -516,7 +518,7 @@ class AetherExecutionEngine:
                 })
                 task.status = TaskStatus.COMPLETED
                 task.completed_at = now_iso()
-                self._emit(case, "human_action.approved", "authorised_human", {
+                self._emit(case, "human_action.approved", actor_id, {
                     "task_id": task_id,
                     "note": note,
                 })
