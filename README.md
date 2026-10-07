@@ -15,14 +15,16 @@ Aether is a government execution layer. It takes a real-world objective, underst
 - Document inspection and evidence extraction
 - Verification, reconciliation, exceptions and risk findings
 - Human authority and physical-action boundaries
-- Durable PostgreSQL/SQLite case, queue and event persistence
+- Durable PostgreSQL/SQLite case, queue, checkpoint, document, notification, payment and event persistence
 - Resumable cases and incremental document submission
 - Tamper-evident execution audit chain
 - Server-controlled tenant membership and role boundaries
 - Private usage metering for case/outcome billing foundations
 - Opt-in authorized REST connectors for real integrations
-- Unified Aether Command Center
+- Unified Aether Command Center with guided document intake, document upload/hash ledger and role-aware officer authority queue
 - Backend and frontend CI workflows
+- Production security headers/readiness endpoint and legacy API quarantine
+- Standalone resumable worker runtime and post-deployment smoke test
 
 The synthetic government system is a demo environment. It does not issue official government documents and it does not represent live government connectivity.
 
@@ -96,6 +98,7 @@ AETHER_ENABLE_PRODUCTION_CONNECTORS=false
 Production authentication fails closed when authentication is not configured.
 
 Real government connectors are enabled only by explicit server-side configuration. Credentials must never be placed in frontend code.
+Document storage uses Supabase Storage when configured with the server-only service-role key; otherwise it uses a local development store. OCR can be connected through AETHER_OCR_BASE_URL/AETHER_OCR_TOKEN.
 
 ## Deployment policy
 
