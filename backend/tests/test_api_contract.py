@@ -28,7 +28,7 @@ def test_v2_api_can_start_case_and_return_human_boundary():
     body = response.json()
     assert body["summary"]["status"] == "waiting_for_human"
     assert body["tasks"]["inspection"]["status"] == "human_review"
-    assert body["tasks"]["final_approval"]["status"] == "blocked"
+    assert body["tasks"]["final_approval"]["status"] == "pending"
 
 
 def test_missing_documents_create_durable_case_then_resume_after_upload():
