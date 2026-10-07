@@ -44,6 +44,7 @@ class DocumentStore:
         self.root = Path(os.getenv("AETHER_DOCUMENT_ROOT", "./data/documents"))
         self.supabase_url = os.getenv("SUPABASE_URL", "").rstrip("/")
         self.service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+        self._bucket_ready = False
 
     def save(
         self,
@@ -132,7 +133,33 @@ class DocumentStore:
             headers["Content-Type"] = content_type
         return headers
 
+    def _ensure_supabase_bucket(self) -> None:
+        if self._bucket_ready or not self._supabase_configured():
+            return
+
+        check = httpx.get(
+            f"{self.supabase_url}/storage/v1/bucket/{self.bucket}",
+            headers=self._headers(),
+            timeout=15.0,
+        )
+        if check.status_code == 200:
+            self._bucket_ready = True
+            return
+        if check.status_code != 404:
+            check.raise_for_status()
+
+        create = httpx.post(
+            f"{self.supabase_url}/storage/v1/bucket",
+            json={"id": self.bucket, "name": self.bucket, "public": False},
+            headers=self._headers("application/json"),
+            timeout=15.0,
+        )
+        if create.status_code not in {200, 201, 409}:
+            create.raise_for_status()
+        self._bucket_ready = True
+
     def _save_supabase(self, key: str, content: bytes, mime_type: str) -> None:
+        self._ensure_supabase_bucket()
         response = httpx.post(
             f"{self.supabase_url}/storage/v1/object/{self.bucket}/{key}",
             content=content,
