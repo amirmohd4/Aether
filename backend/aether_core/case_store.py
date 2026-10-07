@@ -216,8 +216,8 @@ class DatabaseCaseStore:
             row.result = task.result
             row.evidence = task.evidence or []
             row.error = task.error
-            row.started_at = task.started_at
-            row.completed_at = task.completed_at
+            row.started_at = self._to_optional_datetime(task.started_at)
+            row.completed_at = self._to_optional_datetime(task.completed_at)
             row.attempts = task.attempts
             row.idempotency_key = task.idempotency_key
             row.updated_at = datetime.utcnow()
@@ -235,8 +235,8 @@ class DatabaseCaseStore:
                     "result": row.result,
                     "evidence": row.evidence or [],
                     "error": row.error,
-                    "started_at": row.started_at,
-                    "completed_at": row.completed_at,
+                    "started_at": row.started_at.isoformat() if row.started_at else None,
+                    "completed_at": row.completed_at.isoformat() if row.completed_at else None,
                     "attempts": row.attempts,
                     "idempotency_key": row.idempotency_key,
                     "updated_at": row.updated_at.isoformat() if row.updated_at else None,
@@ -412,7 +412,13 @@ class DatabaseCaseStore:
         )
 
     @staticmethod
-    def _to_datetime(value: str) -> datetime:
+    def _to_optional_datetime(value: str | None) -> datetime | None:
+        if not value:
+            return None
+        return datetime.fromisoformat(value.replace("Z", "+00:00")).replace(tzinfo=None)
+
+    @staticmethod
+    def _to_datetime(value: str):
         return datetime.fromisoformat(value.replace("Z", "+00:00")).replace(tzinfo=None)
 
 
