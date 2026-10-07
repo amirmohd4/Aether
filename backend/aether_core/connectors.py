@@ -34,7 +34,7 @@ class GovernmentConnector(ABC):
             "request_id": response.get("request_id"),
             "status": response.get("status"),
             "result": response.get("result"),
-            "source": response.get("source"),
+            "source": response.get("source") or (response.get("result") or {}).get("source"),
         }
 
     def retry(
