@@ -47,15 +47,17 @@ class DatabaseCaseStore:
             "data": data or {},
         }
         with SessionLocal() as db:
-            db.add(AetherExecutionEventRecord(
+            row = AetherExecutionEventRecord(
                 case_id=case_id,
                 action=action,
                 actor=actor,
                 created_at=datetime.utcnow(),
                 data=entry["data"],
-            ))
+            )
+            db.add(row)
+            db.flush()
+            entry["sequence"] = row.id
             db.commit()
-        entry["sequence"] = 0
         return entry
 
     def events_for(self, case_id: str) -> List[Dict[str, Any]]:
