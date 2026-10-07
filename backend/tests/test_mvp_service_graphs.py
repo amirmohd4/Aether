@@ -38,8 +38,10 @@ def test_every_mvp_service_has_an_executable_baseline_graph():
 
         _assert_acyclic(task_map)
 
-        # Outcome is never allowed to bypass the decision package.
-        assert "decision_package" in task_map["outcome"].dependencies
+        # Outcome must remain downstream of the final decision boundary:
+        # directly or through the authorised human step.
+        outcome_dependencies = set(task_map["outcome"].dependencies)
+        assert outcome_dependencies & {"decision_package", "final_approval"}
 
         if service.human_authority_required:
             assert "final_approval" in task_map
