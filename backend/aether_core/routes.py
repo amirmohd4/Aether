@@ -5,10 +5,12 @@ from fastapi import APIRouter, HTTPException
 from .api_models import HumanDecisionRequest, StartCaseRequest
 from .engine import AetherExecutionEngine
 from .requirements_engine import RequirementEngine
+from .understanding import ObjectiveUnderstandingEngine
 
 router = APIRouter(prefix="/api/aether/v2", tags=["Aether V2"])
 engine = AetherExecutionEngine()
 requirements_engine = RequirementEngine()
+understanding_engine = ObjectiveUnderstandingEngine()
 
 
 def serialize(case):
@@ -27,6 +29,7 @@ def serialize(case):
                 "result": state.result,
                 "error": state.error,
                 "evidence": state.evidence,
+                "attempts": state.attempts,
                 "idempotency_key": state.idempotency_key,
             }
             for task_id, state in case.tasks.items()
@@ -37,6 +40,23 @@ def serialize(case):
         "outcome": case.outcome,
         "execution_events": case.execution_events[-50:],
     }
+
+
+@router.get("/services")
+def service_catalog():
+    return {
+        "count": len(engine.services.all()),
+        "services": engine.services.catalog(),
+    }
+
+
+@router.post("/understand")
+def understand(request: StartCaseRequest):
+    return understanding_engine.understand(
+        request.objective,
+        request.customer_type,
+        request.jurisdiction,
+    ).as_dict()
 
 
 @router.post("/requirements")
@@ -61,6 +81,11 @@ def discover_requirements(request: StartCaseRequest):
 
 @router.post("/cases")
 def start_case(request: StartCaseRequest):
+    understanding = understanding_engine.understand(
+        request.objective,
+        request.customer_type,
+        request.jurisdiction,
+    )
     requirements = requirements_engine.discover(
         request.objective,
         request.customer_type,
@@ -71,11 +96,19 @@ def start_case(request: StartCaseRequest):
     submitted = set(request.inputs.get("documents", []))
     missing = [doc for doc in required_documents["documents"] if doc not in submitted]
 
-    # Aether should not launch downstream government work when required intake is incomplete.
+    if understanding.service_id is None:
+        return {
+            "status": "needs_clarification",
+            "objective": request.objective,
+            "understanding": understanding.as_dict(),
+            "requirements": [r.__dict__ for r in requirements],
+        }
+
     if missing:
         return {
             "status": "needs_documents",
             "objective": request.objective,
+            "understanding": understanding.as_dict(),
             "requirements": [r.__dict__ for r in requirements],
             "documents": required_documents["documents"],
             "missing_documents": missing,
