@@ -197,7 +197,12 @@ def create_api_key(data: Dict[str, Any] | None = None, principal: Principal = De
         raise HTTPException(status_code=403, detail="Active tenant is required")
 
     data = data or {}
-    role = str(data.get("role", "service")).lower()
+    requested_role = str(data.get("role", "service")).lower()
+    # API keys are machine credentials, never delegated government officer/admin roles.
+    # Human/administrative authority remains bound to Supabase Auth + membership.
+    if requested_role not in {"service", "integration", "developer"}:
+        raise HTTPException(status_code=400, detail="API key role must be service, integration, or developer")
+    role = requested_role
     scopes = data.get("scopes") or ["cases:read", "cases:write"]
     if not isinstance(scopes, list) or not all(isinstance(scope, str) for scope in scopes):
         raise HTTPException(status_code=400, detail="scopes must be a list of strings")
