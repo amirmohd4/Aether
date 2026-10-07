@@ -131,3 +131,14 @@ create index if not exists idx_aether_v2_usage_case
 
 alter table aether_internal.aether_v2_usage enable row level security;
 revoke all on aether_internal.aether_v2_usage from anon, authenticated;
+
+
+-- Tamper-evident event chain fields for existing V2 event tables.
+alter table if exists aether_internal.aether_v2_execution_events
+  add column if not exists previous_hash varchar(128);
+
+alter table if exists aether_internal.aether_v2_execution_events
+  add column if not exists event_hash varchar(128);
+
+create index if not exists idx_aether_v2_events_event_hash
+  on aether_internal.aether_v2_execution_events(event_hash);
