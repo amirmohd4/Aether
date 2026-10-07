@@ -80,6 +80,7 @@ def release_readiness():
     authoritative_rules = [
         record for record in rule_records
         if record.get("authority_status") == "source_backed"
+        and record.get("service_id")
         and record.get("source_url")
         and record.get("verified_at")
         and record.get("effective_date")
@@ -95,7 +96,8 @@ def release_readiness():
         ),
         "production_connectors": engine.workers.production_connectors_configured(),
         "authoritative_rule_coverage": (
-            len(authoritative_rules) >= len(engine.services.all())
+            {record["service_id"] for record in authoritative_rules}
+            >= {service.id for service in engine.services.all()}
             and len({record["rule_id"] for record in authoritative_rules}) == len(authoritative_rules)
         ),
         "notification_provider": bool(

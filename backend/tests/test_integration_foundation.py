@@ -30,6 +30,7 @@ def test_source_backed_rule_pack_requires_effective_dates_and_sources():
             {
                 "rule_id": "RULE-001",
                 "title": "Authorized rule",
+                "service_id": "passport",
                 "requirement": "identity_document",
                 "authority_status": "source_backed",
                 "source_url": "https://gov.example/rule-001",
@@ -41,6 +42,32 @@ def test_source_backed_rule_pack_requires_effective_dates_and_sources():
     }
     pack = validate_rule_pack(payload)
     assert pack.production_ready is True
+
+
+def test_source_backed_rule_pack_requires_service_binding():
+    payload = {
+        "pack_id": "missing-service-pack",
+        "version": "1.0.0",
+        "jurisdiction": {"country": "India"},
+        "authority_status": "source_backed",
+        "source_document": "AUTHORIZED-SOURCE",
+        "verified_at": "2026-10-07",
+        "effective_from": "2026-10-01",
+        "rules": [
+            {
+                "rule_id": "RULE-001",
+                "title": "Missing service binding",
+                "requirement": "identity_document",
+                "authority_status": "source_backed",
+                "source_url": "https://gov.example/rule-001",
+                "source_title": "Authorized Rule 001",
+                "verified_at": "2026-10-07",
+                "effective_date": "2026-10-01",
+            }
+        ],
+    }
+    with pytest.raises(RulePackValidationError, match="service_id"):
+        validate_rule_pack(payload)
 
 
 def test_source_backed_rule_pack_rejects_missing_effective_date():
@@ -56,6 +83,7 @@ def test_source_backed_rule_pack_rejects_missing_effective_date():
             {
                 "rule_id": "RULE-001",
                 "title": "Missing effective date",
+                "service_id": "passport",
                 "requirement": "identity_document",
                 "authority_status": "source_backed",
                 "source_url": "https://gov.example/rule-001",
