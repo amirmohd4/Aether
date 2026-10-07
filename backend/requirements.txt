@@ -15,4 +15,5 @@ passlib[bCrypt]==1.7.4
 slowapi==0.1.9
 faker==33.1.0
 email-validator>=2.0.0
+httpx==0.28.1
 pytest==8.3.4
