@@ -3,18 +3,15 @@ from .api.property_routes import router as property_router
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 
-# Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Create FastAPI app FIRST
 app = FastAPI(
     title="Aether GovOS API",
-    description="Sovereign Government Operating System Backend",
-    version="0.1.0"
+    description="Outcome-driven government execution platform",
+    version="0.3.0-aether-v2",
 )
 
-# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -23,29 +20,32 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Import ONLY the routers that ACTUALLY exist in your folder
 from backend.api.billing_routes import router as billing_router
 from backend.api.workflow_routes import router as workflow_router
 from backend.api.fraud_routes import router as fraud_router
-from backend.api.water_connection_routes import router as water_router  # <-- THIS EXISTS
-# from backend.api.connector_routes import router as connector_router  # <-- COMMENT THIS - DOESN'T EXIST
+from backend.api.water_connection_routes import router as water_router
+from backend.api.aether_routes import router as aether_router
+from backend.aether_core.routes import router as aether_v2_router
 
-# Register routers that exist
 app.include_router(billing_router, prefix="/api/billing", tags=["Billing"])
 app.include_router(property_router)
 app.include_router(workflow_router, prefix="/api/workflow", tags=["Workflow"])
 app.include_router(fraud_router, prefix="/api/fraud", tags=["Fraud"])
 app.include_router(water_router, prefix="/api/water-connection", tags=["Water Connection"])
-# app.include_router(connector_router, prefix="/api/connectors", tags=["Connectors"])  # <-- COMMENT THIS
+app.include_router(aether_router, prefix="/api/aether", tags=["Aether Execution"])
+app.include_router(aether_v2_router)
+
 
 @app.get("/")
 async def root():
     return {
         "service": "Aether GovOS",
         "status": "running",
-        "version": "0.1.0"
+        "version": "0.3.0-aether-v2",
+        "core": "objective -> requirements -> case -> parallel work graph -> execution -> human authority -> outcome",
     }
+
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy"}
+    return {"status": "healthy", "aether_core": "ready"}
