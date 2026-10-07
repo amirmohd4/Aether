@@ -245,6 +245,28 @@ def create_api_key(data: Dict[str, Any] | None = None, principal: Principal = De
         raise HTTPException(status_code=503, detail="API key store unavailable") from exc
 
 
+@router.post("/api-keys/{key_prefix}/revoke")
+def revoke_api_key(key_prefix: str, principal: Principal = Depends(require_scope("cases:write"))):
+    if not principal.tenant_id:
+        raise HTTPException(status_code=403, detail="Active tenant is required")
+    try:
+        from .persistence_models import AetherApiKeyRecord
+        with SessionLocal() as db:
+            row = db.query(AetherApiKeyRecord).filter_by(
+                tenant_id=principal.tenant_id,
+                key_prefix=key_prefix,
+            ).one_or_none()
+            if not row:
+                raise HTTPException(status_code=404, detail="API key not found")
+            row.status = "revoked"
+            db.commit()
+            return {"status": "revoked", "key_prefix": row.key_prefix}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="API key store unavailable") from exc
+
+
 @router.get("/api-keys")
 def list_api_keys(principal: Principal = Depends(require_scope("cases:read"))):
     if not principal.tenant_id:
