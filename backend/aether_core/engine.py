@@ -9,6 +9,7 @@ from .audit import AuditTrail
 from .case_store import DatabaseCaseStore
 from .domain import Case, TaskState, TaskStatus, now_iso
 from .dependency_engine import DependencyEngine
+from .task_queue import DurableTaskQueue, TaskClaim
 from .ontology import GovernmentOntologyBuilder, WorkGraphBuilder
 from .reliability import RetryPolicy
 from .synthetic_government import SyntheticGovernmentSystem
@@ -31,6 +32,7 @@ class AetherExecutionEngine:
         self.retry_policy = RetryPolicy(max_attempts=3)
         self.audit = AuditTrail()
         self.store = DatabaseCaseStore()
+        self.queue = DurableTaskQueue()
         self._event_lock = RLock()
         self._case_locks: Dict[str, RLock] = {}
 
@@ -100,6 +102,8 @@ class AetherExecutionEngine:
 
     def execute_until_pause(self, case_id: str) -> Case:
         case = self.get_case(case_id)
+        self.queue.reclaim_expired(case_id)
+        self._recover_task_states(case)
         with self._lock_for(case_id):
             case.status = "executing"
             while True:
@@ -140,13 +144,38 @@ class AetherExecutionEngine:
                 if not executable:
                     break
 
-                with ThreadPoolExecutor(max_workers=min(8, len(executable))) as pool:
-                    futures = {
-                        pool.submit(self._execute_task, case, task): task
-                        for task in executable
-                    }
+                for task in executable:
+                    self.queue.enqueue(
+                        case.case_id,
+                        task.definition.id,
+                        {
+                            "worker": task.definition.worker,
+                            "department": task.definition.department,
+                            "operation": self._operation_for(task.definition.id),
+                        },
+                    )
+
+                claims: list[TaskClaim] = []
+                for _ in executable:
+                    claim = self.queue.claim(case.case_id)
+                    if claim is None:
+                        break
+                    claims.append(claim)
+
+                if not claims:
+                    break
+
+                with ThreadPoolExecutor(max_workers=min(8, len(claims))) as pool:
+                    futures = {}
+                    for claim in claims:
+                        task = case.tasks.get(claim.task_id)
+                        if task is None or task.status != TaskStatus.READY:
+                            self.queue.fail(claim.queue_id, "Task no longer ready", retry=False)
+                            continue
+                        futures[pool.submit(self._execute_task, case, task, claim.queue_id)] = (task, claim)
+
                     for future in as_completed(futures):
-                        task = futures[future]
+                        task, claim = futures[future]
                         try:
                             future.result()
                         except Exception as exc:
@@ -159,6 +188,7 @@ class AetherExecutionEngine:
                                 "timestamp": now_iso(),
                             })
 
+                self.store.put(case)
                 self._refresh_ready(case)
 
             statuses = [task.status for task in case.tasks.values()]
@@ -183,7 +213,7 @@ class AetherExecutionEngine:
             self.store.put(case)
             return case
 
-    def _execute_task(self, case: Case, task: TaskState) -> None:
+    def _execute_task(self, case: Case, task: TaskState, queue_id: int | None = None) -> None:
         definition = task.definition
         operation = self._operation_for(definition.id)
         worker = self.workers.get(definition.worker)
@@ -228,6 +258,8 @@ class AetherExecutionEngine:
                         "task_id": definition.id,
                         "request_id": result.get("request_id"),
                     })
+                    if queue_id is not None:
+                        self.queue.complete(queue_id)
                     return
 
                 if result.get("status") == "rejected":
@@ -261,6 +293,8 @@ class AetherExecutionEngine:
                     self._reconcile_property(case)
                 elif definition.id == "cross_record_reconciliation":
                     self._reconcile_restaurant(case)
+                if queue_id is not None:
+                    self.queue.complete(queue_id)
                 return
             except Exception as exc:
                 last_error = exc
@@ -277,7 +311,18 @@ class AetherExecutionEngine:
             "attempts": task.attempts,
             "error": task.error,
         })
+        if queue_id is not None:
+            self.queue.fail(queue_id, task.error, retry=False)
         raise RuntimeError(task.error)
+
+    def _recover_task_states(self, case: Case) -> None:
+        """Turn expired queue leases back into schedulable task state."""
+        rows = {row["task_id"]: row for row in self.queue.for_case(case.case_id)}
+        for task_id, task in case.tasks.items():
+            row = rows.get(task_id)
+            if task.status == TaskStatus.RUNNING and row and row["status"] == self.queue.READY:
+                task.status = TaskStatus.PENDING
+                task.error = None
 
     def _reconcile_property(self, case: Case) -> None:
         land = case.tasks.get("land_record")
