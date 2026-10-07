@@ -820,6 +820,19 @@ def human_decision(case_id: str, task_id: str, request: HumanDecisionRequest, pr
             actor_id=principal.subject,
             actor_role=principal.role,
         )
+        notification_service.enqueue(
+            case.tenant_id or principal.tenant_id,
+            case.owner_user_id or principal.subject,
+            case_id,
+            "human_action." + decision,
+            "in_app",
+            payload={
+                "task_id": task_id,
+                "actor": principal.subject,
+                "role": principal.role,
+                "case_status": case.status,
+            },
+        )
         return serialize(case)
     except KeyError:
         raise HTTPException(status_code=404, detail="Case or task not found")
