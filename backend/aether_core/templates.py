@@ -118,14 +118,8 @@ def commercial_project_tasks() -> List[TaskDefinition]:
     ]
 
 
-def generic_tasks(service: ServiceDefinition) -> List[TaskDefinition]:
-    """Safe default process for services without a specialized graph.
-
-    The generic graph proves that all catalog services use the same execution
-    backbone without pretending that their exact legal process has been modeled.
-    Specialized processes replace this graph as evidence is added.
-    """
-    department_worker = {
+def _service_worker(service: ServiceDefinition) -> str:
+    return {
         "Revenue": "RevenueWorker",
         "Registration": "RegistrationWorker",
         "Municipal": "MunicipalWorker",
@@ -145,31 +139,17 @@ def generic_tasks(service: ServiceDefinition) -> List[TaskDefinition]:
         "Food Safety": "FoodWorker",
     }.get(service.department, "DigitalWorker")
 
-    tasks = [
-        TaskDefinition("document_intake", f"Validate {service.name} inputs", "Aether", "DocumentWorker"),
-        TaskDefinition("identity_check", "Verify subject identity", "Identity", "IdentityWorker"),
-        TaskDefinition(
-            "department_processing",
-            f"Execute {service.name} departmental work",
-            service.department,
-            department_worker,
-            ["document_intake", "identity_check"],
-        ),
-        TaskDefinition(
-            "verification",
-            "Verify and reconcile service result",
-            "Aether",
-            "ReconciliationWorker",
-            ["department_processing"],
-        ),
-        TaskDefinition(
-            "decision_package",
-            "Prepare evidence-backed outcome package",
-            "Aether",
-            "DecisionWorker",
-            ["verification"],
-        ),
-    ]
+
+def _finish_service_tasks(service: ServiceDefinition, tasks: List[TaskDefinition], parent: str) -> List[TaskDefinition]:
+    tasks.append(TaskDefinition(
+        "decision_package",
+        "Prepare evidence-backed outcome package",
+        "Aether",
+        "DecisionWorker",
+        [parent],
+        description="Assemble verified evidence for the statutory or operational outcome.",
+        operation="decision_package",
+    ))
     if service.human_authority_required:
         tasks.append(TaskDefinition(
             "final_approval",
@@ -178,13 +158,126 @@ def generic_tasks(service: ServiceDefinition) -> List[TaskDefinition]:
             "HumanAuthorityWorker",
             ["decision_package"],
             authority_required=True,
+            description="Aether stops here when law requires an authorised human decision.",
+            operation="final_approval",
         ))
         parent = "final_approval"
-    else:
-        parent = "decision_package"
-
-    tasks.append(TaskDefinition("outcome", f"Complete {service.outcome}", "Aether", "OutcomeWorker", [parent]))
+    tasks.append(TaskDefinition(
+        "outcome",
+        f"Complete {service.outcome}",
+        "Aether",
+        "OutcomeWorker",
+        [parent],
+        operation="outcome",
+    ))
     return tasks
+
+
+def generic_tasks(service: ServiceDefinition) -> List[TaskDefinition]:
+    """Build a reusable, auditable process graph for catalog services.
+
+    The graph is deliberately broader than a single department form:
+    identity/document work runs first, applicable government records are checked
+    in parallel where possible, results are reconciled, and only then does the
+    case cross the human-authority boundary. Service-specific legal graphs can
+    replace this safe baseline as authoritative rules and connectors are added.
+    """
+    worker = _service_worker(service)
+    sid = service.id
+
+    # Property and land workflows need independent evidence checks before a
+    # statutory outcome. These tasks share the same backbone used by bank and
+    # developer cases without pretending every service has the same legal rule.
+    property_services = {
+        "property_registration",
+        "mutation",
+        "encumbrance_certificate",
+        "land_conversion",
+        "title_verification",
+    }
+    if sid in property_services:
+        tasks = [
+            TaskDefinition("document_intake", f"Extract and validate {service.name} inputs", "Aether", "DocumentWorker", operation="document"),
+            TaskDefinition("identity_check", "Verify applicant/subject identity", "Identity", "IdentityWorker", operation="identity"),
+            TaskDefinition("land_record", "Retrieve land/property record", "Revenue", "RevenueWorker", ["document_intake"], operation="land_record"),
+            TaskDefinition("registration_record", "Retrieve registration record", "Registration", "RegistrationWorker", ["document_intake"], operation="registration_record"),
+            TaskDefinition("court_search", "Search litigation record", "Courts", "CourtWorker", ["document_intake"], operation="court_search"),
+            TaskDefinition("tax_dues", "Check property/land dues", "Tax", "TaxWorker", ["land_record"], operation="tax_dues"),
+            TaskDefinition("cross_record_reconciliation", "Reconcile material government records", "Aether", "ReconciliationWorker", ["identity_check", "court_search", "tax_dues", "registration_record"], operation="reconciliation"),
+        ]
+        return _finish_service_tasks(service, tasks, "cross_record_reconciliation")
+
+    # Identity/document-heavy certificates and reports.
+    if sid in {"birth_certificate", "death_certificate"}:
+        record_operation = "birth_record" if sid == "birth_certificate" else "death_record"
+        tasks = [
+            TaskDefinition("document_intake", f"Validate {service.name} evidence", "Aether", "DocumentWorker", operation="document"),
+            TaskDefinition("identity_check", "Verify applicant identity", "Identity", "IdentityWorker", operation="identity"),
+            TaskDefinition("record_lookup", f"Retrieve {service.name.lower()} record", "Health", "HealthWorker", ["document_intake", "identity_check"], operation=record_operation),
+            TaskDefinition("verification", "Verify source record and submitted evidence", "Aether", "ReconciliationWorker", ["record_lookup"], operation="reconciliation"),
+        ]
+        return _finish_service_tasks(service, tasks, "verification")
+
+    if sid in {"police_clearance", "fir_report"}:
+        tasks = [
+            TaskDefinition("document_intake", f"Validate {service.name} request", "Aether", "DocumentWorker", operation="document"),
+            TaskDefinition("identity_check", "Verify applicant identity", "Identity", "IdentityWorker", operation="identity"),
+            TaskDefinition("police_search", "Search police records", "Police", "PoliceWorker", ["document_intake", "identity_check"], operation="police_search"),
+            TaskDefinition("verification", "Verify police source response", "Aether", "ReconciliationWorker", ["police_search"], operation="reconciliation"),
+        ]
+        return _finish_service_tasks(service, tasks, "verification")
+
+    # Passport/visa processes can require external verification before an
+    # authorised issuance decision.
+    if sid in {"passport", "visa"}:
+        tasks = [
+            TaskDefinition("document_intake", f"Validate {service.name} evidence", "Aether", "DocumentWorker", operation="document"),
+            TaskDefinition("identity_check", "Verify identity", "Identity", "IdentityWorker", operation="identity"),
+            TaskDefinition("address_check", "Verify address/residency evidence", "Identity", "IdentityWorker", ["document_intake"], operation="address"),
+            TaskDefinition("police_verification", "Request police verification when applicable", "Police", "PoliceWorker", ["identity_check", "address_check"], operation="police_verification"),
+            TaskDefinition("department_processing", f"Process {service.name} case", "Passport", "PassportWorker", ["document_intake", "identity_check", "police_verification"], operation="service_processing"),
+            TaskDefinition("verification", "Reconcile passport/visa evidence", "Aether", "ReconciliationWorker", ["department_processing"], operation="reconciliation"),
+        ]
+        return _finish_service_tasks(service, tasks, "verification")
+
+    # Transport services may cross a physical-action boundary such as a test or
+    # inspection. That boundary is explicit rather than hidden in automation.
+    if sid in {"driving_license", "vehicle_registration"}:
+        physical_name = "driving_test" if sid == "driving_license" else "vehicle_inspection"
+        physical_desc = "Physical driving test by authorised authority" if sid == "driving_license" else "Physical vehicle inspection by authorised authority"
+        tasks = [
+            TaskDefinition("document_intake", f"Validate {service.name} documents", "Aether", "DocumentWorker", operation="document"),
+            TaskDefinition("identity_check", "Verify identity", "Identity", "IdentityWorker", operation="identity"),
+            TaskDefinition("department_processing", f"Process {service.name} digital checks", service.department, worker, ["document_intake", "identity_check"], operation="service_processing"),
+            TaskDefinition(physical_name, physical_desc, "Authorised Authority", "InspectionCoordinator", ["department_processing"], physical_action=True, operation="inspection"),
+            TaskDefinition("verification", "Verify transport evidence and inspection result", "Aether", "ReconciliationWorker", [physical_name], operation="reconciliation"),
+        ]
+        return _finish_service_tasks(service, tasks, "verification")
+
+    # All other services receive the same safe end-to-end baseline. This is
+    # intentionally not described as the service's authoritative legal process.
+    tasks = [
+        TaskDefinition("document_intake", f"Validate {service.name} inputs", "Aether", "DocumentWorker", operation="document"),
+        TaskDefinition("identity_check", "Verify subject identity", "Identity", "IdentityWorker", operation="identity"),
+        TaskDefinition(
+            "department_processing",
+            f"Execute {service.name} departmental work",
+            service.department,
+            worker,
+            ["document_intake", "identity_check"],
+            operation="service_processing",
+            description="Execute the authorized digital work available through the department connector.",
+        ),
+        TaskDefinition(
+            "verification",
+            "Verify and reconcile service result",
+            "Aether",
+            "ReconciliationWorker",
+            ["department_processing"],
+            operation="reconciliation",
+        ),
+    ]
+    return _finish_service_tasks(service, tasks, "verification")
 
 
 def generic_requirements(service: ServiceDefinition) -> List[Dict]:
