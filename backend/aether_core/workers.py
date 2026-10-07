@@ -216,3 +216,6 @@ class WorkerRegistry:
 
     def production_connectors_configured(self) -> bool:
         return self._connectors.production_configured()
+
+    def production_connector(self, department: str) -> bool:
+        return self._connectors.is_production(department)
