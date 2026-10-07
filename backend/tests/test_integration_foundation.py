@@ -93,12 +93,14 @@ def test_rule_pack_rejects_duplicate_rule_ids():
         validate_rule_pack(payload)
 
 
-def test_production_connector_requires_https_and_bearer_token():
+def test_production_connector_requires_https_and_bearer_token(monkeypatch):
+    monkeypatch.setenv("AETHER_ENABLE_PRODUCTION_CONNECTORS", "true")
+    monkeypatch.setenv(
+        "AETHER_PRODUCTION_CONNECTORS",
+        '{"Land Records": {"base_url": "https://sandbox.gov.example"}}',
+    )
     with pytest.raises(RuntimeError, match="bearer_token"):
-        ConnectorRegistry(
-            synthetic_system=None,
-        )
-        # The registry only reads production configuration when explicitly enabled.
+        ConnectorRegistry()
 
 
 def test_configured_http_connector_configuration_validation():
