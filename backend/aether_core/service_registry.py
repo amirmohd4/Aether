@@ -60,11 +60,11 @@ SERVICE_ALIASES = {
     "food_business_license": ["food business registration", "restaurant license", "fssai registration", "cafe license"],
 }
 
-
 def _normalize(value: str) -> str:
     import re
     tokens = re.findall(r"[a-z0-9]+(?:[-/][a-z0-9]+)*", value.lower())
     return " ".join(token for token in tokens if token not in STOPWORDS)
+
 
 SERVICE_DEFINITIONS = [
     ("property_registration", "Property Registration", "Registration", ["citizen", "business", "bank", "developer", "insurer"], ["property registration", "register property"], "commercial_project", "registration_record"),
@@ -103,7 +103,6 @@ SERVICE_DEFINITIONS = [
     ("food_business_license", "Food Business License/Registration", "Food Safety", ["citizen", "business", "developer"], ["restaurant", "cafe", "food business", "food license", "fssai"], "restaurant", "food_business_license"),
 ]
 
-
 DEFAULT_DOCUMENTS = {
     "property": ["identity_document", "property_record"],
     "business": ["identity_document", "business_registration"],
@@ -121,28 +120,61 @@ DEFAULT_DOCUMENTS = {
 
 
 def _document_defaults(service_id: str) -> List[str]:
-    if any(k in service_id for k in ("property", "mutation", "encumbrance", "land", "title", "registration")):
+    # Explicit service groups avoid substring collisions such as
+    # company_registration/rera_registration inheriting property documents.
+    property_services = {
+        "property_registration",
+        "mutation",
+        "encumbrance_certificate",
+        "land_conversion",
+        "title_verification",
+    }
+    business_services = {
+        "trade_license",
+        "medical_license",
+        "factory_license",
+        "pf_esi_registration",
+        "gst_registration",
+        "company_registration",
+        "rera_registration",
+        "affordable_housing",
+        "food_business_license",
+    }
+
+    if service_id in property_services:
         return DEFAULT_DOCUMENTS["property"]
-    if any(k in service_id for k in ("company", "gst", "factory", "trade", "medical", "pf_esi", "rera", "affordable")):
+    if service_id in business_services:
         return DEFAULT_DOCUMENTS["business"]
-    if "building" in service_id:
+    if service_id == "building_permit":
         return DEFAULT_DOCUMENTS["building"]
-    if "vehicle" in service_id:
+    if service_id == "water_connection":
+        return ["identity_document", "address_proof"]
+    if service_id == "vehicle_registration":
         return DEFAULT_DOCUMENTS["vehicle"]
+    if service_id == "driving_license":
+        return ["identity_document", "address_proof"]
     if service_id == "birth_certificate":
         return DEFAULT_DOCUMENTS["birth"]
     if service_id == "death_certificate":
         return DEFAULT_DOCUMENTS["death"]
-    if any(k in service_id for k in ("scholarship", "admission", "transfer")):
+    if service_id in {"scholarship", "admission", "transfer_certificate"}:
         return DEFAULT_DOCUMENTS["education"]
-    if any(k in service_id for k in ("police", "fir")):
+    if service_id in {"police_clearance", "fir_report"}:
         return DEFAULT_DOCUMENTS["police"]
     if service_id == "passport":
         return DEFAULT_DOCUMENTS["passport"]
     if service_id == "visa":
         return DEFAULT_DOCUMENTS["visa"]
-    if any(k in service_id for k in ("pmay", "housing", "subsidy", "ration")):
+    if service_id in {"pmay", "ration_card", "pds_subsidy"}:
         return DEFAULT_DOCUMENTS["housing"]
+    if service_id == "farmer_id":
+        return ["identity_document", "land_record"]
+    if service_id == "crop_insurance":
+        return ["identity_document", "land_record", "crop_record"]
+    if service_id == "court_case_filing":
+        return ["identity_document", "case_documents"]
+    if service_id == "e_court":
+        return ["identity_document"]
     return ["identity_document"]
 
 
@@ -194,7 +226,6 @@ class ServiceRegistry:
                 if not normalized:
                     continue
                 if normalized in text:
-                    # Exact phrase matches are stronger than loose token overlap.
                     weight = 6 if len(normalized.split()) >= 2 else 4
                     score = max(score, weight)
                     matches.append(keyword)
