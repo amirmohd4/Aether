@@ -63,7 +63,7 @@ def connector_catalog():
     return {
         "connectors": engine.workers.connector_catalog(),
         "default_mode": "synthetic",
-        "production_connectors_configured": engine.workers._connectors.production_configured(),
+        "production_connectors_configured": engine.workers.production_connectors_configured(),
     }
 
 
