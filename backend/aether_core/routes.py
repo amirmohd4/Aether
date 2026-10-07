@@ -530,6 +530,12 @@ def rule_catalog():
     }
 
 
+@router.get("/marketplace")
+def marketplace_catalog(principal: Principal = Depends(require_scope("cases:read"))):
+    from .marketplace import marketplace_catalog as build_marketplace
+    return build_marketplace(engine.services)
+
+
 @router.get("/services")
 def service_catalog():
     return {
