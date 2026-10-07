@@ -57,3 +57,22 @@ def test_case_summary_includes_execution_events():
     summary = case.summary()
     assert "execution_events" in summary
     assert summary["execution_events"]
+
+
+
+def test_audit_chain_is_per_case_when_one_engine_handles_multiple_cases():
+    from aether_core.audit import AuditTrail
+
+    audit = AuditTrail()
+    first = audit.record("case.created", "engine", "A-1", {"n": 1})
+    second = audit.record("case.created", "engine", "A-2", {"n": 2})
+    third = audit.record("case.completed", "engine", "A-1", {"n": 3})
+
+    first_chain = AuditTrail.verify_chain(audit.for_case("A-1"))
+    second_chain = AuditTrail.verify_chain(audit.for_case("A-2"))
+
+    assert first["sequence"] == 1
+    assert second["sequence"] == 1
+    assert third["sequence"] == 2
+    assert first_chain["valid"]
+    assert second_chain["valid"]
