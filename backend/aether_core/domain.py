@@ -100,6 +100,7 @@ class Case:
             "ready": counts["ready"],
             "critical_path": self.critical_path(),
             "human_work_remaining": self.human_work_remaining(),
+            "execution_metrics": self.execution_metrics(),
             "updated_at": self.updated_at,
         }
 
