@@ -54,6 +54,8 @@ class Case:
     inputs: Dict[str, Any]
     requirements: List[Dict[str, Any]]
     tasks: Dict[str, TaskState]
+    owner_user_id: Optional[str] = None
+    tenant_id: Optional[str] = None
     status: str = "executing"
     human_actions: List[Dict[str, Any]] = field(default_factory=list)
     exceptions: List[Dict[str, Any]] = field(default_factory=list)
@@ -78,6 +80,8 @@ class Case:
             "case_id": self.case_id,
             "objective": self.objective,
             "customer_type": self.customer_type,
+            "owner_user_id": self.owner_user_id,
+            "tenant_id": self.tenant_id,
             "service_id": self.service_id,
             "service_name": self.service_name,
             "service_department": self.service_department,
