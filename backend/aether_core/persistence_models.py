@@ -1,15 +1,16 @@
 from __future__ import annotations
 
 from datetime import datetime
-import os
 
 from sqlalchemy import Column, DateTime, Integer, String, Text, UniqueConstraint
 from sqlalchemy.types import JSON
 
-from backend.database import Base
+from backend.database import Base, engine
 
 
-PERSISTENCE_SCHEMA = "aether_internal" if os.getenv("DATABASE_URL") else None
+# The private execution-core schema is a PostgreSQL concern. SQLite is used by
+# local development and CI, where SQLAlchemy schemas are not supported.
+PERSISTENCE_SCHEMA = "aether_internal" if engine.dialect.name == "postgresql" else None
 
 
 class AetherCaseRecord(Base):
@@ -61,10 +62,6 @@ class AetherTaskQueueRecord(Base):
     payload = Column(JSON, nullable=False, default=dict)
 
 
-def utc_datetime() -> datetime:
-    return datetime.utcnow()
-
-
 class AetherUsageRecord(Base):
     __tablename__ = "aether_v2_usage"
     __table_args__ = (
@@ -81,3 +78,7 @@ class AetherUsageRecord(Base):
     unit_type = Column(String(32), nullable=False, default="case")
     created_at = Column(DateTime(timezone=True), nullable=False)
     metadata_json = Column(JSON, nullable=False, default=dict)
+
+
+def utc_datetime() -> datetime:
+    return datetime.utcnow()
