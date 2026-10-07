@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from typing import Any, Dict, List
+from threading import Lock
 
 from database import SessionLocal, engine
 from .domain import Case, TaskDefinition, TaskState, TaskStatus
@@ -12,10 +13,21 @@ class DatabaseCaseStore:
     """Durable V2 repository using PostgreSQL when configured, SQLite locally otherwise."""
 
     def __init__(self):
-        from database import Base
-        Base.metadata.create_all(bind=engine)
+        self._schema_ready = False
+        self._schema_lock = Lock()
+
+    def _ensure_schema(self) -> None:
+        if self._schema_ready:
+            return
+        with self._schema_lock:
+            if self._schema_ready:
+                return
+            from database import Base
+            Base.metadata.create_all(bind=engine)
+            self._schema_ready = True
 
     def put(self, case: Case) -> Case:
+        self._ensure_schema()
         payload = self._serialize_case(case)
         with SessionLocal() as db:
             row = db.get(AetherCaseRecord, case.case_id)
@@ -32,6 +44,7 @@ class DatabaseCaseStore:
         return case
 
     def get(self, case_id: str) -> Case:
+        self._ensure_schema()
         with SessionLocal() as db:
             row = db.get(AetherCaseRecord, case_id)
             if row is None:
@@ -39,6 +52,7 @@ class DatabaseCaseStore:
             return self._deserialize_case(row.payload)
 
     def append_event(self, case_id: str, action: str, actor: str, data: Dict[str, Any] | None = None) -> Dict[str, Any]:
+        self._ensure_schema()
         entry = {
             "timestamp": datetime.utcnow().isoformat() + "Z",
             "action": action,
@@ -61,6 +75,7 @@ class DatabaseCaseStore:
         return entry
 
     def events_for(self, case_id: str) -> List[Dict[str, Any]]:
+        self._ensure_schema()
         with SessionLocal() as db:
             rows = db.query(AetherExecutionEventRecord).filter(
                 AetherExecutionEventRecord.case_id == case_id
