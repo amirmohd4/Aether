@@ -147,6 +147,11 @@ class AetherExecutionEngine:
                             {"task_id": task.definition.id, "reason": reason},
                         )
 
+                # Recalculate immediately after a boundary becomes active so
+                # downstream authority tasks are visibly blocked rather than
+                # retaining the stale pre-boundary pending state.
+                self._refresh_ready(case)
+
                 if not executable:
                     break
 
