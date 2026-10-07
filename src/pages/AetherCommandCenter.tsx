@@ -135,6 +135,9 @@ export const AetherCommandCenter: React.FC = () => {
   const [understanding, setUnderstanding] = useState<Understanding | null>(null);
   const [recentCases, setRecentCases] = useState<CaseListItem[]>([]);
   const [officerQueue, setOfficerQueue] = useState<CaseListItem[]>([]);
+  const [apiKeys, setApiKeys] = useState<Array<{ key_prefix: string; role: string; scopes: string[]; status: string; created_at?: string | null }>>([]);
+  const [newApiKey, setNewApiKey] = useState('');
+  const [notifications, setNotifications] = useState<Array<{ id: number; event_type: string; case_id?: string | null; status: string; created_at?: string | null }>>([]);
   const [principal, setPrincipal] = useState<Principal | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -165,6 +168,24 @@ export const AetherCommandCenter: React.FC = () => {
       const body = await response.json() as Principal;
       setPrincipal(body);
       await loadRecentCases();
+
+      const keyReadRoles = ['user', 'citizen', 'business', 'bank', 'developer', 'insurer', 'enterprise', 'admin'];
+      if (keyReadRoles.includes(body.role.toLowerCase())) {
+        const keysResponse = await fetch(API_BASE + '/api/aether/v2/api-keys', {
+          headers: authHeaders(),
+        });
+        if (keysResponse.ok) {
+          const keysBody = await keysResponse.json();
+          setApiKeys(keysBody.keys || []);
+        }
+        const notificationResponse = await fetch(API_BASE + '/api/aether/v2/notifications', {
+          headers: authHeaders(),
+        });
+        if (notificationResponse.ok) {
+          const notificationBody = await notificationResponse.json();
+          setNotifications((notificationBody.notifications || []).slice(0, 6));
+        }
+      }
 
       const operator = ['officer', 'department_admin', 'admin'].includes(body.role.toLowerCase());
       if (!operator) {
@@ -319,6 +340,48 @@ export const AetherCommandCenter: React.FC = () => {
       await refreshIntake(caseData.summary.case_id);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to upload document');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function createApiKey() {
+    setLoading(true);
+    setError('');
+    setNewApiKey('');
+    try {
+      const response = await fetch(API_BASE + '/api/aether/v2/api-keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({
+          role: 'developer',
+          scopes: ['cases:read', 'cases:write', 'documents:read', 'documents:write', 'payments:read', 'payments:write', 'analytics:read'],
+        }),
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.detail || 'API key creation failed');
+      setNewApiKey(body.key || '');
+      await loadWorkspace();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to create API key');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function revokeApiKey(keyPrefix: string) {
+    setLoading(true);
+    setError('');
+    try {
+      const response = await fetch(
+        API_BASE + '/api/aether/v2/api-keys/' + encodeURIComponent(keyPrefix) + '/revoke',
+        { method: 'POST', headers: authHeaders() }
+      );
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.detail || 'API key revocation failed');
+      await loadWorkspace();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to revoke API key');
     } finally {
       setLoading(false);
     }
@@ -580,6 +643,50 @@ export const AetherCommandCenter: React.FC = () => {
             {intakeNotice && <div className="mt-4 rounded-xl border border-cyan-300/20 bg-cyan-300/5 p-3 text-xs text-cyan-100">{intakeNotice}</div>}
             {error && <div className="mt-4 rounded-xl border border-red-400/20 bg-red-400/10 p-3 text-xs text-red-200">{error}</div>}
 
+            {(principal && ['user', 'citizen', 'business', 'bank', 'developer', 'insurer', 'enterprise', 'admin'].includes(principal.role.toLowerCase())) && (
+              <div className="mt-6 border-t border-white/10 pt-5">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-semibold text-slate-300">Developer access</h3>
+                  <button
+                    onClick={createApiKey}
+                    disabled={loading}
+                    className="rounded-lg border border-cyan-300/20 px-2 py-1 text-[10px] font-semibold text-cyan-200 disabled:opacity-50"
+                  >
+                    Create API key
+                  </button>
+                </div>
+                {newApiKey && (
+                  <div className="mt-2 rounded-lg border border-amber-300/20 bg-amber-300/5 p-2">
+                    <p className="text-[9px] text-amber-100">Copy this key now. It will not be shown again.</p>
+                    <div className="mt-1 break-all font-mono text-[9px] text-slate-200">{newApiKey}</div>
+                    <button
+                      onClick={() => navigator.clipboard?.writeText(newApiKey)}
+                      className="mt-2 rounded border border-white/10 px-2 py-1 text-[9px] text-slate-300"
+                    >
+                      Copy key
+                    </button>
+                  </div>
+                )}
+                <div className="mt-2 space-y-2">
+                  {apiKeys.length === 0 ? (
+                    <p className="text-[10px] text-slate-500">No developer keys.</p>
+                  ) : apiKeys.slice(0, 4).map((key) => (
+                    <div key={key.key_prefix} className="flex items-center justify-between gap-2 rounded-lg border border-white/5 bg-black/10 p-2">
+                      <div className="min-w-0">
+                        <div className="truncate font-mono text-[9px] text-slate-200">{key.key_prefix}… · {key.status}</div>
+                        <div className="mt-1 text-[8px] text-slate-500">{key.scopes.join(', ')}</div>
+                      </div>
+                      {key.status === 'active' && (
+                        <button onClick={() => revokeApiKey(key.key_prefix)} className="shrink-0 text-[9px] text-red-300">
+                          Revoke
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="mt-6 border-t border-white/10 pt-5">
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-semibold text-slate-300">Recent cases</h3>
@@ -797,6 +904,26 @@ export const AetherCommandCenter: React.FC = () => {
                         ) : null}
                       </div>
                     ))}
+                  </div>
+                )}
+
+                {notifications.length > 0 && (
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+                    <div className="flex items-center justify-between gap-2">
+                      <h3 className="font-semibold">Workspace notifications</h3>
+                      <span className="text-[10px] text-slate-500">{notifications.length} recent</span>
+                    </div>
+                    <div className="mt-3 space-y-2">
+                      {notifications.map((notice) => (
+                        <div key={notice.id} className="rounded-lg border border-white/5 bg-black/10 p-2">
+                          <div className="flex justify-between gap-2 text-[10px]">
+                            <span className="text-slate-200">{notice.event_type}</span>
+                            <span className="text-slate-500">{notice.status}</span>
+                          </div>
+                          <p className="mt-1 text-[9px] text-slate-500">{notice.case_id || 'workspace'} · {notice.created_at || ''}</p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 
