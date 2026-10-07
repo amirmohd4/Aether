@@ -1,0 +1,53 @@
+name: Aether Deployed Smoke
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deployed-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      AETHER_API_URL: https://aether-backend-9laf.onrender.com
+      AETHER_FRONTEND_URL: https://aether-govos.netlify.app
+    steps:
+      - name: Wait for deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in {1..18}; do
+            health="$(curl -sS -o /tmp/health.json -w '%{http_code}' "$AETHER_API_URL/health" || true)"
+            ready="$(curl -sS -o /tmp/ready.json -w '%{http_code}' "$AETHER_API_URL/ready" || true)"
+            root="$(curl -sS -o /tmp/root.html -w '%{http_code}' "$AETHER_FRONTEND_URL/" || true)"
+            echo "attempt=$attempt health=$health ready=$ready frontend=$root"
+            if [ "$health" = "200" ] && [ "$ready" = "200" ] && [ "$root" = "200" ]; then
+              break
+            fi
+            sleep 10
+          done
+          test "$health" = "200"
+          test "$ready" = "200"
+          test "$root" = "200"
+
+      - name: Validate backend readiness
+        shell: bash
+        run: |
+          set -euo pipefail
+          jq -e '.status == "ready" and .database == "ready"' /tmp/ready.json
+
+      - name: Validate public release endpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          code="$(curl -sS -o /tmp/release.json -w '%{http_code}' "$AETHER_API_URL/api/aether/v2/release/readiness")"
+          test "$code" = "200"
+          jq -e '.status != null' /tmp/release.json
+
+      - name: Validate frontend HTML
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Eqi '<html|<title' /tmp/root.html
