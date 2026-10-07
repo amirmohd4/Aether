@@ -25,4 +25,4 @@ def test_understanding_does_not_guess_unknown_objective():
 
 def test_catalog_contains_all_mvp_services():
     from aether_core.service_registry import ServiceRegistry
-    assert len(ServiceRegistry().all()) == 33
+    assert len(ServiceRegistry().all()) == 34
