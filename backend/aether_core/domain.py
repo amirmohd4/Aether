@@ -58,6 +58,10 @@ class Case:
     exceptions: List[Dict[str, Any]] = field(default_factory=list)
     evidence: List[Dict[str, Any]] = field(default_factory=list)
     outcome: Optional[Dict[str, Any]] = None
+    service_id: Optional[str] = None
+    service_name: Optional[str] = None
+    service_department: Optional[str] = None
+    service_outcome: Optional[str] = None
     created_at: str = field(default_factory=now_iso)
     updated_at: str = field(default_factory=now_iso)
 
@@ -70,6 +74,10 @@ class Case:
             "case_id": self.case_id,
             "objective": self.objective,
             "customer_type": self.customer_type,
+            "service_id": self.service_id,
+            "service_name": self.service_name,
+            "service_department": self.service_department,
+            "service_outcome": self.service_outcome,
             "jurisdiction": self.jurisdiction,
             "status": self.status,
             "tasks_total": len(self.tasks),
