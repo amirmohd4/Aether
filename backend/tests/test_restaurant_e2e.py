@@ -19,7 +19,7 @@ def test_restaurant_full_vertical_slice_resumes_after_inspection_and_approval():
     case = engine.execute_until_pause(case.case_id)
     assert case.status == "waiting_for_human"
     assert case.tasks["inspection"].status == TaskStatus.HUMAN_REVIEW
-    assert case.tasks["final_approval"].status == TaskStatus.BLOCKED
+    assert case.tasks["final_approval"].status == TaskStatus.PENDING
 
     # Physical inspection is completed by an authorised human/field process.
     case = engine.complete_human_task(case.case_id, "inspection", "approved", "Inspection passed")
