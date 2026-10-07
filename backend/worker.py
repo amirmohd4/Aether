@@ -2,7 +2,10 @@ import os
 import threading
 import time
 
-from aether_core.worker_runtime import AetherWorkerRuntime
+try:
+    from backend.aether_core.worker_runtime import AetherWorkerRuntime
+except ModuleNotFoundError:
+    from aether_core.worker_runtime import AetherWorkerRuntime
 
 
 def run_background_worker() -> None:
