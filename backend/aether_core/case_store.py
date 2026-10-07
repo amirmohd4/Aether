@@ -92,17 +92,37 @@ class DatabaseCaseStore:
         if not tenant_id:
             raise ValueError("tenant_id is required for usage metering")
         self._ensure_schema()
-        row = AetherUsageRecord(
-            tenant_id=tenant_id,
-            case_id=case_id,
-            customer_type=customer_type,
-            event_type=event_type,
-            units=max(0, int(units)),
-            unit_type=unit_type,
-            created_at=datetime.utcnow(),
-            metadata_json=metadata or {},
-        )
         with SessionLocal() as db:
+            existing = None
+            if case_id:
+                existing = db.query(AetherUsageRecord).filter_by(
+                    tenant_id=tenant_id,
+                    case_id=case_id,
+                    event_type=event_type,
+                ).one_or_none()
+            if existing is not None:
+                return {
+                    "id": existing.id,
+                    "tenant_id": existing.tenant_id,
+                    "case_id": existing.case_id,
+                    "customer_type": existing.customer_type,
+                    "event_type": existing.event_type,
+                    "units": existing.units,
+                    "unit_type": existing.unit_type,
+                    "created_at": existing.created_at.isoformat(),
+                    "metadata": existing.metadata_json or {},
+                }
+
+            row = AetherUsageRecord(
+                tenant_id=tenant_id,
+                case_id=case_id,
+                customer_type=customer_type,
+                event_type=event_type,
+                units=max(0, int(units)),
+                unit_type=unit_type,
+                created_at=datetime.utcnow(),
+                metadata_json=metadata or {},
+            )
             db.add(row)
             db.commit()
             db.refresh(row)
