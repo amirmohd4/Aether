@@ -57,6 +57,7 @@ def test_source_backed_rule_pack_rejects_missing_effective_date():
             {
                 "rule_id": "RULE-001",
                 "title": "Missing effective date",
+                "service_id": "passport",
                 "requirement": "identity_document",
                 "authority_status": "source_backed",
                 "source_url": "https://gov.example/rule-001",
