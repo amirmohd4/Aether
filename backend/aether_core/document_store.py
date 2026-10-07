@@ -54,6 +54,8 @@ class DocumentStore:
         content: bytes,
         mime_type: str | None = None,
     ) -> StoredDocument:
+        if os.getenv("AETHER_ENV", "development").strip().lower() == "production" and not self._supabase_configured():
+            raise RuntimeError("Server-side Supabase document storage is required in production")
         if not content:
             raise ValueError("Document is empty")
         if len(content) > self._max_bytes():
