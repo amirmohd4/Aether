@@ -301,6 +301,7 @@ class DatabaseCaseStore:
         actor: str,
         data: Dict[str, Any] | None = None,
         previous_hash: str | None = None,
+        sequence: int | None = None,
         event_hash: str | None = None,
     ) -> Dict[str, Any]:
         self._ensure_schema()
@@ -315,6 +316,7 @@ class DatabaseCaseStore:
         }
         with SessionLocal() as db:
             row = AetherExecutionEventRecord(
+                sequence=sequence,
                 case_id=case_id,
                 action=action,
                 actor=actor,
@@ -338,7 +340,7 @@ class DatabaseCaseStore:
             ).order_by(AetherExecutionEventRecord.id.asc()).all()
             return [
                 {
-                    "sequence": row.id,
+                    "sequence": row.sequence if row.sequence is not None else row.id,
                     "timestamp": row.created_at.isoformat() if row.created_at else None,
                     "action": row.action,
                     "actor": row.actor,
