@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from threading import RLock
 from typing import Any, Dict, List
 
 
-def event(action: str, actor: str, case_id: str, data: Dict[str, Any] | None = None) -> Dict[str, Any]:
+def event(action: str, actor: str, case_id: str, data: Dict[str, Any] | None = None, sequence: int = 0) -> Dict[str, Any]:
     return {
+        "sequence": sequence,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "action": action,
         "actor": actor,
@@ -15,11 +17,18 @@ def event(action: str, actor: str, case_id: str, data: Dict[str, Any] | None = N
 
 
 class AuditTrail:
+    """Append-only in-process execution ledger; replace storage backend later."""
+
     def __init__(self):
         self.events: List[Dict[str, Any]] = []
+        self._lock = RLock()
 
     def record(self, action: str, actor: str, case_id: str, data: Dict[str, Any] | None = None):
-        self.events.append(event(action, actor, case_id, data))
+        with self._lock:
+            entry = event(action, actor, case_id, data, sequence=len(self.events) + 1)
+            self.events.append(entry)
+            return entry
 
     def for_case(self, case_id: str) -> List[Dict[str, Any]]:
-        return [e for e in self.events if e["case_id"] == case_id]
+        with self._lock:
+            return [e.copy() for e in self.events if e["case_id"] == case_id]
