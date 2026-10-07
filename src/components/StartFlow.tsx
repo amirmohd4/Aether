@@ -113,9 +113,9 @@ export const StartFlow: React.FC<StartFlowProps> = ({
 
   const executionSteps = [
     { title: "National ID & Identity Authentication", detail: `Verifying ${countryConfig.id_system.name}...` },
-    { title: "Sovereign Registry Ledger Audit", detail: `Querying ${countryConfig.country_name} Ministry Database...` },
-    { title: "AI Land & Fraud Risk Scoring", detail: "Checking zero-knowledge encumbrance records (0% Risk)..." },
-    { title: "e-Deed & Seal Generation", detail: "Recording cryptographic transaction block..." }
+    { title: "Government-system simulation", detail: `Querying ${countryConfig.country_name} Ministry Database...` },
+    { title: "AI Land & Fraud Risk Scoring", detail: "Checking simulated property/record evidence..." },
+    { title: "Simulated outcome packaging", detail: "Recording simulated audit event..." }
   ];
 
   return (
@@ -141,8 +141,8 @@ export const StartFlow: React.FC<StartFlowProps> = ({
                 {step === 'search' && 'Step 1 of 4: Search & Select Service'}
                 {step === 'country_state' && 'Step 2 of 4: Select Country & Region'}
                 {step === 'id_entry' && 'Step 3 of 4: Enter Sovereign ID'}
-                {step === 'processing' && 'Step 4 of 4: Autonomous Processing'}
-                {step === 'completed' && 'Service Issued Successfully'}
+                {step === 'processing' && 'Step 4 of 4: Simulated case execution'}
+                {step === 'completed' && 'Demo case completed'}
               </p>
             </div>
           </div>
@@ -268,7 +268,7 @@ export const StartFlow: React.FC<StartFlowProps> = ({
                 onClick={() => setStep('id_entry')}
                 className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-black text-sm shadow-xl shadow-emerald-500/20 hover:scale-[1.01] transition-transform flex items-center justify-center gap-2"
               >
-                <span>Continue to Sovereign ID Verification</span>
+                <span>Continue to identity details</span>
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
@@ -328,7 +328,7 @@ export const StartFlow: React.FC<StartFlowProps> = ({
                   />
                 </div>
                 <p className="text-[10px] text-slate-500">
-                  Encrypted end-to-end with W3C Verifiable Credentials & Zero-Knowledge Proofs.
+                  Demo only: no government identity system is contacted.
                 </p>
               </div>
 
@@ -339,7 +339,7 @@ export const StartFlow: React.FC<StartFlowProps> = ({
                 className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-black text-sm shadow-xl shadow-emerald-500/20 hover:scale-[1.01] transition-transform flex items-center justify-center gap-2"
               >
                 <Sparkles className="w-4 h-4" />
-                <span>Process & Issue Service Instant</span>
+                <span>Run simulated case</span>
               </button>
             </form>
           )}
@@ -355,7 +355,7 @@ export const StartFlow: React.FC<StartFlowProps> = ({
               </div>
 
               <div>
-                <h3 className="text-xl font-black text-white">Autonomous Service Processing</h3>
+                <h3 className="text-xl font-black text-white">Simulated Aether Processing</h3>
                 <p className="text-xs text-slate-400 mt-1">Executing cross-department digital workflow in {countryConfig.country_name}...</p>
               </div>
 
@@ -410,13 +410,13 @@ export const StartFlow: React.FC<StartFlowProps> = ({
 
               <div>
                 <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-950 px-3 py-1 rounded-full border border-emerald-800">
-                  Official Sovereign Document Issued
+                  Simulated Government Output
                 </span>
                 <h3 className="text-2xl font-black text-white mt-2">
-                  {selectedService.name} Certificate
+                  {selectedService.name} — simulated outcome
                 </h3>
                 <p className="text-xs text-slate-400 mt-1">
-                  Issued under authority of {countryConfig.country_name} Ministry of Digital Affairs.
+                  No official government document is issued by this demo.
                 </p>
               </div>
 
@@ -443,8 +443,8 @@ export const StartFlow: React.FC<StartFlowProps> = ({
                     <span className="font-bold text-white">{selectedState || 'Federal Central Registry'}</span>
                   </div>
                   <div>
-                    <span className="text-slate-500 text-[10px] uppercase block">Verification Hash</span>
-                    <span className="font-mono text-[10px] text-emerald-400">0x8f2a...e491</span>
+                    <span className="text-slate-500 text-[10px] uppercase block">Demo reference</span>
+                    <span className="font-mono text-[10px] text-emerald-400">SIMULATED</span>
                   </div>
                   <div>
                     <span className="text-slate-500 text-[10px] uppercase block">Timestamp</span>
@@ -456,11 +456,11 @@ export const StartFlow: React.FC<StartFlowProps> = ({
               <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   id="btn-download-cert"
-                  onClick={() => alert("Downloading official cryptographic digital certificate (PDF + W3C VC)...")}
+                  onClick={() => alert("This MVP does not issue an official government certificate.")}
                   className="flex-1 py-3 px-4 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 hover:bg-emerald-400 transition-colors shadow-lg shadow-emerald-500/20"
                 >
                   <Download className="w-4 h-4" />
-                  <span>Download Official Certificate</span>
+                  <span>View simulated outcome</span>
                 </button>
 
                 <button
