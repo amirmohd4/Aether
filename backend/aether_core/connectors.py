@@ -154,6 +154,13 @@ class ConfiguredHTTPConnector(GovernmentConnector):
             headers["Idempotency-Key"] = idempotency_key
         return headers
 
+    def configuration_valid(self) -> bool:
+        """Return whether this adapter has enough configuration to make calls safely."""
+        return (
+            self.base_url.startswith("https://")
+            and bool(self.bearer_token)
+        )
+
     def authenticate(self) -> Dict[str, Any]:
         # The upstream system may use a long-lived service credential or a
         # short-lived gateway token. Authentication is kept outside case logic.
@@ -162,6 +169,7 @@ class ConfiguredHTTPConnector(GovernmentConnector):
             "department": self.department,
             "base_url": self.base_url,
             "credential_present": bool(self.bearer_token),
+            "configuration_valid": self.configuration_valid(),
         }
 
     def submit(
