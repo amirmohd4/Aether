@@ -1,5 +1,5 @@
 from aether_core.connector_registry import ConnectorRegistry
-from aether_core.connectors import SyntheticConnector
+from aether_core.connectors import ConfiguredHTTPConnector, SyntheticConnector
 from aether_core.synthetic_government import SyntheticGovernmentSystem
 
 
@@ -34,8 +34,10 @@ def test_configured_http_connector_uses_stable_request_contract(monkeypatch):
     class FakeResponse:
         def __init__(self, payload):
             self.payload = payload
+
         def raise_for_status(self):
             return None
+
         def json(self):
             return self.payload
 
