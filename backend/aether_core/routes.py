@@ -424,7 +424,18 @@ def upload_case_document(
                 detail=f"Document type is not required for this case: {document_type}",
             )
 
-        content = file.file.read()
+        max_bytes = document_store._max_bytes()
+        if getattr(file, "size", None) and file.size > max_bytes:
+            raise HTTPException(
+                status_code=413,
+                detail="Document exceeds the configured upload limit",
+            )
+        content = file.file.read(max_bytes + 1)
+        if len(content) > max_bytes:
+            raise HTTPException(
+                status_code=413,
+                detail="Document exceeds the configured upload limit",
+            )
         stored = document_store.save(
             case_id=case_id,
             tenant_id=case.tenant_id or principal.tenant_id,
