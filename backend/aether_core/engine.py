@@ -268,6 +268,12 @@ class AetherExecutionEngine:
                     operation=operation,
                     payload={
                         **case.inputs,
+                        "task_results": {
+                            task_id: state.result
+                            for task_id, state in case.tasks.items()
+                            if state.result is not None
+                        },
+                        "case_exceptions": list(case.exceptions),
                         "service_id": case.service_id,
                         "service_outcome": case.service_outcome,
                         "jurisdiction": case.jurisdiction,
