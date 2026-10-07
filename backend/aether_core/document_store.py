@@ -4,6 +4,7 @@ import base64
 import hashlib
 import mimetypes
 import os
+import re
 from dataclasses import dataclass, asdict
 from pathlib import Path
 from typing import Any, Dict, List
@@ -63,7 +64,11 @@ class DocumentStore:
             raise ValueError("Document exceeds the configured upload limit")
 
         document_id = f"DOC-{uuid4().hex[:16].upper()}"
-        safe_name = Path(filename or "document").name
+        safe_name = re.sub(
+            r'[\r\n"]',
+            "_",
+            Path(filename or "document").name,
+        )
         resolved_mime = mime_type or mimetypes.guess_type(safe_name)[0] or "application/octet-stream"
         allowed = {
             item.strip() for item in os.getenv(
@@ -74,6 +79,16 @@ class DocumentStore:
         }
         if resolved_mime not in allowed:
             raise ValueError(f"Unsupported document type: {resolved_mime}")
+
+        signature_checks = {
+            "application/pdf": lambda body: body.lstrip().startswith(b"%PDF-"),
+            "image/png": lambda body: body.startswith(b"\x89PNG\r\n\x1a\n"),
+            "image/jpeg": lambda body: body.startswith(b"\xff\xd8\xff"),
+        }
+        checker = signature_checks.get(resolved_mime)
+        if checker is not None and not checker(content):
+            raise ValueError(f"File signature does not match declared MIME type: {resolved_mime}")
+
         digest = hashlib.sha256(content).hexdigest()
         storage_key = f"{tenant_id or 'unscoped'}/{case_id}/{document_id}-{safe_name}"
 
