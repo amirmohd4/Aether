@@ -16,4 +16,4 @@ COPY scripts /app/scripts
 
 EXPOSE 8081
 
-CMD ["python", "backend/worker.py"]
+CMD ["python", "-m", "backend.worker"]
