@@ -27,7 +27,8 @@ def main() -> int:
         ("marketplace", "/api/aether/v2/marketplace", 200, True),
         ("connector catalog", "/api/aether/v2/connectors", 200, True),
         ("rule readiness", "/api/aether/v2/rules/readiness", 200, True),
-        ("release readiness", "/api/aether/v2/release/readiness", 200, False),
+        # release/readiness is on the authenticated V2 router.
+        ("release readiness", "/api/aether/v2/release/readiness", 200, True),
     ]
 
     failures = []
