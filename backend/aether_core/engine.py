@@ -173,8 +173,39 @@ class AetherExecutionEngine:
                 "lack authoritative, effective-dated rule provenance."
             )
 
-    def execute_until_pause(self, case_id: str) -> Case:
+    def execute_until_pause(
+        self,
+        case_id: str,
+        lease_owner: str | None = None,
+        lease_seconds: int = 300,
+    ) -> Case:
         case = self.get_case(case_id)
+        if lease_owner and not self.store.try_claim_case(
+            case_id,
+            lease_owner,
+            lease_seconds=lease_seconds,
+        ):
+            raise RuntimeError("Case is currently leased by another worker")
+        try:
+            self._execute_until_pause_locked(
+                case_id,
+                lease_owner=lease_owner,
+                lease_seconds=lease_seconds,
+            )
+        finally:
+            if lease_owner:
+                self.store.release_case(case_id, lease_owner)
+        return self.get_case(case_id)
+
+    def _execute_until_pause_locked(
+        self,
+        case_id: str,
+        lease_owner: str | None = None,
+        lease_seconds: int = 300,
+    ) -> Case:
+        case = self.get_case(case_id)
+        if lease_owner and not self.store.heartbeat_case(case_id, lease_owner, lease_seconds):
+            raise RuntimeError("Case lease could not be established")
         self._production_rule_guard(case)
         self.queue.reclaim_expired(case_id)
         self._recover_task_states(case)
@@ -302,6 +333,8 @@ class AetherExecutionEngine:
 
             case.updated_at = now_iso()
             self.store.put(case)
+            if lease_owner and not self.store.heartbeat_case(case.case_id, lease_owner, lease_seconds):
+                raise RuntimeError("Case lease was lost during execution")
             return case
 
     def _execute_task(self, case: Case, task: TaskState, queue_id: int | None = None) -> None:
