@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 import logging
 import os
 import time
@@ -47,7 +48,6 @@ async def platform_hardening(request, call_next):
     while bucket and now - bucket[0] >= 60:
         bucket.popleft()
     if production and len(bucket) >= limit:
-        from fastapi.responses import JSONResponse
         return JSONResponse(
             status_code=429,
             content={"detail": "Rate limit exceeded", "request_id": request_id},
@@ -113,4 +113,13 @@ async def readiness_check():
             connection.exec_driver_sql("SELECT 1")
         return {"status": "ready", "database": "ready", "aether_core": "ready"}
     except Exception as exc:
-        return {"status": "not_ready", "database": "unavailable", "error": type(exc).__name__}
+        logger.warning("Aether readiness check failed: %s", type(exc).__name__)
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "not_ready",
+                "database": "unavailable",
+                "aether_core": "ready",
+                "error": type(exc).__name__,
+            },
+        )
