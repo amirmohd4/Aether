@@ -15,7 +15,7 @@ if not DATABASE_URL:
     )
 else:
     # Use PostgreSQL (Supabase) - no special connect_args needed
-    engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+    engine = create_engine(DATABASE_URL, pool_pre_ping=True, connect_args={"connect_timeout": 5})
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
