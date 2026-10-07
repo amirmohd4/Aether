@@ -138,6 +138,11 @@ export const AetherCommandCenter: React.FC = () => {
   const [apiKeys, setApiKeys] = useState<Array<{ key_prefix: string; role: string; scopes: string[]; status: string; created_at?: string | null }>>([]);
   const [newApiKey, setNewApiKey] = useState('');
   const [notifications, setNotifications] = useState<Array<{ id: number; event_type: string; case_id?: string | null; status: string; created_at?: string | null }>>([]);
+  const [marketplace, setMarketplace] = useState<Array<{ service_id: string; name: string; department: string; outcome: string; sandbox: boolean }>>([]);
+  const [analytics, setAnalytics] = useState<{ case_count: number; completion_rate: number; human_actions_pending: number; exceptions: number } | null>(null);
+  const [payments, setPayments] = useState<Array<{ payment_id: string; amount_minor: number; currency: string; provider: string; status: string; created_at?: string | null }>>([]);
+  const [paymentAmount, setPaymentAmount] = useState('0');
+  const [paymentMessage, setPaymentMessage] = useState('');
   const [principal, setPrincipal] = useState<Principal | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -185,12 +190,28 @@ export const AetherCommandCenter: React.FC = () => {
           const notificationBody = await notificationResponse.json();
           setNotifications((notificationBody.notifications || []).slice(0, 6));
         }
+
+        const marketplaceResponse = await fetch(API_BASE + '/api/aether/v2/marketplace', {
+          headers: authHeaders(),
+        });
+        if (marketplaceResponse.ok) {
+          const marketplaceBody = await marketplaceResponse.json();
+          setMarketplace((marketplaceBody.apis || []).slice(0, 12));
+        }
       }
 
       const operator = ['officer', 'department_admin', 'admin'].includes(body.role.toLowerCase());
       if (!operator) {
         setOfficerQueue([]);
+        setAnalytics(null);
         return;
+      }
+
+      const analyticsResponse = await fetch(API_BASE + '/api/aether/v2/analytics', {
+        headers: authHeaders(),
+      });
+      if (analyticsResponse.ok) {
+        setAnalytics(await analyticsResponse.json());
       }
 
       const queueResponse = await fetch(
@@ -404,6 +425,7 @@ export const AetherCommandCenter: React.FC = () => {
       if (!response.ok) throw new Error(body.detail || `Document submission returned ${response.status}`);
       setCaseData(body);
       setMissingDocuments(body.missing_documents || []);
+      await loadPayments(caseData.summary.case_id);
       setSelectedDocuments([]);
       setIntakeNotice(
         body.status === 'needs_documents'
@@ -429,8 +451,54 @@ export const AetherCommandCenter: React.FC = () => {
       if (!response.ok) throw new Error(body.detail || `Case returned ${response.status}`);
       setCaseData(body);
       setUnderstanding(body.understanding || null);
+      await loadPayments(caseId);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to reopen case');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function loadPayments(caseId: string) {
+    try {
+      const response = await fetch(
+        API_BASE + '/api/aether/v2/cases/' + caseId + '/payments',
+        { headers: authHeaders() }
+      );
+      if (!response.ok) return;
+      const body = await response.json();
+      setPayments(body.payments || []);
+    } catch {
+      // Payment history is optional for the active case.
+    }
+  }
+
+  async function createPayment() {
+    if (!caseData) return;
+    const amount = Math.round(Number(paymentAmount) * 100);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setPaymentMessage('Enter a positive INR amount.');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    setPaymentMessage('');
+    try {
+      const key = caseData.summary.case_id + ':mvp-payment:' + amount;
+      const response = await fetch(
+        API_BASE + '/api/aether/v2/cases/' + caseData.summary.case_id
+          + '/payments?amount_minor=' + amount
+          + '&currency=INR&idempotency_key=' + encodeURIComponent(key),
+        { method: 'POST', headers: authHeaders() }
+      );
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.detail || 'Payment creation failed');
+      setPaymentMessage(
+        'Payment ' + body.status + ' via ' + body.provider + ' · ' + body.payment_id
+      );
+      await loadPayments(caseData.summary.case_id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to create payment');
     } finally {
       setLoading(false);
     }
@@ -687,6 +755,37 @@ export const AetherCommandCenter: React.FC = () => {
               </div>
             )}
 
+            {marketplace.length > 0 && (
+              <div className="mt-6 border-t border-white/10 pt-5">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-semibold text-slate-300">Developer API marketplace</h3>
+                  <span className="text-[9px] text-cyan-200/70">{marketplace.length} services</span>
+                </div>
+                <div className="mt-2 space-y-2">
+                  {marketplace.slice(0, 5).map((api) => (
+                    <div key={api.service_id} className="rounded-lg border border-white/5 bg-black/10 p-2">
+                      <div className="truncate text-[10px] font-medium text-slate-200">{api.name}</div>
+                      <div className="mt-1 text-[8px] text-slate-500">{api.department} · sandbox API · {api.outcome}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {analytics && (
+              <div className="mt-6 border-t border-white/10 pt-5">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-semibold text-slate-300">Officer analytics</h3>
+                  <span className="text-[9px] text-slate-500">{analytics.case_count} cases</span>
+                </div>
+                <div className="mt-2 grid grid-cols-3 gap-2 text-[9px]">
+                  <div className="rounded-lg bg-black/10 p-2"><span className="text-slate-500">Complete</span><div className="mt-1 font-bold text-cyan-200">{analytics.completion_rate}%</div></div>
+                  <div className="rounded-lg bg-black/10 p-2"><span className="text-slate-500">Human</span><div className="mt-1 font-bold text-violet-200">{analytics.human_actions_pending}</div></div>
+                  <div className="rounded-lg bg-black/10 p-2"><span className="text-slate-500">Exceptions</span><div className="mt-1 font-bold text-amber-200">{analytics.exceptions}</div></div>
+                </div>
+              </div>
+            )}
+
             <div className="mt-6 border-t border-white/10 pt-5">
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-semibold text-slate-300">Recent cases</h3>
@@ -906,6 +1005,46 @@ export const AetherCommandCenter: React.FC = () => {
                     ))}
                   </div>
                 )}
+
+                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <h3 className="font-semibold">Payments</h3>
+                      <p className="mt-1 text-xs text-slate-500">
+                        Controlled-MVP payment ledger. Live fees/providers are configured externally.
+                      </p>
+                    </div>
+                    <span className="text-[10px] text-slate-500">{payments.length} recorded</span>
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <input
+                      inputMode="decimal"
+                      value={paymentAmount}
+                      onChange={(e) => setPaymentAmount(e.target.value)}
+                      placeholder="Amount in INR"
+                      className="w-40 rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs"
+                    />
+                    <button
+                      onClick={createPayment}
+                      disabled={loading}
+                      className="rounded-lg border border-emerald-300/20 bg-emerald-300/10 px-3 py-2 text-xs font-bold text-emerald-100 disabled:opacity-50"
+                    >
+                      Create payment
+                    </button>
+                  </div>
+                  {paymentMessage && <p className="mt-2 text-[10px] text-emerald-200">{paymentMessage}</p>}
+                  {payments.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      {payments.slice(0, 5).map((payment) => (
+                        <div key={payment.payment_id} className="flex items-center justify-between rounded-lg border border-white/5 bg-black/10 p-2 text-[10px]">
+                          <span className="font-mono text-slate-300">{payment.payment_id}</span>
+                          <span className="text-slate-400">{(payment.amount_minor / 100).toFixed(2)} {payment.currency}</span>
+                          <span className="text-cyan-200">{payment.status}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 {notifications.length > 0 && (
                   <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
