@@ -2,6 +2,12 @@
   command = "npm ci && npm run build"
   publish = "dist"
 
+[build.environment]
+  VITE_API_URL = "https://aether-backend-9laf.onrender.com"
+  VITE_SUPABASE_URL = "https://lekudqjewxxunqjuqayi.supabase.co"
+  VITE_SUPABASE_ANON_KEY = "sb_publishable_1zr-O35OIeQVgBfnAVnXaQ_AewTZBqI"
+  VITE_REQUIRE_AUTH = "true"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
