@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import hmac
 import os
 from typing import Optional
@@ -18,6 +18,8 @@ class Principal:
     role: str
     tenant_id: Optional[str]
     auth_mode: str
+    department: Optional[str] = None
+    jurisdiction: dict = field(default_factory=dict)
 
 
 def auth_mode() -> str:
@@ -73,7 +75,7 @@ def _supabase_principal(request: Request) -> Principal:
         with SessionLocal() as db:
             row = db.execute(
                 text(
-                    "SELECT role, tenant_id FROM public.aether_memberships "
+                    "SELECT role, tenant_id, department, jurisdiction FROM public.aether_memberships "
                     "WHERE user_id = :user_id AND status = 'active' LIMIT 1"
                 ),
                 {"user_id": subject},
@@ -89,6 +91,8 @@ def _supabase_principal(request: Request) -> Principal:
         role=str(row["role"]),
         tenant_id=str(row["tenant_id"]) if row["tenant_id"] is not None else None,
         auth_mode="supabase",
+        department=str(row["department"]) if row["department"] else None,
+        jurisdiction=row["jurisdiction"] or {},
     )
 
 
