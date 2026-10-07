@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
+import hashlib
+import secrets
 
 from .api_models import DocumentSubmissionRequest, HumanDecisionRequest, StartCaseRequest
 from .engine import engine
 from .requirements_engine import RequirementEngine
 from .rule_registry import RuleRegistry
 from .verification import VerificationEngine
-from .security import Principal, require_principal, require_role
+from .security import Principal, require_principal, require_role, require_scope
 from .understanding import ObjectiveUnderstandingEngine
 from .document_store import DocumentStore, document_summary
 from .notifications import NotificationService
@@ -180,6 +182,86 @@ def rules_readiness():
         "production_legal_coverage_complete": False,
         "note": "Aether blocks no service because baseline metadata is explicitly non-authoritative; production execution must use verified, effective-dated rules for the target jurisdiction."
     }
+
+
+@router.post("/api-keys")
+def create_api_key(data: Dict[str, Any] | None = None, principal: Principal = Depends(require_principal)):
+    """Create one tenant-scoped developer key; the raw secret is returned once."""
+    if principal.auth_mode == "none":
+        tenant_id = principal.tenant_id or "demo"
+    else:
+        tenant_id = principal.tenant_id
+        if principal.role.lower() not in {"admin", "developer", "business", "bank", "enterprise", "insurer"}:
+            raise HTTPException(status_code=403, detail="This role cannot create API keys")
+    if not tenant_id:
+        raise HTTPException(status_code=403, detail="Active tenant is required")
+
+    data = data or {}
+    role = str(data.get("role", "service")).lower()
+    scopes = data.get("scopes") or ["cases:read", "cases:write"]
+    if not isinstance(scopes, list) or not all(isinstance(scope, str) for scope in scopes):
+        raise HTTPException(status_code=400, detail="scopes must be a list of strings")
+    allowed_scopes = {"cases:read", "cases:write", "documents:read", "documents:write", "payments:read", "payments:write", "analytics:read"}
+    if any(scope not in allowed_scopes for scope in scopes):
+        raise HTTPException(status_code=400, detail="Unsupported API scope")
+
+    raw_key = "aether_" + secrets.token_urlsafe(32)
+    key_prefix = raw_key[:20]
+    key_hash = hashlib.sha256(raw_key.encode("utf-8")).hexdigest()
+
+    try:
+        from datetime import datetime, timedelta
+        with SessionLocal() as db:
+            from .persistence_models import AetherApiKeyRecord
+            row = AetherApiKeyRecord(
+                tenant_id=tenant_id,
+                key_prefix=key_prefix,
+                key_hash=key_hash,
+                role=role,
+                scopes=scopes,
+                status="active",
+                created_at=datetime.utcnow(),
+                expires_at=(
+                    datetime.utcnow() + timedelta(days=int(data["expires_in_days"]))
+                    if data.get("expires_in_days") else None
+                ),
+            )
+            db.add(row)
+            db.commit()
+        return {
+            "key": raw_key,
+            "key_prefix": key_prefix,
+            "tenant_id": tenant_id,
+            "role": role,
+            "scopes": scopes,
+            "warning": "Store the raw API key now; Aether never returns it again.",
+        }
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="API key store unavailable") from exc
+
+
+@router.get("/api-keys")
+def list_api_keys(principal: Principal = Depends(require_principal)):
+    if not principal.tenant_id:
+        raise HTTPException(status_code=403, detail="Active tenant is required")
+    try:
+        from .persistence_models import AetherApiKeyRecord
+        with SessionLocal() as db:
+            rows = db.query(AetherApiKeyRecord).filter(
+                AetherApiKeyRecord.tenant_id == principal.tenant_id
+            ).order_by(AetherApiKeyRecord.created_at.desc()).all()
+            return {"keys": [{
+                "key_prefix": row.key_prefix,
+                "tenant_id": row.tenant_id,
+                "role": row.role,
+                "scopes": row.scopes or [],
+                "status": row.status,
+                "created_at": row.created_at.isoformat() if row.created_at else None,
+                "expires_at": row.expires_at.isoformat() if row.expires_at else None,
+                "last_used_at": row.last_used_at.isoformat() if row.last_used_at else None,
+            } for row in rows]}
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="API key store unavailable") from exc
 
 
 @router.get("/admin/memberships")
@@ -433,6 +515,8 @@ def _authorize_case(case, principal: Principal) -> None:
         return
     same_owner = case.owner_user_id and case.owner_user_id == principal.subject
     same_tenant = case.tenant_id and principal.tenant_id and case.tenant_id == principal.tenant_id
+    if principal.auth_mode == "api_key" and same_tenant:
+        return
     if principal.role.lower() in {"officer", "department_admin"} and same_tenant:
         if principal.department and case.service_department:
             if principal.department.lower() != case.service_department.lower():
