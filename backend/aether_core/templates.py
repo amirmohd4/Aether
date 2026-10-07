@@ -298,9 +298,17 @@ TEMPLATES = {
 
 
 def infer_template(objective: str, customer_type: str, service: ServiceDefinition | None = None) -> str:
-    if service:
-        return service.template or "generic"
     text = f"{objective} {customer_type}".lower()
+    # Templates are only selected when the objective actually supports the
+    # specialized workflow. A service being related to a domain is not enough;
+    # this prevents a simple trade licence or property registration request
+    # from silently becoming a restaurant/project workflow.
+    if service and service.template == "restaurant":
+        return "restaurant" if any(x in text for x in ["restaurant", "cafe", "food business", "food license", "fssai"]) else "generic"
+    if service and service.template == "property_loan":
+        return "property_loan" if any(x in text for x in ["loan", "lender", "mortgage", "bank"]) else "generic"
+    if service and service.template == "commercial_project":
+        return "commercial_project" if any(x in text for x in ["project", "factory", "construction", "developer"]) else "generic"
     if any(x in text for x in ["restaurant", "cafe", "food business"]):
         return "restaurant"
     if any(x in text for x in ["loan", "lender", "mortgage", "bank"]):
