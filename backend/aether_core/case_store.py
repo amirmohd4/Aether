@@ -35,14 +35,19 @@ class DatabaseCaseStore:
         with self._schema_lock:
             if self._schema_ready:
                 return
-            if engine.dialect.name == "postgresql":
-                with engine.begin() as connection:
-                    connection.execute(text("CREATE SCHEMA IF NOT EXISTS aether_internal"))
 
-            # Never bootstrap the entire application's legacy SQLAlchemy
-            # metadata from the execution-core repository. The MVP runtime only
-            # owns its private case/event/task tables; all other schemas are
-            # migrated independently and must not be recreated on startup.
+            # PostgreSQL/Supabase is migration-managed. Runtime identities are
+            # intentionally not granted CREATE privileges on the database/schema.
+            # Never perform DDL from a request or worker process in staging/prod.
+            if engine.dialect.name == "postgresql":
+                with engine.connect() as connection:
+                    connection.execute(text("SELECT 1"))
+                    connection.commit()
+                self._schema_ready = True
+                return
+
+            # SQLite is used for local development and CI, where runtime schema
+            # bootstrap keeps the local developer experience self-contained.
             for model in (
                 AetherCaseRecord,
                 AetherExecutionEventRecord,
