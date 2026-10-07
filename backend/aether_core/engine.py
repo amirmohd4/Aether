@@ -48,6 +48,8 @@ class AetherExecutionEngine:
         customer_type: str,
         jurisdiction: Dict[str, str],
         inputs: Dict[str, Any] | None = None,
+        owner_user_id: str | None = None,
+        tenant_id: str | None = None,
     ) -> Case:
         service = self.services.resolve(objective, customer_type)
         template = infer_template(objective, customer_type, service)
@@ -77,6 +79,8 @@ class AetherExecutionEngine:
             inputs=enriched_inputs,
             requirements=requirements,
             tasks=tasks,
+            owner_user_id=owner_user_id,
+            tenant_id=tenant_id,
             service_id=service.id if service else None,
             service_name=service.name if service else None,
             service_department=service.department if service else None,
