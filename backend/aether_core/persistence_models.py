@@ -61,3 +61,18 @@ class AetherTaskQueueRecord(Base):
 
 def utc_datetime() -> datetime:
     return datetime.utcnow()
+
+
+class AetherUsageRecord(Base):
+    __tablename__ = "aether_v2_usage"
+    __table_args__ = {"schema": PERSISTENCE_SCHEMA}
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    tenant_id = Column(String(128), nullable=False, index=True)
+    case_id = Column(String(64), nullable=True, index=True)
+    customer_type = Column(String(64), nullable=True, index=True)
+    event_type = Column(String(64), nullable=False, index=True)
+    units = Column(Integer, nullable=False, default=1)
+    unit_type = Column(String(32), nullable=False, default="case")
+    created_at = Column(DateTime(timezone=True), nullable=False)
+    metadata_json = Column(JSON, nullable=False, default=dict)
