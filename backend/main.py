@@ -49,12 +49,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(billing_router, prefix="/api/billing", tags=["Billing"])
-app.include_router(property_router)
-app.include_router(workflow_router, prefix="/api/workflow", tags=["Workflow"])
-app.include_router(fraud_router, prefix="/api/fraud", tags=["Fraud"])
-app.include_router(water_router, prefix="/api/water-connection", tags=["Water Connection"])
-app.include_router(aether_router, prefix="/api/aether", tags=["Aether Execution"])
+legacy_api_enabled = os.getenv(
+    "AETHER_ENABLE_LEGACY_API",
+    "false" if os.getenv("AETHER_ENV", "development").strip().lower() == "production" else "true",
+).strip().lower() == "true"
+
+if legacy_api_enabled:
+    app.include_router(billing_router, prefix="/api/billing", tags=["Billing"])
+    app.include_router(property_router)
+    app.include_router(workflow_router, prefix="/api/workflow", tags=["Workflow"])
+    app.include_router(fraud_router, prefix="/api/fraud", tags=["Fraud"])
+    app.include_router(water_router, prefix="/api/water-connection", tags=["Water Connection"])
+    app.include_router(aether_router, prefix="/api/aether", tags=["Aether Execution"])
+
 app.include_router(aether_v2_router)
 
 
