@@ -182,14 +182,24 @@ class DatabaseCaseStore:
                 raise KeyError(case_id)
             return self._deserialize_case(row.payload)
 
-    def append_event(self, case_id: str, action: str, actor: str, data: Dict[str, Any] | None = None) -> Dict[str, Any]:
+    def append_event(
+        self,
+        case_id: str,
+        action: str,
+        actor: str,
+        data: Dict[str, Any] | None = None,
+        previous_hash: str | None = None,
+        event_hash: str | None = None,
+    ) -> Dict[str, Any]:
         self._ensure_schema()
         entry = {
-            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "action": action,
             "actor": actor,
             "case_id": case_id,
             "data": data or {},
+            "previous_hash": previous_hash,
+            "event_hash": event_hash,
         }
         with SessionLocal() as db:
             row = AetherExecutionEventRecord(
@@ -199,6 +209,8 @@ class DatabaseCaseStore:
                 tenant_id=self._case_tenant(case_id),
                 created_at=datetime.utcnow(),
                 data=entry["data"],
+                previous_hash=previous_hash,
+                event_hash=event_hash or "",
             )
             db.add(row)
             db.flush()
@@ -220,6 +232,8 @@ class DatabaseCaseStore:
                     "actor": row.actor,
                     "case_id": row.case_id,
                     "data": row.data or {},
+                    "previous_hash": row.previous_hash,
+                    "event_hash": row.event_hash,
                 }
                 for row in rows
             ]
