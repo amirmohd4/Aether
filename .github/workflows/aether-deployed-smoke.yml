@@ -21,16 +21,18 @@ jobs:
           for attempt in {1..18}; do
             health="$(curl -sS -o /tmp/health.json -w '%{http_code}' "$AETHER_API_URL/health" || true)"
             ready="$(curl -sS -o /tmp/ready.json -w '%{http_code}' "$AETHER_API_URL/ready" || true)"
-            root="$(curl -sS -o /tmp/root.html -w '%{http_code}' "$AETHER_FRONTEND_URL/" || true)"
-            echo "attempt=$attempt health=$health ready=$ready frontend=$root"
-            if [ "$health" = "200" ] && [ "$ready" = "200" ] && [ "$root" = "200" ]; then
+            backend="$(curl -sS -o /tmp/backend.json -w '%{http_code}' "$AETHER_API_URL/" || true)"
+            frontend="$(curl -sS -o /tmp/frontend.html -w '%{http_code}' "$AETHER_FRONTEND_URL/" || true)"
+            echo "attempt=$attempt health=$health ready=$ready backend=$backend frontend=$frontend"
+            if [ "$health" = "200" ] && [ "$ready" = "200" ] && [ "$backend" = "200" ] && [ "$frontend" = "200" ]; then
               break
             fi
             sleep 10
           done
           test "$health" = "200"
           test "$ready" = "200"
-          test "$root" = "200"
+          test "$backend" = "200"
+          test "$frontend" = "200"
 
       - name: Validate backend readiness
         shell: bash
@@ -42,10 +44,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          jq -e '.service == "Aether GovOS" and .status == "running"' /tmp/health.json
+          jq -e '.service == "Aether GovOS" and .status == "running"' /tmp/backend.json
 
       - name: Validate frontend HTML
         shell: bash
         run: |
           set -euo pipefail
-          grep -Eqi '<html|<title' /tmp/root.html
+          grep -Eqi '<html|<title' /tmp/frontend.html
