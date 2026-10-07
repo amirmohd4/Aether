@@ -17,17 +17,30 @@ rule_registry = RuleRegistry()
 verification_engine = VerificationEngine()
 
 
-def serialize(case):
+def serialize(case, include_tasks: bool = True):
     understanding = understanding_engine.understand(
         case.objective,
         case.customer_type,
         case.jurisdiction,
     )
-    return {
+    response = {
         "summary": case.summary(),
         "understanding": understanding.as_dict(),
         "requirements": case.requirements,
-        "tasks": {
+        "human_actions": case.human_actions,
+        "exceptions": case.exceptions,
+        "evidence": case.evidence,
+        "outcome": case.outcome,
+        "verification": verification_engine.reconcile({
+            task_id: task.result
+            for task_id, task in case.tasks.items()
+            if task.result
+        }).as_dict(),
+        "queue": engine.queue.for_case(case.case_id),
+        "execution_events": case.execution_events[-50:],
+    }
+    if include_tasks:
+        response["tasks"] = {
             task_id: {
                 "name": state.definition.name,
                 "department": state.definition.department,
@@ -43,19 +56,8 @@ def serialize(case):
                 "idempotency_key": state.idempotency_key,
             }
             for task_id, state in case.tasks.items()
-        },
-        "human_actions": case.human_actions,
-        "exceptions": case.exceptions,
-        "evidence": case.evidence,
-        "outcome": case.outcome,
-        "verification": verification_engine.reconcile({
-            task_id: task.result
-            for task_id, task in case.tasks.items()
-            if task.result
-        }).as_dict(),
-        "queue": engine.queue.for_case(case.case_id),
-        "execution_events": case.execution_events[-50:],
-    }
+        }
+    return response
 
 
 @router.get("/connectors")
@@ -71,10 +73,7 @@ def connector_catalog():
 def usage_summary(
     principal: Principal = Depends(require_principal),
 ):
-    if principal.auth_mode == "none":
-        tenant_id = principal.tenant_id
-    else:
-        tenant_id = principal.tenant_id
+    tenant_id = principal.tenant_id
     if not tenant_id:
         raise HTTPException(status_code=403, detail="Active tenant is required for usage reporting")
     return engine.store.usage_summary(tenant_id)
@@ -163,9 +162,8 @@ def start_case(request: StartCaseRequest, principal: Principal = Depends(require
         )
         case.requirements = [r.__dict__ for r in requirements]
         case.status = "needs_documents"
-        case.updated_at = case.updated_at
         engine.store.put(case)
-        response = serialize(case)
+        response = serialize(case, include_tasks=False)
         response.update({
             "status": "needs_documents",
             "documents": required_documents["documents"],
@@ -255,9 +253,8 @@ def submit_case_documents(
         missing = [doc for doc in required_documents["documents"] if doc not in submitted_types]
         if missing:
             case.status = "needs_documents"
-            case.updated_at = case.updated_at
             engine.store.put(case)
-            response = serialize(case)
+            response = serialize(case, include_tasks=False)
             response.update({
                 "status": "needs_documents",
                 "documents": required_documents["documents"],
