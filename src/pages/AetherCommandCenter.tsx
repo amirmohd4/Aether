@@ -42,6 +42,15 @@ type Understanding = {
 
 type CaseListItem = CaseResponse['summary'];
 
+type Principal = {
+  subject: string;
+  role: string;
+  tenant_id?: string | null;
+  department?: string | null;
+  jurisdiction?: Record<string, string>;
+  auth_mode: string;
+};
+
 type CaseResponse = {
   summary: {
     case_id: string;
@@ -115,6 +124,8 @@ export const AetherCommandCenter: React.FC = () => {
   const [caseData, setCaseData] = useState<CaseResponse | null>(null);
   const [understanding, setUnderstanding] = useState<Understanding | null>(null);
   const [recentCases, setRecentCases] = useState<CaseListItem[]>([]);
+  const [officerQueue, setOfficerQueue] = useState<CaseListItem[]>([]);
+  const [principal, setPrincipal] = useState<Principal | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [authEmail, setAuthEmail] = useState('');
@@ -128,8 +139,39 @@ export const AetherCommandCenter: React.FC = () => {
   const { session, loading: authLoading, required: authRequired, signIn, signUp, signOut } = useAuth();
 
   React.useEffect(() => {
-    if (!authRequired || session) loadRecentCases();
+    if (!authRequired || session) {
+      loadWorkspace();
+    }
   }, [authRequired, session?.access_token]);
+
+  async function loadWorkspace() {
+    try {
+      const response = await fetch(API_BASE + '/api/aether/v2/me', {
+        headers: authHeaders(),
+      });
+      if (!response.ok) return;
+      const body = await response.json() as Principal;
+      setPrincipal(body);
+      await loadRecentCases();
+
+      const operator = ['officer', 'department_admin', 'admin'].includes(body.role.toLowerCase());
+      if (!operator) {
+        setOfficerQueue([]);
+        return;
+      }
+
+      const queueResponse = await fetch(
+        API_BASE + '/api/aether/v2/cases?status=waiting_for_human&limit=12',
+        { headers: authHeaders() }
+      );
+      if (queueResponse.ok) {
+        const queueBody = await queueResponse.json();
+        setOfficerQueue(queueBody.cases || []);
+      }
+    } catch {
+      // The command center remains usable even when workspace metadata is unavailable.
+    }
+  }
 
   const completedPercent = useMemo(() => {
     if (!caseData?.summary.tasks_total) return 0;
@@ -362,6 +404,11 @@ export const AetherCommandCenter: React.FC = () => {
             </p>
           </div>
           <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-slate-300">
+            {principal && (
+              <span className="rounded-full border border-cyan-300/20 bg-cyan-300/5 px-2 py-1 text-cyan-200">
+                {principal.role.replace('_', ' ')}{principal.department ? ' · ' + principal.department : ''}
+              </span>
+            )}
             <span>MVP mode: synthetic government systems</span>
             {session && (
               <button onClick={signOut} className="rounded-lg border border-white/10 px-2 py-1 text-[10px] hover:bg-white/5">
@@ -486,6 +533,27 @@ export const AetherCommandCenter: React.FC = () => {
                 <h3 className="text-xs font-semibold text-slate-300">Recent cases</h3>
                 <button onClick={loadRecentCases} className="text-[10px] text-cyan-300 hover:text-cyan-200">Refresh</button>
               </div>
+              {officerQueue.length > 0 && (
+                <div className="mt-4 rounded-xl border border-violet-300/15 bg-violet-300/5 p-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-[11px] font-semibold text-violet-100">Authority queue</h3>
+                    <span className="text-[10px] text-violet-200">{officerQueue.length} waiting</span>
+                  </div>
+                  <div className="mt-2 space-y-2">
+                    {officerQueue.slice(0, 4).map((item) => (
+                      <button
+                        key={item.case_id}
+                        onClick={() => openCase(item.case_id)}
+                        className="w-full rounded-lg border border-violet-300/10 bg-black/10 p-2 text-left hover:border-violet-300/20"
+                      >
+                        <div className="truncate text-[11px] font-medium text-violet-50">{item.service_name || item.objective}</div>
+                        <div className="mt-1 text-[9px] text-violet-200/70">{item.human_actions || 0} action(s) · {item.case_id}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="mt-2 space-y-2">
                 {recentCases.length === 0 ? (
                   <p className="text-[11px] text-slate-500">No saved cases yet.</p>
@@ -638,13 +706,15 @@ export const AetherCommandCenter: React.FC = () => {
                           <p className="text-sm font-medium">{action.task}</p>
                           <p className="mt-1 text-xs text-slate-400">{action.reason}</p>
                         </div>
-                        <button
-                          onClick={() => continueHumanTask(action.task_id)}
-                          disabled={loading}
-                          className="rounded-lg bg-violet-300 px-4 py-2 text-xs font-bold text-slate-950"
-                        >
-                          Approve / continue
-                        </button>
+                        {principal && ['officer', 'department_admin', 'admin'].includes(principal.role.toLowerCase()) ? (
+                          <button
+                            onClick={() => continueHumanTask(action.task_id)}
+                            disabled={loading}
+                            className="rounded-lg bg-violet-300 px-4 py-2 text-xs font-bold text-slate-950"
+                          >
+                            Approve / continue
+                          </button>
+                        ) : null}
                       </div>
                     ))}
                   </div>
