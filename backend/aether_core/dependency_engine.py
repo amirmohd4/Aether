@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, Iterable, List
+from typing import Iterable, List
 
 from .domain import Case, TaskState, TaskStatus
 
@@ -22,7 +22,12 @@ class DependencyEngine:
         blocked: List[str] = []
 
         for task in case.tasks.values():
-            if task.status in {TaskStatus.COMPLETED, TaskStatus.RUNNING, TaskStatus.EXCEPTION, TaskStatus.HUMAN_REVIEW}:
+            if task.status in {
+                TaskStatus.COMPLETED,
+                TaskStatus.RUNNING,
+                TaskStatus.EXCEPTION,
+                TaskStatus.HUMAN_REVIEW,
+            }:
                 continue
 
             dependencies = [
@@ -32,6 +37,9 @@ class DependencyEngine:
             ]
 
             if any(dep.status == TaskStatus.EXCEPTION for dep in dependencies):
+                task.status = TaskStatus.BLOCKED
+                blocked.append(task.definition.id)
+            elif any(dep.status == TaskStatus.HUMAN_REVIEW for dep in dependencies):
                 task.status = TaskStatus.BLOCKED
                 blocked.append(task.definition.id)
             elif all(dep.status == TaskStatus.COMPLETED for dep in dependencies):
