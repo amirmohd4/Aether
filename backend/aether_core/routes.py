@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Response
 import hashlib
 import secrets
 
@@ -358,6 +358,19 @@ def upload_case_document(
     try:
         case = engine.get_case(case_id)
         _authorize_case(case, principal)
+        requirements = requirements_engine.discover(
+            case.objective,
+            case.customer_type,
+            case.jurisdiction,
+            case.inputs,
+        )
+        required_documents = requirements_engine.document_request(requirements)["documents"]
+        if document_type not in required_documents:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Document type is not required for this case: {document_type}",
+            )
+
         content = file.file.read()
         stored = document_store.save(
             case_id=case_id,
@@ -380,6 +393,13 @@ def upload_case_document(
             "extraction_mode": stored.extraction_mode,
         })
         engine.store.put(case)
+
+        submitted_types = {
+            str(document.get("type")) if isinstance(document, dict) else str(document)
+            for document in case.inputs.get("documents", [])
+        }
+        missing = [doc for doc in required_documents if doc not in submitted_types]
+
         notification_service.enqueue(
             case.tenant_id or principal.tenant_id,
             principal.subject,
@@ -388,10 +408,22 @@ def upload_case_document(
             "in_app",
             payload={"document_id": stored.document_id, "document_type": document_type},
         )
+        if missing:
+            return {
+                "status": "uploaded",
+                "case_status": "needs_documents",
+                "missing_documents": missing,
+                "document": document_summary(stored),
+                "case": serialize(case, include_tasks=False),
+            }
+
+        resumed = engine.execute_until_pause(case_id)
         return {
-            "status": "uploaded",
+            "status": "uploaded_and_resumed",
+            "case_status": resumed.status,
+            "missing_documents": [],
             "document": document_summary(stored),
-            "case": serialize(case, include_tasks=False),
+            "case": serialize(resumed, include_tasks=False),
         }
     except KeyError:
         raise HTTPException(status_code=404, detail="Case not found")
@@ -399,6 +431,46 @@ def upload_case_document(
         raise HTTPException(status_code=400, detail=str(exc))
     except OSError as exc:
         raise HTTPException(status_code=400, detail=f"Unable to store document: {exc}")
+
+
+@router.get("/cases/{case_id}/documents/{document_id}/download")
+def download_case_document(case_id: str, document_id: str, principal: Principal = Depends(require_scope("documents:read"))):
+    try:
+        case = engine.get_case(case_id)
+        _authorize_case(case, principal)
+        docs = engine.store.documents_for(case_id, case.tenant_id)
+        metadata = next((item for item in docs if item["document_id"] == document_id), None)
+        if not metadata:
+            raise HTTPException(status_code=404, detail="Document not found")
+
+        from .persistence_models import AetherDocumentRecord
+        with SessionLocal() as db:
+            row = db.query(AetherDocumentRecord).filter_by(
+                document_id=document_id,
+                case_id=case_id,
+                tenant_id=case.tenant_id,
+            ).one_or_none()
+            if not row:
+                raise HTTPException(status_code=404, detail="Document not found")
+            storage_key = row.storage_key
+            mime_type = row.mime_type
+            filename = row.filename
+
+        payload = document_store.read(storage_key)
+        import hashlib
+        digest = hashlib.sha256(payload).hexdigest()
+        if digest != metadata["sha256"]:
+            raise HTTPException(status_code=409, detail="Document integrity check failed")
+        return Response(
+            content=payload,
+            media_type=mime_type,
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"',
+                "X-Document-SHA256": digest,
+            },
+        )
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Case not found")
 
 
 @router.get("/usage")
