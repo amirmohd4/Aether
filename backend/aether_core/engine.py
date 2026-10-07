@@ -10,6 +10,7 @@ from .case_store import DatabaseCaseStore
 from .domain import Case, TaskState, TaskStatus, now_iso
 from .dependency_engine import DependencyEngine
 from .task_queue import DurableTaskQueue, TaskClaim
+from .verification import VerificationEngine
 from .ontology import GovernmentOntologyBuilder, WorkGraphBuilder
 from .reliability import RetryPolicy
 from .synthetic_government import SyntheticGovernmentSystem
@@ -33,6 +34,7 @@ class AetherExecutionEngine:
         self.audit = AuditTrail()
         self.store = DatabaseCaseStore()
         self.queue = DurableTaskQueue()
+        self.verifier = VerificationEngine()
         self._event_lock = RLock()
         self._case_locks: Dict[str, RLock] = {}
 
@@ -279,8 +281,44 @@ class AetherExecutionEngine:
                     "verified": True,
                     "timestamp": now_iso(),
                 }
+                verification = self.verifier.verify_result(
+                    definition.id,
+                    result["result"],
+                    [doc for req in case.requirements for doc in req.get("documents", [])],
+                    list(case.inputs.get("documents", [])),
+                )
+                evidence["verification"] = verification.as_dict()
                 task.evidence.append(evidence)
                 case.evidence.append(evidence)
+
+                if verification.status == "exception":
+                    for finding in verification.findings:
+                        case.exceptions.append({
+                            "type": finding.code,
+                            "severity": finding.severity,
+                            "message": finding.message,
+                            "evidence": finding.evidence or {},
+                            "task_id": definition.id,
+                            "timestamp": now_iso(),
+                        })
+                    task.result["verification"] = verification.as_dict()
+                    if verification.risk_level in {"high", "medium"}:
+                        task.status = TaskStatus.HUMAN_REVIEW
+                        case.human_actions.append({
+                            "task_id": definition.id,
+                            "task": definition.name,
+                            "reason": "Evidence verification detected an exception requiring authorised review.",
+                            "created_at": now_iso(),
+                        })
+                        self._emit(case, "exception.escalated", "aether.verification_engine", {
+                            "task_id": definition.id,
+                            "risk_level": verification.risk_level,
+                            "findings": verification.as_dict()["findings"],
+                        })
+                        if queue_id is not None:
+                            self.queue.complete(queue_id)
+                        return
+
                 task.status = TaskStatus.COMPLETED
                 task.completed_at = now_iso()
                 self._emit(case, "task.completed", definition.worker, {
