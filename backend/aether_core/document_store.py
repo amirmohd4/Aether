@@ -62,6 +62,15 @@ class DocumentStore:
         document_id = f"DOC-{uuid4().hex[:16].upper()}"
         safe_name = Path(filename or "document").name
         resolved_mime = mime_type or mimetypes.guess_type(safe_name)[0] or "application/octet-stream"
+        allowed = {
+            item.strip() for item in os.getenv(
+                "AETHER_ALLOWED_DOCUMENT_MIME_TYPES",
+                "application/pdf,text/plain,text/csv,application/json,image/jpeg,image/png,"
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            ).split(",") if item.strip()
+        }
+        if resolved_mime not in allowed:
+            raise ValueError(f"Unsupported document type: {resolved_mime}")
         digest = hashlib.sha256(content).hexdigest()
         storage_key = f"{tenant_id or 'unscoped'}/{case_id}/{document_id}-{safe_name}"
 
