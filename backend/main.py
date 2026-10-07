@@ -29,6 +29,18 @@ cors_origins = [
     if origin.strip()
 ]
 
+@app.middleware("http")
+async def security_headers(request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    if os.getenv("AETHER_ENV", "development").strip().lower() == "production":
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
@@ -59,3 +71,14 @@ async def root():
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "aether_core": "ready"}
+
+
+@app.get("/ready")
+async def readiness_check():
+    from backend.database import engine
+    try:
+        with engine.connect() as connection:
+            connection.exec_driver_sql("SELECT 1")
+        return {"status": "ready", "database": "ready", "aether_core": "ready"}
+    except Exception as exc:
+        return {"status": "not_ready", "database": "unavailable", "error": type(exc).__name__}
