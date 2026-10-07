@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - aether-mvp-build
+      - aether-mvp-final-hardening
       - main
   pull_request:
     branches:

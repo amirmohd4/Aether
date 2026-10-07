@@ -71,3 +71,59 @@ def test_database_backed_api_key_is_tenant_scoped(monkeypatch):
     assert principal.tenant_id == "tenant-db"
     assert principal.role == "developer"
     assert "cases:read" in principal.scopes
+
+def test_supabase_auth_refuses_arbitrary_tenant_selection(monkeypatch):
+    import aether_core.security as security
+
+    class FakeResponse:
+        status_code = 200
+        def json(self):
+            return {"id": "user-multi"}
+
+    membership_rows = [
+        {"role": "user", "tenant_id": "tenant-b", "department": None, "jurisdiction": {}},
+        {"role": "user", "tenant_id": "tenant-a", "department": None, "jurisdiction": {}},
+    ]
+
+    class FakeResult:
+        def __init__(self, rows):
+            self.rows = rows
+        def mappings(self):
+            return self
+        def all(self):
+            return list(self.rows)
+        def first(self):
+            return self.rows[0] if self.rows else None
+
+    class FakeDB:
+        def __enter__(self):
+            return self
+        def __exit__(self, *_):
+            return False
+        def execute(self, *_args, **kwargs):
+            params = kwargs.get("parameters") or (_args[1] if len(_args) > 1 else {})
+            if params.get("tenant_id"):
+                rows = [row for row in membership_rows if row["tenant_id"] == params["tenant_id"]]
+            else:
+                rows = membership_rows
+            return FakeResult(rows)
+
+    monkeypatch.setenv("SUPABASE_URL", "https://example.supabase.co")
+    monkeypatch.setenv("SUPABASE_ANON_KEY", "publishable-test-key")
+    monkeypatch.setattr(security.httpx, "get", lambda *args, **kwargs: FakeResponse())
+    monkeypatch.setattr(security, "SessionLocal", lambda: FakeDB())
+
+    try:
+        security._supabase_principal(_request({"Authorization": "Bearer test-token"}))
+    except HTTPException as exc:
+        assert exc.status_code == 409
+        assert exc.detail["code"] == "multiple_active_memberships"
+        assert {item["tenant_id"] for item in exc.detail["memberships"]} == {"tenant-a", "tenant-b"}
+    else:
+        raise AssertionError("ambiguous active memberships must require an explicit tenant")
+
+    principal = security._supabase_principal(_request({
+        "Authorization": "Bearer test-token",
+        "X-Aether-Tenant-ID": "tenant-a",
+    }))
+    assert principal.tenant_id == "tenant-a"

@@ -75,6 +75,56 @@ def _api_key_principal(request: Request) -> Principal:
         raise HTTPException(status_code=503, detail="API key store unavailable") from exc
 
 
+def _supabase_membership_for_subject(subject: str, tenant_id: str | None = None) -> dict:
+    """Resolve one active membership without ever choosing an arbitrary tenant."""
+    try:
+        with SessionLocal() as db:
+            if tenant_id:
+                row = db.execute(
+                    text(
+                        "SELECT role, tenant_id, department, jurisdiction FROM public.aether_memberships "
+                        "WHERE user_id = :user_id AND tenant_id = :tenant_id AND status = 'active' "
+                        "LIMIT 1"
+                    ),
+                    {"user_id": subject, "tenant_id": tenant_id},
+                ).mappings().first()
+                if not row:
+                    raise HTTPException(status_code=403, detail="Requested Aether tenant is not an active membership")
+                return dict(row)
+
+            rows = db.execute(
+                text(
+                    "SELECT role, tenant_id, department, jurisdiction FROM public.aether_memberships "
+                    "WHERE user_id = :user_id AND status = 'active' "
+                    "ORDER BY updated_at DESC, created_at DESC"
+                ),
+                {"user_id": subject},
+            ).mappings().all()
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="Authorization membership store unavailable") from exc
+
+    if not rows:
+        raise HTTPException(status_code=403, detail="No active Aether membership")
+    if len(rows) > 1:
+        memberships = [{
+            "tenant_id": str(row["tenant_id"]),
+            "role": str(row["role"]),
+            "department": str(row["department"]) if row["department"] else None,
+            "jurisdiction": row["jurisdiction"] or {},
+        } for row in rows]
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "multiple_active_memberships",
+                "message": "Multiple active Aether memberships exist; select a tenant explicitly.",
+                "memberships": memberships,
+            },
+        )
+    return dict(rows[0])
+
+
 def _supabase_principal(request: Request) -> Principal:
     authorization = request.headers.get("Authorization", "")
     if not authorization.lower().startswith("bearer "):
@@ -107,28 +157,18 @@ def _supabase_principal(request: Request) -> Principal:
     # Authorization is server-controlled. Do not trust user-editable metadata
     # for role or tenant membership; resolve the active membership record on the
     # server before any case data is returned or mutated.
-    try:
-        with SessionLocal() as db:
-            row = db.execute(
-                text(
-                    "SELECT role, tenant_id, department, jurisdiction FROM public.aether_memberships "
-                    "WHERE user_id = :user_id AND status = 'active' LIMIT 1"
-                ),
-                {"user_id": subject},
-            ).mappings().first()
-    except Exception as exc:
-        raise HTTPException(status_code=503, detail="Authorization membership store unavailable") from exc
-
-    if not row:
-        raise HTTPException(status_code=403, detail="No active Aether membership")
+    membership = _supabase_membership_for_subject(
+        subject,
+        tenant_id=request.headers.get("X-Aether-Tenant-ID"),
+    )
 
     return Principal(
         subject=subject,
-        role=str(row["role"]),
-        tenant_id=str(row["tenant_id"]) if row["tenant_id"] is not None else None,
+        role=str(membership["role"]),
+        tenant_id=str(membership["tenant_id"]) if membership["tenant_id"] is not None else None,
         auth_mode="supabase",
-        department=str(row["department"]) if row["department"] else None,
-        jurisdiction=row["jurisdiction"] or {},
+        department=str(membership["department"]) if membership["department"] else None,
+        jurisdiction=membership["jurisdiction"] or {},
     )
 
 

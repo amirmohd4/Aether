@@ -51,6 +51,13 @@ type Principal = {
   auth_mode: string;
 };
 
+type TenantOption = {
+  tenant_id: string;
+  role: string;
+  department?: string | null;
+  jurisdiction?: Record<string, string>;
+};
+
 type CaseResponse = {
   summary: {
     case_id: string;
@@ -147,6 +154,8 @@ export const AetherCommandCenter: React.FC = () => {
   const [marketplace, setMarketplace] = useState<Array<{ service_id: string; name: string; department: string; outcome: string; sandbox: boolean }>>([]);
   const [analytics, setAnalytics] = useState<{ case_count: number; completion_rate: number; human_actions_pending: number; exceptions: number } | null>(null);
   const [payments, setPayments] = useState<Array<{ payment_id: string; amount_minor: number; currency: string; provider: string; status: string; created_at?: string | null }>>([]);
+  const [tenantOptions, setTenantOptions] = useState<TenantOption[]>([]);
+  const [selectedTenantId, setSelectedTenantId] = useState('');
   const [paymentAmount, setPaymentAmount] = useState('0');
   const [paymentMessage, setPaymentMessage] = useState('');
   const [humanNotes, setHumanNotes] = useState<Record<string, string>>({});
@@ -166,19 +175,42 @@ export const AetherCommandCenter: React.FC = () => {
   const { session, loading: authLoading, required: authRequired, signIn, signUp, signOut } = useAuth();
 
   React.useEffect(() => {
+    if (session?.access_token) {
+      const storedTenant = window.localStorage.getItem('aether.tenant_id') || '';
+      setSelectedTenantId(storedTenant);
+    }
+  }, [session?.access_token]);
+
+  React.useEffect(() => {
     if (!authRequired || session) {
       loadWorkspace();
     }
-  }, [authRequired, session?.access_token]);
+  }, [authRequired, session?.access_token, selectedTenantId]);
 
   async function loadWorkspace() {
     try {
       const response = await fetch(API_BASE + '/api/aether/v2/me', {
         headers: authHeaders(),
       });
+      if (response.status === 409) {
+        const body = await response.json().catch(() => ({}));
+        const detail = body.detail;
+        if (detail?.code === 'multiple_active_memberships') {
+          setTenantOptions(Array.isArray(detail.memberships) ? detail.memberships : []);
+          setPrincipal(null);
+          setRecentCases([]);
+          return;
+        }
+      }
+      if (response.status === 403 && selectedTenantId) {
+        setSelectedTenantId('');
+        window.localStorage.removeItem('aether.tenant_id');
+        return;
+      }
       if (!response.ok) return;
       const body = await response.json() as Principal;
       setPrincipal(body);
+      setTenantOptions([]);
       await loadRecentCases();
 
       const keyReadRoles = ['user', 'citizen', 'business', 'bank', 'developer', 'insurer', 'enterprise', 'admin'];
@@ -239,7 +271,30 @@ export const AetherCommandCenter: React.FC = () => {
     return Math.round((caseData.summary.tasks_completed / caseData.summary.tasks_total) * 100);
   }, [caseData]);
 
-  const authHeaders = () => session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
+  const authHeaders = () => {
+    if (!session?.access_token) return {};
+    return {
+      Authorization: `Bearer ${session.access_token}`,
+      ...(selectedTenantId ? { 'X-Aether-Tenant-ID': selectedTenantId } : {}),
+    };
+  };
+
+  const tenantSelectionRequired = tenantOptions.length > 1 && !selectedTenantId;
+
+  function selectTenant(tenantId: string) {
+    setSelectedTenantId(tenantId);
+    setCaseData(null);
+    setUnderstanding(null);
+    setMissingDocuments([]);
+    setSelectedDocuments([]);
+    setIntakeNotice('');
+    setError('');
+    if (tenantId) {
+      window.localStorage.setItem('aether.tenant_id', tenantId);
+    } else {
+      window.localStorage.removeItem('aether.tenant_id');
+    }
+  }
 
   async function loadRecentCases() {
     try {
@@ -597,6 +652,20 @@ export const AetherCommandCenter: React.FC = () => {
             </p>
           </div>
           <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-slate-300">
+            {tenantOptions.length > 1 && (
+              <select
+                value={selectedTenantId}
+                onChange={(e) => selectTenant(e.target.value)}
+                className="max-w-56 rounded-lg border border-white/10 bg-slate-900 px-2 py-1 text-[10px] text-slate-200"
+              >
+                <option value="">Select tenant/workspace</option>
+                {tenantOptions.map((tenant) => (
+                  <option key={tenant.tenant_id} value={tenant.tenant_id}>
+                    {tenant.tenant_id} · {tenant.role}
+                  </option>
+                ))}
+              </select>
+            )}
             {principal && (
               <span className="rounded-full border border-cyan-300/20 bg-cyan-300/5 px-2 py-1 text-cyan-200">
                 {principal.role.replace('_', ' ')}{principal.department ? ' · ' + principal.department : ''}
@@ -620,7 +689,7 @@ export const AetherCommandCenter: React.FC = () => {
 
             <button
               onClick={analyzeObjective}
-              disabled={loading || !objective.trim()}
+              disabled={loading || !objective.trim() || tenantSelectionRequired}
               className="mt-4 w-full rounded-xl border border-cyan-300/20 bg-cyan-300/5 px-4 py-2 text-xs font-semibold text-cyan-100 disabled:opacity-50"
             >
               Understand objective first
@@ -701,7 +770,7 @@ export const AetherCommandCenter: React.FC = () => {
 
             <button
               onClick={startCase}
-              disabled={loading || !objective.trim()}
+              disabled={loading || !objective.trim() || tenantSelectionRequired}
               className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-400 px-4 py-3 text-sm font-bold text-slate-950 disabled:opacity-50"
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}

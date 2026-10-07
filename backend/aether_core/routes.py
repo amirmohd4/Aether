@@ -76,6 +76,14 @@ def serialize(case, include_tasks: bool = True):
 def release_readiness():
     import os
     production = os.getenv("AETHER_ENV", "development").strip().lower() == "production"
+    rule_records = rule_registry.all()
+    authoritative_rules = [
+        record for record in rule_records
+        if record.get("authority_status") == "source_backed"
+        and record.get("source_url")
+        and record.get("verified_at")
+        and record.get("effective_date")
+    ]
     checks = {
         "database_url": bool(os.getenv("DATABASE_URL")),
         "supabase_auth": os.getenv("AETHER_AUTH_MODE", "none").strip().lower() == "supabase",
@@ -86,7 +94,10 @@ def release_readiness():
             else bool(os.getenv("SUPABASE_URL") and os.getenv("SUPABASE_SERVICE_ROLE_KEY"))
         ),
         "production_connectors": engine.workers.production_connectors_configured(),
-        "authoritative_rule_coverage": len(rule_registry.all()) >= len(engine.services.all()),
+        "authoritative_rule_coverage": (
+            len(authoritative_rules) >= len(engine.services.all())
+            and len({record["rule_id"] for record in authoritative_rules}) == len(authoritative_rules)
+        ),
         "notification_provider": bool(
             os.getenv("AETHER_NOTIFICATION_WEBHOOK_URL")
             or os.getenv("AETHER_NOTIFICATION_EMAIL_URL")
@@ -234,10 +245,18 @@ def case_intake(case_id: str, principal: Principal = Depends(require_scope("case
 def rules_readiness():
     services = engine.services.all()
     source_backed = len(rule_registry.all())
+    effective_dated = sum(
+        1 for record in rule_registry.all()
+        if record.get("authority_status") == "source_backed"
+        and record.get("source_url")
+        and record.get("verified_at")
+        and record.get("effective_date")
+    )
     return {
         "status": "development",
         "services_in_catalog": len(services),
         "source_backed_rule_records": source_backed,
+        "effective_dated_source_backed_records": effective_dated,
         "production_legal_coverage_complete": False,
         "note": "Aether blocks no service because baseline metadata is explicitly non-authoritative; production execution must use verified, effective-dated rules for the target jurisdiction."
     }
@@ -269,6 +288,15 @@ def create_api_key(data: Dict[str, Any] | None = None, principal: Principal = De
     if any(scope not in allowed_scopes for scope in scopes):
         raise HTTPException(status_code=400, detail="Unsupported API scope")
 
+    expires_in_days = data.get("expires_in_days")
+    if expires_in_days is not None:
+        try:
+            expires_in_days = int(expires_in_days)
+        except (TypeError, ValueError) as exc:
+            raise HTTPException(status_code=400, detail="expires_in_days must be an integer") from exc
+        if expires_in_days < 1 or expires_in_days > 3650:
+            raise HTTPException(status_code=400, detail="expires_in_days must be between 1 and 3650")
+    
     raw_key = "aether_" + secrets.token_urlsafe(32)
     key_prefix = raw_key[:20]
     key_hash = hashlib.sha256(raw_key.encode("utf-8")).hexdigest()
@@ -286,8 +314,8 @@ def create_api_key(data: Dict[str, Any] | None = None, principal: Principal = De
                 status="active",
                 created_at=datetime.utcnow(),
                 expires_at=(
-                    datetime.utcnow() + timedelta(days=int(data["expires_in_days"]))
-                    if data.get("expires_in_days") else None
+                    datetime.utcnow() + timedelta(days=expires_in_days)
+                    if expires_in_days is not None else None
                 ),
             )
             db.add(row)
