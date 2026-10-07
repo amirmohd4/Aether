@@ -10,82 +10,88 @@ Objective → understand → discover requirements → create case → build gov
 
 ## Release rule
 
-Do not deploy production changes during MVP construction.
+Development work stays on `aether-mvp-build`. `main` is the release branch.
 
-Development branch: `aether-mvp-build`
-
-`main` is treated as the release branch. The final MVP is merged to `main` only after the release checklist is green. That merge is the coordinated trigger for Render and the connected Netlify flow. Supabase schema/migrations are applied only as part of the final release process.
+The controlled MVP release is now on `main`, with the Supabase schema hardened and the Netlify frontend published from the release commit.
 
 ## Current status — CTO estimate
 
-Overall whole-MVP software completion: **~85% for the controlled MVP / sandbox release**.
+Overall whole-MVP software completion: **~90% for the controlled MVP / sandbox release**.
 
-This remains a directional engineering estimate, not a project-management measurement. The software is now release-candidate complete for controlled/sandbox operation: objective understanding, requirements, 34-service catalog, cross-department graphs, parallel execution, durable queue/checkpoints/case leases, evidence and document vault, OCR adapter, audit, RBAC, API keys, payments, notifications, analytics, marketplace, worker runtime and unified Command Center are implemented.
+This is a directional engineering estimate, not a project-management measurement.
 
-This is a directional engineering estimate, not a measured project-management percentage.
+The software backbone is release-candidate complete for controlled/sandbox operation: objective understanding, requirements, 34-service catalog, cross-department graphs, dependency-aware parallel execution, durable queue/checkpoints/leases, evidence and document vault, OCR adapter, audit, RBAC, API keys, payments, notifications, analytics, marketplace, worker runtime and the unified Command Center are implemented.
 
-### Strongly built
+## Deployed release status
+
+- GitHub release commit: `25db222db97f153fad5731bd51dc2dc168d8fcdf` plus subsequent release-configuration commits.
+- GitHub backend/frontend automated checks on the release line have passed.
+- Supabase project is active and hardened; required Aether migrations are applied.
+- Netlify site `aether-govos` is published from the current release commit.
+- Render web service has a known-good live deployment, while the latest release deployment is currently waiting in Render's deployment queue. Do not treat the queued deployment as validated until it starts and becomes healthy.
+- The Render blueprint now declares `/health` as the health check and includes the Supabase pooler host override for both the web and worker definitions.
+- A separate Render worker is defined in `render.yaml`, but the connected Render workspace currently exposes only the web service. Worker provisioning/live execution is therefore the remaining infrastructure validation item.
+
+## Strongly built
+
 - Shared case/execution domain
-- Service Registry with 32+ service identities
-- Requirements gate
-- Source provenance fields for verified rules
+- 34-service shared registry
+- Requirements gate and source provenance
 - Government Ontology model
 - Work Graph model
-- Dependency-aware execution
-- Parallel digital task execution
-- Human/physical authority boundaries
-- Retry policy
-- Stable task idempotency keys
+- Dependency-aware execution and parallel digital tasks
+- Human/statutory and physical-action boundaries
+- Retry policy, stable task idempotency and queue semantics
 - Execution event ledger
-- Durable case/event repository design
-- Supabase private persistence schema
+- Durable PostgreSQL/SQLite persistence
 - Synthetic Government Environment
-- Restaurant and commercial-project execution templates
-- Existing broad frontend/service surfaces from the earlier product
-- Existing backend service-specific models/connectors that can be reused while migrating
-- Objective understanding with ranked candidates and ambiguity stop
-- Reusable process graphs across the MVP service catalog
-- Explicit connector operation metadata on executable tasks
-- Evidence-aware reconciliation and decision-package workers
-- Durable case listing, resume, and incremental document submission
-- Private tenant usage metering with idempotent case/outcome events
-- Opt-in authorized HTTP connector contract for production integrations
+- Evidence verification and reconciliation
+- Durable case listing, resume and incremental document submission
+- Private tenant usage metering
+- Authorized HTTP connector contract
 - Server-controlled membership/RBAC boundary with department/jurisdiction scoping
-- Tamper-evident audit hash chain and integrity verification endpoint
-- CI definitions for backend tests and frontend typecheck/build
-- Legacy browser-data lockdown migration with deny-by-default RLS
+- Tamper-evident audit hash chain and integrity verification
+- Document upload, hashing, private storage, extraction, encryption and OCR adapter
+- Notification outbox and idempotency
+- Payment ledger and provider adapters
+- Operator analytics and 34-service marketplace
+- Standalone worker runtime with durable case leases
+- Unified Aether Command Center
+- CI definitions for backend tests and frontend build/typecheck
+- Supabase RLS/security hardening for the controlled MVP
 
-### Partially built
-- Broad service catalog → all 34 identities have a shared executable baseline; domain-specific legal graphs remain limited to the MVP verticals
-- Government rules → provenance/version readiness exists for a narrow verified slice, not broad jurisdiction/service coverage
-- Connector framework → synthetic execution plus an opt-in authorized REST adapter exist; live government connector certification/access remains external work
-- Document intelligence → server-side file upload, hashing, private storage, native text/PDF extraction, encrypted extracted text and an external OCR adapter exist; production OCR/vision provider configuration remains external
-- Persistence → durable cases, queues, checkpoints, case leases, events and recovery exist; fully event-sourced replay remains future hardening
-- Notifications/payments → durable idempotent ledgers, notification outbox and provider adapters exist; external delivery/payment credentials are not bundled
-- Frontend → unified Command Center, guided intake, document upload, payments, notifications, marketplace visibility, role-aware authority queue and recent-case recovery exist; legacy service screens remain for compatibility
+## Partially built
 
-### Controlled-MVP completion state
+- Broad service catalog: all 34 identities share the execution backbone, but domain-specific legal graphs are deeper for selected MVP verticals.
+- Government rules: provenance/version readiness exists, but production-authoritative effective-dated rule coverage is not complete across every jurisdiction/service.
+- Connector framework: synthetic execution and an authorized REST adapter exist; live government connector certification/access remains external.
+- Document intelligence: production OCR/vision provider configuration remains external.
+- Persistence: durable recovery exists; full event-sourced replay is future scale hardening.
+- Notifications/payments: provider contracts and credentials remain external.
+- Frontend: unified Command Center is the primary MVP surface; older service-specific screens remain for compatibility.
 
-The remaining blockers are external production prerequisites: authorized live government connectivity, authoritative effective-dated rules, certified statutory signature/issuance integrations, and final deployed environment/security validation. Those cannot be truthfully manufactured in code.
+## Remaining MVP release-validation work
 
-### Production / scale extensions (not missing controlled-MVP software)
+1. Get the latest Render deployment out of the current queue and verify the web service becomes healthy.
+2. Validate live worker execution against Supabase using the exact configured connection details.
+3. Run the final deployed smoke test across the Netlify frontend and Render API.
+4. Verify role/tenant/department/jurisdiction boundaries against the deployed stack.
 
-1. Authorized live government connectors and endpoint certifications — external dependency
-2. Authoritative, versioned, effective-dated rule packs for each production jurisdiction/service — external/legal-data dependency
-3. Certified statutory signatures, certificates and issuance integrations — external authority dependency
-4. Production OCR/vision provider credentials and service-level integration — external provider dependency
-5. Production notification delivery providers and credentials — external provider dependency
-6. Production payment processor contracts/credentials — external provider dependency
-7. Deployed Supabase RLS/security-advisor verification — deployment gate
-8. Distributed event-sourced replay and large-scale worker orchestration — scale hardening
-9. Full production load/chaos testing — release validation
-10. Retirement of legacy modules after dependency proof — cleanup/maintenance
+## Production / scale extensions
 
-The controlled MVP intentionally keeps synthetic government connectors and non-authoritative baseline service metadata behind explicit boundaries. These are not silently promoted to legal/production authority.
+These are not being manufactured as completed MVP features:
+1. Authorized live government connectors and endpoint certifications
+2. Authoritative versioned effective-dated rule packs for production jurisdictions
+3. Certified statutory signatures, certificates and issuance integrations
+4. Production OCR/vision provider contracts and credentials
+5. Production notification delivery and payment processor credentials
+6. Distributed event-sourced replay and large-scale worker orchestration
+7. Full production load/chaos testing
+8. Retirement of legacy modules after dependency proof
 
 ## Legacy-code policy
 
-Do **not** delete legacy modules merely because a V2 equivalent exists.
+Do not delete legacy modules merely because a V2 equivalent exists.
 
 A legacy file is deleted only when:
 - no production route imports it,
@@ -94,40 +100,17 @@ A legacy file is deleted only when:
 - its behavior is covered by tests,
 - and the replacement is confirmed in the unified MVP flow.
 
-Obvious generated/cache artifacts can be removed during cleanup after dependency review.
-
-## Current legacy areas observed
-
-The repository still contains:
-- `backend/models/*` service-specific models
-- `backend/services/*` older service/business logic
-- `backend/connectors/*` older connector implementations
-- `backend/govstack/*` earlier government-stack modules
-- `src/components/*` many service-specific frontend surfaces
-- multiple deployment/configuration documents and historical artifacts
-
-These are **not yet fully removed** because existing routes still reference parts of them.
-
-## Remaining blockers before production declaration (external)
-1. Connect at least one real government integration per intended launch journey using authorized credentials and sandbox/certification access.
-2. Populate authoritative, versioned, effective-dated rules for every service/jurisdiction being exposed; do not treat baseline metadata as law.
-3. Configure production OCR/document storage, notification and payment providers.
-4. Run the full Supabase RLS/security review against the deployed database and verify no browser role can reach private execution tables.
-5. Run the release smoke test against the final Render URL and final Netlify site.
-6. Retire or explicitly quarantine remaining legacy APIs/modules after dependency review.
-
 ## Final release gate
 
-Before merging MVP to `main`:
-- application boots cleanly in the release container
-- complete automated test suite passes
-- core customer journeys pass end-to-end
-- persistence/restart recovery passes
-- connector idempotency passes
-- security review/RLS plan is resolved
-- production secrets/configuration verified
-- Supabase migrations verified
-- Render deployment succeeds and health check passes
-- Netlify deployment succeeds and published build matches release commit
-- smoke-test APIs and UI
-- only then declare MVP deployed
+Before declaring the controlled MVP fully deployed:
+- application boots cleanly in the release container;
+- complete automated test suite passes;
+- core customer journeys pass end-to-end;
+- persistence/restart recovery passes;
+- connector idempotency passes;
+- Supabase migrations and RLS/security posture are verified;
+- Render deployment succeeds and health check passes;
+- worker execution succeeds;
+- Netlify deployment matches the release commit;
+- deployed smoke-test APIs and UI pass;
+- rollback path remains available.
