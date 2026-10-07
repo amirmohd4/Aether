@@ -3,6 +3,16 @@ from fastapi.testclient import TestClient
 from main import app
 
 
+def test_v2_me_returns_server_resolved_identity():
+    client = TestClient(app)
+    response = client.get("/api/aether/v2/me")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["subject"] == "demo"
+    assert body["role"] == "demo"
+    assert body["auth_mode"] == "none"
+
+
 def test_v2_api_can_start_case_and_return_human_boundary():
     client = TestClient(app)
     response = client.post(
