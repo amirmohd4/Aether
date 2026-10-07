@@ -107,8 +107,30 @@ class AetherExecutionEngine:
         if case_id in self.cases:
             return self.cases[case_id]
         case = self.store.get(case_id)
+        self._hydrate_task_checkpoints(case)
         self.cases[case_id] = case
         return case
+
+    def _hydrate_task_checkpoints(self, case: Case) -> None:
+        checkpoints = self.store.task_checkpoints(case.case_id)
+        for task_id, checkpoint in checkpoints.items():
+            task = case.tasks.get(task_id)
+            if task is None:
+                continue
+            try:
+                task.status = TaskStatus(checkpoint["status"])
+            except (KeyError, ValueError):
+                continue
+            task.result = checkpoint.get("result")
+            task.evidence = checkpoint.get("evidence", [])
+            task.error = checkpoint.get("error")
+            task.started_at = checkpoint.get("started_at")
+            task.completed_at = checkpoint.get("completed_at")
+            task.attempts = checkpoint.get("attempts", task.attempts)
+            task.idempotency_key = checkpoint.get("idempotency_key") or task.idempotency_key
+
+    def _checkpoint_task(self, case: Case, task: TaskState) -> None:
+        self.store.put_task_checkpoint(case.case_id, task)
 
     def _refresh_ready(self, case: Case) -> None:
         self.dependencies.refresh(case)
@@ -138,6 +160,7 @@ class AetherExecutionEngine:
                 ]
                 for task in boundaries:
                     task.status = TaskStatus.HUMAN_REVIEW
+                    self._checkpoint_task(case, task)
                     if not any(a.get("task_id") == task.definition.id for a in case.human_actions):
                         reason = (
                             "Physical action is required."
@@ -256,6 +279,7 @@ class AetherExecutionEngine:
             task.status = TaskStatus.RUNNING
             task.started_at = task.started_at or now_iso()
             task.attempts += 1
+            self._checkpoint_task(case, task)
             self._emit(case, "task.attempted", "aether.execution_engine", {
                 "task_id": definition.id,
                 "attempt": task.attempts,
@@ -301,6 +325,7 @@ class AetherExecutionEngine:
                         "task_id": definition.id,
                         "request_id": result.get("request_id"),
                     })
+                    self._checkpoint_task(case, task)
                     if queue_id is not None:
                         self.queue.complete(queue_id)
                     return
@@ -361,12 +386,14 @@ class AetherExecutionEngine:
                             "risk_level": verification.risk_level,
                             "findings": verification.as_dict()["findings"],
                         })
+                        self._checkpoint_task(case, task)
                         if queue_id is not None:
                             self.queue.complete(queue_id)
                         return
 
                 task.status = TaskStatus.COMPLETED
                 task.completed_at = now_iso()
+                self._checkpoint_task(case, task)
                 self._emit(case, "task.completed", definition.worker, {
                     "task_id": definition.id,
                     "attempts": task.attempts,
@@ -390,6 +417,7 @@ class AetherExecutionEngine:
 
         task.status = TaskStatus.EXCEPTION
         task.error = str(last_error or "Task failed")
+        self._checkpoint_task(case, task)
         self._emit(case, "task.exception", definition.worker, {
             "task_id": definition.id,
             "attempts": task.attempts,
@@ -433,6 +461,7 @@ class AetherExecutionEngine:
                     "reason": "Aether detected conflicting property records.",
                     "created_at": now_iso(),
                 })
+                self._checkpoint_task(case, legal)
                 self._emit(case, "exception.escalated", "aether.risk_engine", exception)
 
     def _reconcile_restaurant(self, case: Case) -> None:
@@ -505,6 +534,7 @@ class AetherExecutionEngine:
                     "error": task.error,
                     "timestamp": now_iso(),
                 })
+                self._checkpoint_task(case, task)
                 self._emit(case, "human_action.rejected", actor_id, {
                     "task_id": task_id,
                     "note": note,
@@ -524,6 +554,7 @@ class AetherExecutionEngine:
                 })
                 task.status = TaskStatus.COMPLETED
                 task.completed_at = now_iso()
+                self._checkpoint_task(case, task)
                 self._emit(case, "human_action.approved", actor_id, {
                     "task_id": task_id,
                     "note": note,

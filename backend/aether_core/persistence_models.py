@@ -62,6 +62,23 @@ class AetherTaskQueueRecord(Base):
     payload = Column(JSON, nullable=False, default=dict)
 
 
+class AetherTaskCheckpointRecord(Base):
+    __tablename__ = "aether_v2_task_checkpoints"
+    __table_args__ = {"schema": PERSISTENCE_SCHEMA}
+
+    case_id = Column(String(64), primary_key=True)
+    task_id = Column(String(128), primary_key=True)
+    status = Column(String(32), nullable=False, index=True)
+    result = Column(JSON, nullable=True)
+    evidence = Column(JSON, nullable=False, default=list)
+    error = Column(Text, nullable=True)
+    started_at = Column(String(64), nullable=True)
+    completed_at = Column(String(64), nullable=True)
+    attempts = Column(Integer, nullable=False, default=0)
+    idempotency_key = Column(String(256), nullable=True)
+    updated_at = Column(DateTime(timezone=True), nullable=False)
+
+
 class AetherUsageRecord(Base):
     __tablename__ = "aether_v2_usage"
     __table_args__ = (

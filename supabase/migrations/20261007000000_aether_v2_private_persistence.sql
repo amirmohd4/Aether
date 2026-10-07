@@ -69,10 +69,31 @@ create index if not exists idx_aether_v2_queue_locked_by
 create index if not exists idx_aether_v2_queue_lease_until
   on aether_internal.aether_v2_task_queue(lease_until);
 
+create table if not exists aether_internal.aether_v2_task_checkpoints (
+  case_id varchar(64) not null,
+  task_id varchar(128) not null,
+  status varchar(32) not null,
+  result jsonb,
+  evidence jsonb not null default '[]'::jsonb,
+  error text,
+  started_at timestamptz,
+  completed_at timestamptz,
+  attempts integer not null default 0,
+  idempotency_key varchar(256),
+  updated_at timestamptz not null default now(),
+  primary key (case_id, task_id)
+);
+
+create index if not exists idx_aether_v2_checkpoints_case_id
+  on aether_internal.aether_v2_task_checkpoints(case_id);
+create index if not exists idx_aether_v2_checkpoints_status
+  on aether_internal.aether_v2_task_checkpoints(status);
+
 -- Keep these execution tables behind the private schema boundary.
 alter table aether_internal.aether_v2_cases enable row level security;
 alter table aether_internal.aether_v2_execution_events enable row level security;
 alter table aether_internal.aether_v2_task_queue enable row level security;
+alter table aether_internal.aether_v2_task_checkpoints enable row level security;
 
 -- The execution schema is never a browser/client data surface.
 revoke all on schema aether_internal from anon, authenticated;

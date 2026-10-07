@@ -7,7 +7,13 @@ from sqlalchemy import text
 
 from backend.database import SessionLocal, engine
 from .domain import Case, TaskDefinition, TaskState, TaskStatus
-from .persistence_models import AetherCaseRecord, AetherExecutionEventRecord, AetherTaskQueueRecord, AetherUsageRecord
+from .persistence_models import (
+    AetherCaseRecord,
+    AetherExecutionEventRecord,
+    AetherTaskQueueRecord,
+    AetherTaskCheckpointRecord,
+    AetherUsageRecord,
+)
 
 
 class DatabaseCaseStore:
@@ -31,7 +37,13 @@ class DatabaseCaseStore:
             # metadata from the execution-core repository. The MVP runtime only
             # owns its private case/event/task tables; all other schemas are
             # migrated independently and must not be recreated on startup.
-            for model in (AetherCaseRecord, AetherExecutionEventRecord, AetherTaskQueueRecord, AetherUsageRecord):
+            for model in (
+                AetherCaseRecord,
+                AetherExecutionEventRecord,
+                AetherTaskQueueRecord,
+                AetherTaskCheckpointRecord,
+                AetherUsageRecord,
+            ):
                 model.__table__.create(bind=engine, checkfirst=True)
             self._schema_ready = True
 
@@ -181,6 +193,56 @@ class DatabaseCaseStore:
             if row is None:
                 raise KeyError(case_id)
             return self._deserialize_case(row.payload)
+
+    def put_task_checkpoint(self, case_id: str, task: TaskState) -> None:
+        """Persist the latest state of one task independently of the case blob.
+
+        This prevents a worker crash between case-wide writes from losing a
+        task's last durable checkpoint.
+        """
+        self._ensure_schema()
+        with SessionLocal() as db:
+            row = db.query(AetherTaskCheckpointRecord).filter_by(
+                case_id=case_id,
+                task_id=task.definition.id,
+            ).one_or_none()
+            if row is None:
+                row = AetherTaskCheckpointRecord(
+                    case_id=case_id,
+                    task_id=task.definition.id,
+                )
+                db.add(row)
+            row.status = task.status.value
+            row.result = task.result
+            row.evidence = task.evidence or []
+            row.error = task.error
+            row.started_at = task.started_at
+            row.completed_at = task.completed_at
+            row.attempts = task.attempts
+            row.idempotency_key = task.idempotency_key
+            row.updated_at = datetime.utcnow()
+            db.commit()
+
+    def task_checkpoints(self, case_id: str) -> Dict[str, Dict[str, Any]]:
+        self._ensure_schema()
+        with SessionLocal() as db:
+            rows = db.query(AetherTaskCheckpointRecord).filter(
+                AetherTaskCheckpointRecord.case_id == case_id
+            ).all()
+            return {
+                row.task_id: {
+                    "status": row.status,
+                    "result": row.result,
+                    "evidence": row.evidence or [],
+                    "error": row.error,
+                    "started_at": row.started_at,
+                    "completed_at": row.completed_at,
+                    "attempts": row.attempts,
+                    "idempotency_key": row.idempotency_key,
+                    "updated_at": row.updated_at.isoformat() if row.updated_at else None,
+                }
+                for row in rows
+            }
 
     def append_event(
         self,
