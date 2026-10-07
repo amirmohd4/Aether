@@ -166,6 +166,39 @@ def _authorize_case(case, principal: Principal) -> None:
     raise HTTPException(status_code=404, detail="Case not found")
 
 
+@router.get("/cases")
+def list_cases(
+    status: str | None = None,
+    limit: int = 50,
+    principal: Principal = Depends(require_principal),
+):
+    if principal.role.lower() == "admin" or principal.auth_mode == "none":
+        return {"cases": engine.store.list(status=status, limit=limit)}
+    if principal.role.lower() in {"officer", "department_admin"} and principal.tenant_id:
+        return {"cases": engine.store.list(tenant_id=principal.tenant_id, status=status, limit=limit)}
+    return {"cases": engine.store.list(owner_user_id=principal.subject, status=status, limit=limit)}
+
+
+@router.post("/cases/{case_id}/resume")
+def resume_case(case_id: str, principal: Principal = Depends(require_principal)):
+    try:
+        case = engine.get_case(case_id)
+        _authorize_case(case, principal)
+        return serialize(engine.execute_until_pause(case_id))
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Case not found")
+
+
+@router.get("/cases/{case_id}/events")
+def case_events(case_id: str, principal: Principal = Depends(require_principal)):
+    try:
+        case = engine.get_case(case_id)
+        _authorize_case(case, principal)
+        return {"case_id": case_id, "events": engine.store.events_for(case_id)}
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Case not found")
+
+
 @router.get("/cases/{case_id}")
 def get_case(case_id: str, principal: Principal = Depends(require_principal)):
     try:
