@@ -68,6 +68,38 @@ class AuditTrail:
             self._last_hashes[case_id] = entry["event_hash"]
             return entry
 
+    @staticmethod
+    def verify_chain(events: List[Dict[str, Any]]) -> Dict[str, Any]:
+        previous = None
+        for index, item in enumerate(events, start=1):
+            if item.get("previous_hash") != previous:
+                return {
+                    "valid": False,
+                    "checked_events": index - 1,
+                    "reason": "previous_hash mismatch",
+                }
+            expected = _event_hash({
+                "sequence": item.get("sequence", 0),
+                "timestamp": item.get("timestamp", ""),
+                "action": item.get("action", ""),
+                "actor": item.get("actor", ""),
+                "case_id": item.get("case_id", ""),
+                "data": item.get("data") or {},
+                "previous_hash": item.get("previous_hash"),
+            })
+            if item.get("event_hash") != expected:
+                return {
+                    "valid": False,
+                    "checked_events": index - 1,
+                    "reason": "event_hash mismatch",
+                }
+            previous = item.get("event_hash")
+        return {
+            "valid": True,
+            "checked_events": len(events),
+            "head_hash": previous,
+        }
+
     def for_case(self, case_id: str) -> List[Dict[str, Any]]:
         with self._lock:
             return [e.copy() for e in self.events if e["case_id"] == case_id]
