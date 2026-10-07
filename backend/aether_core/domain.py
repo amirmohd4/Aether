@@ -132,7 +132,7 @@ class Case:
     def human_work_remaining(self) -> int:
         # Demo estimate only; never presented as a real-world government SLA.
         return sum(
-            15 if t.definition.authority_required else 0
+            15 if (t.definition.authority_required or t.definition.physical_action) else 0
             for t in self.tasks.values()
             if t.status not in {TaskStatus.COMPLETED}
         )
