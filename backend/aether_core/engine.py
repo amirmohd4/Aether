@@ -138,6 +138,23 @@ class AetherExecutionEngine:
     def ready_tasks(self, case: Case) -> Iterable[TaskState]:
         return self.dependencies.ready_tasks(case)
 
+    def _production_connector_guard(self, task) -> None:
+        import os
+
+        if os.getenv("AETHER_ENV", "development").strip().lower() != "production":
+            return
+        if os.getenv("AETHER_ALLOW_SYNTHETIC_IN_PRODUCTION", "").strip().lower() == "true":
+            return
+
+        department = task.definition.department.strip().lower()
+        internal_departments = {"aether", "authorised authority", "authorised officer"}
+        if department in internal_departments:
+            return
+        if not self.workers.production_connector(task.definition.department):
+            raise RuntimeError(
+                f"Live execution blocked: no production connector configured for {task.definition.department}."
+            )
+
     def _production_rule_guard(self, case: Case) -> None:
         """Prevent live connector execution when rules are not authoritative."""
         import os
@@ -289,6 +306,7 @@ class AetherExecutionEngine:
 
     def _execute_task(self, case: Case, task: TaskState, queue_id: int | None = None) -> None:
         definition = task.definition
+        self._production_connector_guard(task)
         operation = definition.operation or self._operation_for(definition.id)
         worker = self.workers.get(definition.worker)
         task.idempotency_key = task.idempotency_key or f"{case.case_id}:{definition.id}"
