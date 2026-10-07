@@ -62,6 +62,8 @@ class Case:
     service_name: Optional[str] = None
     service_department: Optional[str] = None
     service_outcome: Optional[str] = None
+    ontology: Dict[str, Any] = field(default_factory=dict)
+    work_graph: Dict[str, Any] = field(default_factory=dict)
     created_at: str = field(default_factory=now_iso)
     updated_at: str = field(default_factory=now_iso)
 
