@@ -33,6 +33,7 @@ class AetherExecutionEventRecord(Base):
     __table_args__ = {"schema": PERSISTENCE_SCHEMA}
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+    sequence = Column(Integer, nullable=True, index=True)
     case_id = Column(String(64), nullable=False, index=True)
     action = Column(String(128), nullable=False, index=True)
     actor = Column(String(128), nullable=False)
