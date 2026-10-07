@@ -137,6 +137,22 @@ class AetherPaymentRecord(Base):
     completed_at = Column(DateTime(timezone=True), nullable=True)
 
 
+class AetherApiKeyRecord(Base):
+    __tablename__ = "aether_v2_api_keys"
+    __table_args__ = {"schema": PERSISTENCE_SCHEMA}
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    tenant_id = Column(String(128), nullable=False, index=True)
+    key_prefix = Column(String(32), nullable=False, unique=True, index=True)
+    key_hash = Column(String(128), nullable=False, unique=True, index=True)
+    role = Column(String(64), nullable=False)
+    scopes = Column(JSON, nullable=False, default=list)
+    status = Column(String(32), nullable=False, default="active", index=True)
+    created_at = Column(DateTime(timezone=True), nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=True)
+    last_used_at = Column(DateTime(timezone=True), nullable=True)
+
+
 class AetherUsageRecord(Base):
     __tablename__ = "aether_v2_usage"
     __table_args__ = (
