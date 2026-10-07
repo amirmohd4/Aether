@@ -43,6 +43,8 @@ class PaymentService:
         idempotency_key: str | None = None,
         metadata: Dict[str, Any] | None = None,
     ) -> Dict[str, Any]:
+        from .case_store import DatabaseCaseStore
+        DatabaseCaseStore().ensure_schema()
         if amount_minor < 0:
             raise ValueError("Payment amount cannot be negative")
         key = idempotency_key or f"{case_id}:{amount_minor}:{currency}"
@@ -81,6 +83,8 @@ class PaymentService:
             return self._serialize(row)
 
     def for_case(self, tenant_id: str, case_id: str) -> list[Dict[str, Any]]:
+        from .case_store import DatabaseCaseStore
+        DatabaseCaseStore().ensure_schema()
         with self.session_factory() as db:
             rows = db.query(AetherPaymentRecord).filter_by(
                 tenant_id=tenant_id,
