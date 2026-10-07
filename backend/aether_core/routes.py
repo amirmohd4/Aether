@@ -216,6 +216,21 @@ def resume_case(case_id: str, principal: Principal = Depends(require_principal))
         raise HTTPException(status_code=404, detail="Case not found")
 
 
+@router.get("/cases/{case_id}/audit")
+def case_audit_integrity(case_id: str, principal: Principal = Depends(require_principal)):
+    try:
+        case = engine.get_case(case_id)
+        _authorize_case(case, principal)
+        from .audit import AuditTrail
+        events = engine.store.events_for(case_id)
+        return {
+            "case_id": case_id,
+            "integrity": AuditTrail.verify_chain(events),
+        }
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Case not found")
+
+
 @router.get("/cases/{case_id}/events")
 def case_events(case_id: str, principal: Principal = Depends(require_principal)):
     try:
