@@ -72,6 +72,46 @@ def serialize(case, include_tasks: bool = True):
     return response
 
 
+@router.get("/release/readiness")
+def release_readiness():
+    import os
+    production = os.getenv("AETHER_ENV", "development").strip().lower() == "production"
+    checks = {
+        "database_url": bool(os.getenv("DATABASE_URL")),
+        "supabase_auth": os.getenv("AETHER_AUTH_MODE", "none").strip().lower() == "supabase",
+        "encryption_key": bool(os.getenv("AETHER_ENCRYPTION_KEY")),
+        "private_document_storage": bool(
+            os.getenv("SUPABASE_URL") and os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+        ),
+        "production_connectors": engine.workers.production_connectors_configured(),
+        "authoritative_rule_coverage": len(rule_registry.all()) > 0,
+        "legacy_api_quarantined": os.getenv("AETHER_ENABLE_LEGACY_API", "true").strip().lower() == "false",
+        "synthetic_mode": not engine.workers.production_connectors_configured(),
+    }
+    blockers = []
+    if production and not checks["database_url"]:
+        blockers.append("DATABASE_URL is not configured")
+    if production and not checks["supabase_auth"]:
+        blockers.append("AETHER_AUTH_MODE must be supabase")
+    if production and not checks["encryption_key"]:
+        blockers.append("AETHER_ENCRYPTION_KEY is not configured")
+    if production and not checks["private_document_storage"]:
+        blockers.append("Private Supabase document storage is not configured")
+    if production and not checks["production_connectors"]:
+        blockers.append("No live government connectors are configured")
+    if production and not checks["authoritative_rule_coverage"]:
+        blockers.append("No authoritative rule records are configured")
+
+    return {
+        "mode": "production" if production else "development_or_staging",
+        "ready_for_controlled_mvp": True,
+        "ready_for_production": production and not blockers,
+        "checks": checks,
+        "blockers": blockers,
+        "note": "Controlled MVP can run against deterministic synthetic government systems. Production readiness requires authorized live connectors and authoritative rule coverage."
+    }
+
+
 @router.get("/connectors")
 def connector_catalog():
     return {
