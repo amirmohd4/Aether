@@ -138,8 +138,27 @@ class AetherExecutionEngine:
     def ready_tasks(self, case: Case) -> Iterable[TaskState]:
         return self.dependencies.ready_tasks(case)
 
+    def _production_rule_guard(self, case: Case) -> None:
+        """Prevent live connector execution when rules are not authoritative."""
+        import os
+        production = os.getenv("AETHER_ENV", "development").strip().lower() == "production"
+        if not production or not self.workers.production_connectors_configured():
+            return
+        if not case.requirements:
+            raise RuntimeError("Live connector execution requires verified requirements")
+        unverified = [
+            req for req in case.requirements
+            if req.get("authority_status") != "source_backed"
+        ]
+        if unverified and os.getenv("AETHER_ALLOW_BASELINE_RULES", "").strip().lower() != "true":
+            raise RuntimeError(
+                "Live connector execution is blocked because one or more requirements "
+                "lack authoritative, effective-dated rule provenance."
+            )
+
     def execute_until_pause(self, case_id: str) -> Case:
         case = self.get_case(case_id)
+        self._production_rule_guard(case)
         self.queue.reclaim_expired(case_id)
         self._recover_task_states(case)
         with self._lock_for(case_id):
