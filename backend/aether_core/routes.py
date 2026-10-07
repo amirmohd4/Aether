@@ -85,6 +85,13 @@ def release_readiness():
         ),
         "production_connectors": engine.workers.production_connectors_configured(),
         "authoritative_rule_coverage": len(rule_registry.all()) > 0,
+        "notification_provider": bool(
+            os.getenv("AETHER_NOTIFICATION_WEBHOOK_URL")
+            or os.getenv("AETHER_NOTIFICATION_EMAIL_URL")
+            or os.getenv("AETHER_NOTIFICATION_SMS_URL")
+        ),
+        "payment_provider": bool(os.getenv("AETHER_PAYMENT_PROVIDER_URL")),
+        "worker_command_configured": bool(os.getenv("AETHER_WORKER_INTERVAL_SECONDS", "5")),
         "legacy_api_quarantined": os.getenv("AETHER_ENABLE_LEGACY_API", "true").strip().lower() == "false",
         "synthetic_mode": not engine.workers.production_connectors_configured(),
     }
@@ -101,6 +108,12 @@ def release_readiness():
         blockers.append("No live government connectors are configured")
     if production and not checks["authoritative_rule_coverage"]:
         blockers.append("No authoritative rule records are configured")
+    if production and not checks["notification_provider"]:
+        blockers.append("No notification provider is configured")
+    if production and not checks["payment_provider"]:
+        blockers.append("No payment provider is configured")
+    if production and os.getenv("AETHER_WORKER_DISABLED", "").strip().lower() == "true":
+        blockers.append("Durable worker runtime is disabled")
 
     return {
         "mode": "production" if production else "development_or_staging",
