@@ -70,6 +70,8 @@ def _supabase_principal(request: Request) -> Principal:
 
 def require_principal(request: Request) -> Principal:
     mode = auth_mode()
+    if os.getenv("AETHER_ENV", "development").strip().lower() == "production" and mode == "none":
+        raise HTTPException(status_code=500, detail="Production authentication is not configured")
     if mode == "none":
         return Principal(
             subject="demo",
