@@ -67,6 +67,19 @@ def connector_catalog():
     }
 
 
+@router.get("/usage")
+def usage_summary(
+    principal: Principal = Depends(require_principal),
+):
+    if principal.auth_mode == "none":
+        tenant_id = principal.tenant_id
+    else:
+        tenant_id = principal.tenant_id
+    if not tenant_id:
+        raise HTTPException(status_code=403, detail="Active tenant is required for usage reporting")
+    return engine.store.usage_summary(tenant_id)
+
+
 @router.get("/rules")
 def rule_catalog():
     return {
