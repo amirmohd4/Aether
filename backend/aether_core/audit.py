@@ -51,26 +51,31 @@ class AuditTrail:
     def __init__(self):
         self.events: List[Dict[str, Any]] = []
         self._last_hashes: Dict[str, str] = {}
+        self._sequences: Dict[str, int] = {}
         self._lock = RLock()
 
-    def seed_case(self, case_id: str, previous_hash: str | None) -> None:
+    def seed_case(self, case_id: str, previous_hash: str | None, sequence: int = 0) -> None:
         """Seed a recovered case so a restarted process continues its chain."""
-        if previous_hash:
-            with self._lock:
+        with self._lock:
+            if previous_hash:
                 self._last_hashes.setdefault(case_id, previous_hash)
+            if sequence:
+                self._sequences.setdefault(case_id, sequence)
 
     def record(self, action: str, actor: str, case_id: str, data: Dict[str, Any] | None = None):
         with self._lock:
             previous = self._last_hashes.get(case_id)
+            sequence = self._sequences.get(case_id, 0) + 1
             entry = event(
                 action,
                 actor,
                 case_id,
                 data,
-                sequence=len(self.events) + 1,
+                sequence=sequence,
                 previous_hash=previous,
             )
             self.events.append(entry)
+            self._sequences[case_id] = sequence
             self._last_hashes[case_id] = entry["event_hash"]
             return entry
 
