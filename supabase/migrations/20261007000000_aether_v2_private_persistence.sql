@@ -142,3 +142,28 @@ alter table if exists aether_internal.aether_v2_execution_events
 
 create index if not exists idx_aether_v2_events_event_hash
   on aether_internal.aether_v2_execution_events(event_hash);
+
+
+-- Provision a least-privilege Aether user membership when a new Auth user is
+-- created. Elevated roles must still be assigned by an administrator.
+create or replace function public.handle_aether_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.aether_memberships (user_id, tenant_id, role, status)
+  values (new.id, 'user:' || new.id::text, 'user', 'active')
+  on conflict (user_id, tenant_id) do nothing;
+  return new;
+end;
+$$;
+
+revoke all on function public.handle_aether_new_user() from public;
+revoke all on function public.handle_aether_new_user() from anon, authenticated;
+
+drop trigger if exists on_aether_auth_user_created on auth.users;
+create trigger on_aether_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_aether_new_user();
