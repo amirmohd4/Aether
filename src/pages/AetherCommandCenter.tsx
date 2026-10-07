@@ -77,6 +77,12 @@ type CaseResponse = {
   evidence: Array<{ source: string; request_id?: string; operation?: string }>;
   tasks: Record<string, Omit<Task, 'id'>> | Task[];
   outcome?: Record<string, unknown> | null;
+  execution_events?: Array<{
+    sequence?: number;
+    timestamp?: string;
+    action: string;
+    actor?: string;
+  }>;
   documents?: Array<{
     document_id: string;
     document_type: string;
@@ -143,6 +149,7 @@ export const AetherCommandCenter: React.FC = () => {
   const [payments, setPayments] = useState<Array<{ payment_id: string; amount_minor: number; currency: string; provider: string; status: string; created_at?: string | null }>>([]);
   const [paymentAmount, setPaymentAmount] = useState('0');
   const [paymentMessage, setPaymentMessage] = useState('');
+  const [humanNotes, setHumanNotes] = useState<Record<string, string>>({});
   const [principal, setPrincipal] = useState<Principal | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -514,7 +521,10 @@ export const AetherCommandCenter: React.FC = () => {
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', ...authHeaders() },
-          body: JSON.stringify({ approved, note: 'MVP authorised-human action' }),
+          body: JSON.stringify({
+            approved,
+            note: humanNotes[taskId] || (approved ? 'Approved by authorised operator.' : 'Rejected by authorised operator.'),
+          }),
         }
       );
       const body = await response.json();
@@ -993,13 +1003,36 @@ export const AetherCommandCenter: React.FC = () => {
                           <p className="mt-1 text-xs text-slate-400">{action.reason}</p>
                         </div>
                         {principal && ['officer', 'department_admin', 'admin'].includes(principal.role.toLowerCase()) ? (
-                          <button
-                            onClick={() => continueHumanTask(action.task_id)}
-                            disabled={loading}
-                            className="rounded-lg bg-violet-300 px-4 py-2 text-xs font-bold text-slate-950"
-                          >
-                            Approve / continue
-                          </button>
+                          <div className="w-full space-y-2 sm:max-w-md">
+                            <textarea
+                              value={humanNotes[action.task_id] || ''}
+                              onChange={(e) =>
+                                setHumanNotes((current) => ({
+                                  ...current,
+                                  [action.task_id]: e.target.value,
+                                }))
+                              }
+                              placeholder="Decision note (optional)"
+                              rows={2}
+                              className="w-full rounded-lg border border-white/10 bg-slate-950 p-2 text-xs text-slate-200"
+                            />
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                onClick={() => continueHumanTask(action.task_id, true)}
+                                disabled={loading}
+                                className="rounded-lg bg-violet-300 px-4 py-2 text-xs font-bold text-slate-950 disabled:opacity-50"
+                              >
+                                Approve / continue
+                              </button>
+                              <button
+                                onClick={() => continueHumanTask(action.task_id, false)}
+                                disabled={loading}
+                                className="rounded-lg border border-red-300/20 bg-red-300/10 px-4 py-2 text-xs font-bold text-red-100 disabled:opacity-50"
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          </div>
                         ) : null}
                       </div>
                     ))}
@@ -1081,6 +1114,29 @@ export const AetherCommandCenter: React.FC = () => {
                             <span className="text-[10px] text-cyan-200">{document.extraction_mode}</span>
                           </div>
                           <p className="mt-1 break-all text-[9px] text-slate-500">SHA-256 {document.sha256}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {caseData.execution_events && caseData.execution_events.length > 0 && (
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <h3 className="font-semibold">Audit trail</h3>
+                        <p className="mt-1 text-xs text-slate-500">Recent tamper-evident execution events for this case.</p>
+                      </div>
+                      <span className="text-[10px] text-slate-500">{caseData.execution_events.length} events shown</span>
+                    </div>
+                    <div className="mt-4 space-y-2">
+                      {caseData.execution_events.slice(-10).reverse().map((event) => (
+                        <div key={String(event.sequence) + event.action} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/5 bg-black/10 p-2 text-[10px]">
+                          <div className="min-w-0">
+                            <span className="font-medium text-slate-200">{event.action}</span>
+                            {event.actor && <span className="ml-2 text-slate-500">by {event.actor}</span>}
+                          </div>
+                          <span className="text-slate-500">{event.timestamp || ''}</span>
                         </div>
                       ))}
                     </div>
