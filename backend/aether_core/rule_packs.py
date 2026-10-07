@@ -123,6 +123,10 @@ def validate_rule_pack(payload: Dict[str, Any]) -> RulePack:
             raise RulePackValidationError(f"rule[{index}] has unsupported authority_status")
 
         if rule["authority_status"] == "source_backed":
+            if not rule.get("service_id"):
+                raise RulePackValidationError(
+                    f"rule[{index}] source_backed rules require service_id"
+                )
             if not rule.get("source_url") or not rule.get("source_title"):
                 raise RulePackValidationError(
                     f"rule[{index}] source_backed rules require source_url and source_title"
