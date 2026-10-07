@@ -283,7 +283,7 @@ class AetherExecutionEngine:
                 }
                 required_documents = (
                     [doc for req in case.requirements for doc in req.get("documents", [])]
-                    if definition.id == "document_intake"
+                    if definition.id == "document_intake" and case.inputs.get("enforce_intake_gate")
                     else []
                 )
                 verification = self.verifier.verify_result(
