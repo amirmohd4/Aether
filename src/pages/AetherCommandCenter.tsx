@@ -24,6 +24,24 @@ type Requirement = {
   confidence?: string;
 };
 
+type Understanding = {
+  service_id?: string | null;
+  service_name?: string | null;
+  confidence: number;
+  matched_keywords: string[];
+  candidates: Array<{
+    service_id: string;
+    service_name: string;
+    department: string;
+    score: number;
+    matched_keywords: string[];
+  }>;
+  ambiguous: boolean;
+  missing_context: string[];
+};
+
+type CaseListItem = CaseResponse['summary'];
+
 type CaseResponse = {
   summary: {
     case_id: string;
@@ -44,6 +62,7 @@ type CaseResponse = {
     human_work_remaining: number;
   };
   requirements: Requirement[];
+  understanding?: Understanding;
   human_actions: Array<{ task_id: string; task: string; reason: string }>;
   exceptions: Array<{ type?: string; severity?: string; message?: string; error?: string }>;
   evidence: Array<{ source: string; request_id?: string; operation?: string }>;
@@ -94,6 +113,8 @@ export const AetherCommandCenter: React.FC = () => {
   const [state, setState] = useState('Jammu and Kashmir');
   const [district, setDistrict] = useState('Jammu');
   const [caseData, setCaseData] = useState<CaseResponse | null>(null);
+  const [understanding, setUnderstanding] = useState<Understanding | null>(null);
+  const [recentCases, setRecentCases] = useState<CaseListItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [authEmail, setAuthEmail] = useState('');
@@ -102,12 +123,57 @@ export const AetherCommandCenter: React.FC = () => {
   const [authMessage, setAuthMessage] = useState('');
   const { session, loading: authLoading, required: authRequired, signIn, signUp, signOut } = useAuth();
 
+  React.useEffect(() => {
+    if (!authRequired || session) loadRecentCases();
+  }, [authRequired, session?.access_token]);
+
   const completedPercent = useMemo(() => {
     if (!caseData?.summary.tasks_total) return 0;
     return Math.round((caseData.summary.tasks_completed / caseData.summary.tasks_total) * 100);
   }, [caseData]);
 
   const authHeaders = () => session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
+
+  async function loadRecentCases() {
+    try {
+      const params = new URLSearchParams({ limit: '12' });
+      const response = await fetch(`${API_BASE}/api/aether/v2/cases?${params.toString()}`, {
+        headers: authHeaders(),
+      });
+      if (!response.ok) return;
+      const body = await response.json();
+      setRecentCases(body.cases || []);
+    } catch {
+      // The active case remains usable when case history cannot be loaded.
+    }
+  }
+
+  async function analyzeObjective() {
+    setError('');
+    try {
+      const response = await fetch(`${API_BASE}/api/aether/v2/understand`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({
+          objective,
+          customer_type: customerType,
+          jurisdiction: { country, state, district },
+          inputs: {},
+        }),
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.detail || `Understanding returned ${response.status}`);
+      setUnderstanding(body);
+      if (body.ambiguous) {
+        setError('Aether found more than one plausible service. Choose a clearer objective before execution.');
+      }
+      return body as Understanding;
+    } catch (err) {
+      setUnderstanding(null);
+      setError(err instanceof Error ? err.message : 'Unable to understand objective');
+      return null;
+    }
+  }
 
   async function submitAuth() {
     setAuthMessage('');
@@ -121,6 +187,8 @@ export const AetherCommandCenter: React.FC = () => {
     setLoading(true);
     setError('');
     try {
+      const analyzed = await analyzeObjective();
+      if (!analyzed || analyzed.ambiguous || !analyzed.service_id) return;
       const response = await fetch(`${API_BASE}/api/aether/v2/cases`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders() },
@@ -142,8 +210,28 @@ export const AetherCommandCenter: React.FC = () => {
       const body = await response.json();
       if (!response.ok) throw new Error(body.detail || `Aether API returned ${response.status}`);
       setCaseData(body);
+      setUnderstanding(body.understanding || analyzed);
+      await loadRecentCases();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to start Aether case');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function openCase(caseId: string) {
+    setLoading(true);
+    setError('');
+    try {
+      const response = await fetch(`${API_BASE}/api/aether/v2/cases/${caseId}`, {
+        headers: authHeaders(),
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.detail || `Case returned ${response.status}`);
+      setCaseData(body);
+      setUnderstanding(body.understanding || null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to reopen case');
     } finally {
       setLoading(false);
     }
@@ -248,6 +336,38 @@ export const AetherCommandCenter: React.FC = () => {
               Describe the real-world objective instead of navigating department forms.
             </p>
 
+            <button
+              onClick={analyzeObjective}
+              disabled={loading || !objective.trim()}
+              className="mt-4 w-full rounded-xl border border-cyan-300/20 bg-cyan-300/5 px-4 py-2 text-xs font-semibold text-cyan-100 disabled:opacity-50"
+            >
+              Understand objective first
+            </button>
+
+            {understanding && (
+              <div className="mt-3 rounded-xl border border-white/10 bg-black/10 p-3 text-[11px]">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-slate-400">Aether understanding</span>
+                  <span className="font-semibold text-cyan-200">
+                    {Math.round(understanding.confidence * 100)}% confidence
+                  </span>
+                </div>
+                <p className="mt-1 text-sm font-semibold text-white">
+                  {understanding.service_name || 'Needs clarification'}
+                </p>
+                {understanding.candidates.length > 1 && (
+                  <div className="mt-2 space-y-1 text-slate-400">
+                    {understanding.candidates.slice(0, 3).map((candidate) => (
+                      <div key={candidate.service_id} className="flex justify-between gap-2">
+                        <span className="truncate">{candidate.service_name}</span>
+                        <span>{candidate.score}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             <label className="mt-5 block text-xs font-semibold text-slate-300">Objective</label>
             <textarea
               value={objective}
@@ -298,6 +418,30 @@ export const AetherCommandCenter: React.FC = () => {
             )}
 
             {error && <div className="mt-4 rounded-xl border border-red-400/20 bg-red-400/10 p-3 text-xs text-red-200">{error}</div>}
+
+            <div className="mt-6 border-t border-white/10 pt-5">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-semibold text-slate-300">Recent cases</h3>
+                <button onClick={loadRecentCases} className="text-[10px] text-cyan-300 hover:text-cyan-200">Refresh</button>
+              </div>
+              <div className="mt-2 space-y-2">
+                {recentCases.length === 0 ? (
+                  <p className="text-[11px] text-slate-500">No saved cases yet.</p>
+                ) : recentCases.slice(0, 6).map((item) => (
+                  <button
+                    key={item.case_id}
+                    onClick={() => openCase(item.case_id)}
+                    className="w-full rounded-lg border border-white/5 bg-black/10 p-2 text-left hover:border-white/10"
+                  >
+                    <div className="truncate text-[11px] font-medium text-slate-200">{item.service_name || item.objective}</div>
+                    <div className="mt-1 flex justify-between gap-2 text-[9px] text-slate-500">
+                      <span>{item.status.replace('_', ' ')}</span>
+                      <span>{item.case_id}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
           </aside>
 
           <section className="space-y-6">
@@ -327,6 +471,9 @@ export const AetherCommandCenter: React.FC = () => {
                       <p className="text-xs text-slate-500">CASE {caseData.summary.case_id}</p>
                       <h2 className="mt-1 text-xl font-semibold">{caseData.summary.objective}</h2>
                       <p className="mt-1 text-xs text-slate-500">{caseData.summary.service_department || 'Aether'} · critical path: {caseData.summary.critical_path.join(' → ') || 'none'}</p>
+                      {understanding?.matched_keywords?.length ? (
+                        <p className="mt-1 text-[10px] text-cyan-300/70">Matched: {understanding.matched_keywords.join(', ')}</p>
+                      ) : null}
                     </div>
                     <span className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-cyan-200">{caseData.summary.status}</span>
                   </div>
