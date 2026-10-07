@@ -23,6 +23,12 @@ class ServiceDefinition:
 
 STOPWORDS = {"a", "an", "the", "to", "my", "i", "want", "need", "please", "me", "for", "this", "get", "apply", "application", "service", "process"}
 
+# Enterprise requests use the same service eligibility surface as business
+# requests unless a service explicitly defines a different customer class.
+CUSTOMER_TYPE_ALIASES = {
+    "enterprise": "business",
+}
+
 SERVICE_ALIASES = {
     "property_registration": ["register a property", "property registry", "sale deed registration"],
     "mutation": ["mutation of property", "change land owner", "land record transfer", "record mutation"],
@@ -216,8 +222,12 @@ class ServiceRegistry:
         text = _normalize(objective)
         tokens = set(text.split())
         candidates = []
+        requested_customer_type = CUSTOMER_TYPE_ALIASES.get(
+            customer_type.strip().lower(),
+            customer_type.strip().lower(),
+        )
         for service in self._services.values():
-            if customer_type and customer_type.lower() not in service.customer_types:
+            if requested_customer_type and requested_customer_type not in service.customer_types:
                 continue
             matches: List[str] = []
             score = 0
