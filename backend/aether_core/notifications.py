@@ -3,8 +3,6 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Dict, List
 
-from sqlalchemy import Session
-
 from .persistence_models import AetherNotificationRecord
 
 
