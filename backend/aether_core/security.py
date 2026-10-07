@@ -152,7 +152,7 @@ def require_principal(request: Request) -> Principal:
 
 def require_scope(scope: str):
     def dependency(principal: Principal = Depends(require_principal)) -> Principal:
-        if principal.auth_mode == "none" or "*" in principal.scopes or scope in principal.scopes:
+        if principal.auth_mode != "api_key" or "*" in principal.scopes or scope in principal.scopes:
             return principal
         raise HTTPException(status_code=403, detail=f"Missing Aether API scope: {scope}")
     return dependency
