@@ -98,7 +98,7 @@ def discover_requirements(request: StartCaseRequest):
 
 
 @router.post("/cases")
-def start_case(request: StartCaseRequest):
+def start_case(request: StartCaseRequest, principal: Principal = Depends(require_principal)):
     understanding = understanding_engine.understand(
         request.objective,
         request.customer_type,
@@ -137,16 +137,32 @@ def start_case(request: StartCaseRequest):
         request.customer_type,
         request.jurisdiction,
         {**request.inputs, "enforce_intake_gate": True},
+        owner_user_id=principal.subject,
+        tenant_id=principal.tenant_id or principal.subject,
     )
     case.requirements = [r.__dict__ for r in requirements]
     case = engine.execute_until_pause(case.case_id)
     return serialize(case)
 
 
+def _authorize_case(case, principal: Principal) -> None:
+    if principal.auth_mode == "none" or principal.role.lower() == "admin":
+        return
+    same_owner = case.owner_user_id and case.owner_user_id == principal.subject
+    same_tenant = case.tenant_id and principal.tenant_id and case.tenant_id == principal.tenant_id
+    if principal.role.lower() in {"officer", "department_admin"} and same_tenant:
+        return
+    if same_owner and (not case.tenant_id or not principal.tenant_id or same_tenant):
+        return
+    raise HTTPException(status_code=404, detail="Case not found")
+
+
 @router.get("/cases/{case_id}")
-def get_case(case_id: str):
+def get_case(case_id: str, principal: Principal = Depends(require_principal)):
     try:
-        return serialize(engine.get_case(case_id))
+        case = engine.get_case(case_id)
+        _authorize_case(case, principal)
+        return serialize(case)
     except KeyError:
         raise HTTPException(status_code=404, detail="Case not found")
 
@@ -154,6 +170,8 @@ def get_case(case_id: str):
 @router.post("/cases/{case_id}/human/{task_id}")
 def human_decision(case_id: str, task_id: str, request: HumanDecisionRequest, principal: Principal = Depends(require_role("officer", "admin"))):
     try:
+        case = engine.get_case(case_id)
+        _authorize_case(case, principal)
         decision = "approved" if request.approved else "rejected"
         case = engine.complete_human_task(case_id, task_id, decision, request.note or "")
         return serialize(case)
