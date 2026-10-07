@@ -7,6 +7,7 @@ from uuid import uuid4
 from .domain import Case, TaskState, TaskStatus, now_iso
 from .synthetic_government import SyntheticGovernmentSystem
 from .templates import TEMPLATES, infer_template
+from .service_registry import ServiceRegistry
 from .workers import WorkerContext, WorkerRegistry
 
 
@@ -17,15 +18,21 @@ class AetherExecutionEngine:
         self.cases: Dict[str, Case] = {}
         self.gov = SyntheticGovernmentSystem()
         self.workers = WorkerRegistry(self.gov)
+        self.services = ServiceRegistry()
 
     def create_case(self, objective: str, customer_type: str, jurisdiction: Dict[str, str], inputs: Dict[str, Any] | None = None) -> Case:
-        template = infer_template(objective, customer_type)
+        service = self.services.resolve(objective, customer_type)
+        template = service.template if service and service.template in TEMPLATES else infer_template(objective, customer_type)
         requirements_fn, tasks_fn = TEMPLATES[template]
         tasks = {d.id: TaskState(definition=d) for d in tasks_fn()}
         case = Case(
             case_id=f"A-{uuid4().hex[:10].upper()}", objective=objective,
             customer_type=customer_type, jurisdiction=jurisdiction, inputs=inputs or {},
             requirements=requirements_fn(), tasks=tasks,
+            service_id=service.id if service else None,
+            service_name=service.name if service else None,
+            service_department=service.department if service else None,
+            service_outcome=service.outcome if service else None,
         )
         self.cases[case.case_id] = case
         self._refresh_ready(case)
