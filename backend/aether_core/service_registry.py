@@ -161,6 +161,13 @@ class ServiceRegistry:
                 template=row[5],
                 outcome=row[6],
                 required_documents=_document_defaults(row[0]),
+                physical_action_possible=row[0] in {
+                    "driving_license",
+                    "vehicle_registration",
+                    "medical_license",
+                    "building_permit",
+                    "factory_license",
+                },
             )
 
     def get(self, service_id: str) -> Optional[ServiceDefinition]:
