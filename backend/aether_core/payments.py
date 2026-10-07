@@ -3,6 +3,9 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Dict
 
+import os
+import httpx
+
 from .persistence_models import AetherPaymentRecord
 
 
@@ -27,12 +30,60 @@ class DemoPaymentProvider(PaymentProvider):
         }
 
 
+class ConfiguredHTTPPaymentProvider(PaymentProvider):
+    """Normalized external payment adapter.
+
+    Contract:
+      POST {base_url}/payments
+      -> {provider_payment_id, status, amount, currency}
+    """
+
+    name = "http"
+
+    def __init__(self, base_url: str, token: str | None = None, timeout_seconds: float = 15.0):
+        self.base_url = base_url.rstrip("/")
+        self.token = token
+        self.timeout_seconds = timeout_seconds
+
+    def create_payment(self, payment_id: str, amount: int, currency: str, metadata: Dict[str, Any]) -> Dict[str, Any]:
+        headers = {"Content-Type": "application/json", "Idempotency-Key": payment_id}
+        if self.token:
+            headers["Authorization"] = f"Bearer {self.token}"
+        response = httpx.post(
+            f"{self.base_url}/payments",
+            json={"payment_id": payment_id, "amount_minor": amount, "currency": currency, "metadata": metadata},
+            headers=headers,
+            timeout=self.timeout_seconds,
+        )
+        response.raise_for_status()
+        data = response.json()
+        return {
+            "provider_payment_id": data.get("provider_payment_id"),
+            "status": data.get("status", "pending"),
+            "amount": data.get("amount", amount),
+            "currency": data.get("currency", currency),
+        }
+
+
+def configured_payment_provider() -> PaymentProvider:
+    url = os.getenv("AETHER_PAYMENT_PROVIDER_URL", "").strip()
+    token = os.getenv("AETHER_PAYMENT_PROVIDER_TOKEN", "").strip() or None
+    production = os.getenv("AETHER_ENV", "development").strip().lower() == "production"
+    if url:
+        return ConfiguredHTTPPaymentProvider(url, token)
+    if production:
+        raise RuntimeError(
+            "AETHER_PAYMENT_PROVIDER_URL is required in production for payment operations"
+        )
+    return DemoPaymentProvider()
+
+
 class PaymentService:
     """Idempotent payment ledger with replaceable provider implementation."""
 
     def __init__(self, session_factory, provider: PaymentProvider | None = None):
         self.session_factory = session_factory
-        self.provider = provider or DemoPaymentProvider()
+        self.provider = provider or configured_payment_provider()
 
     def create(
         self,
