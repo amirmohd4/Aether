@@ -762,12 +762,6 @@ export const AetherCommandCenter: React.FC = () => {
               />
               Use demo evidence for a full synthetic run
             </label>
-            {tenantSelectionRequired && (
-              <div className="mt-4 rounded-xl border border-amber-300/20 bg-amber-300/5 p-3 text-[11px] text-amber-100">
-                This account has multiple active Aether workspaces. Select the workspace above before starting or viewing cases.
-              </div>
-            )}
-
             <div className="mt-3 rounded-xl border border-cyan-300/10 bg-cyan-300/5 p-3 text-[11px] text-cyan-100">
               {useDemoEvidence
                 ? 'Demo mode supplies synthetic document types so the execution graph can be exercised end-to-end.'
@@ -1012,3 +1006,257 @@ export const AetherCommandCenter: React.FC = () => {
                           ))}
                         </select>
                         <input
+                          type="file"
+                          onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+                          className="rounded-lg border border-white/10 bg-slate-900 p-2 text-xs text-slate-300"
+                        />
+                        <button
+                          onClick={uploadDocument}
+                          disabled={loading || !uploadDocumentType || !uploadFile}
+                          className="rounded-lg border border-cyan-300/20 px-3 py-2 text-xs font-bold text-cyan-100 disabled:opacity-50"
+                        >
+                          Upload
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {caseData.requirements.length > 0 && (
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+                    <h3 className="font-semibold">Requirements and evidence</h3>
+                    <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                      {caseData.requirements.map((r) => (
+                        <div key={r.name} className="rounded-xl bg-white/[0.04] p-3">
+                          <div className="flex gap-2">
+                            <FileText className="h-4 w-4 text-cyan-300" />
+                            <span className="text-sm">{r.name}</span>
+                          </div>
+                          <p className="mt-1 text-[11px] text-slate-500">{r.documents.join(', ') || 'No document input'}</p>
+                          {r.source && <p className="mt-2 truncate text-[10px] text-cyan-300/70">Source-backed: {r.source}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+                  <h3 className="font-semibold">Aether work graph</h3>
+                  <div className="mt-4 grid gap-2 md:grid-cols-2">
+                    {tasks.map((task) => <TaskRow key={task.id} task={task} />)}
+                  </div>
+                </div>
+
+                {caseData.exceptions.length > 0 && (
+                  <div className="rounded-2xl border border-amber-300/20 bg-amber-300/5 p-5">
+                    <div className="flex items-center gap-2">
+                      <CircleAlert className="h-5 w-5 text-amber-300" />
+                      <h3 className="font-semibold">Exception detected</h3>
+                    </div>
+                    {caseData.exceptions.map((e, i) => (
+                      <p key={i} className="mt-2 text-sm text-amber-100">{e.message || e.error || e.type || 'Exception'}</p>
+                    ))}
+                  </div>
+                )}
+
+                {caseData.human_actions.length > 0 && (
+                  <div className="rounded-2xl border border-violet-300/20 bg-violet-300/5 p-5">
+                    <div className="flex items-center gap-2">
+                      <UserRound className="h-5 w-5 text-violet-300" />
+                      <h3 className="font-semibold">Human authority boundary</h3>
+                    </div>
+                    {caseData.human_actions.map((action) => (
+                      <div key={action.task_id} className="mt-4 flex flex-col gap-3 rounded-xl bg-black/20 p-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <p className="text-sm font-medium">{action.task}</p>
+                          <p className="mt-1 text-xs text-slate-400">{action.reason}</p>
+                        </div>
+                        {principal && ['officer', 'department_admin', 'admin'].includes(principal.role.toLowerCase()) ? (
+                          <div className="w-full space-y-2 sm:max-w-md">
+                            <textarea
+                              value={humanNotes[action.task_id] || ''}
+                              onChange={(e) =>
+                                setHumanNotes((current) => ({
+                                  ...current,
+                                  [action.task_id]: e.target.value,
+                                }))
+                              }
+                              placeholder="Decision note (optional)"
+                              rows={2}
+                              className="w-full rounded-lg border border-white/10 bg-slate-950 p-2 text-xs text-slate-200"
+                            />
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                onClick={() => continueHumanTask(action.task_id, true)}
+                                disabled={loading}
+                                className="rounded-lg bg-violet-300 px-4 py-2 text-xs font-bold text-slate-950 disabled:opacity-50"
+                              >
+                                Approve / continue
+                              </button>
+                              <button
+                                onClick={() => continueHumanTask(action.task_id, false)}
+                                disabled={loading}
+                                className="rounded-lg border border-red-300/20 bg-red-300/10 px-4 py-2 text-xs font-bold text-red-100 disabled:opacity-50"
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <h3 className="font-semibold">Payments</h3>
+                      <p className="mt-1 text-xs text-slate-500">
+                        Controlled-MVP payment ledger. Live fees/providers are configured externally.
+                      </p>
+                    </div>
+                    <span className="text-[10px] text-slate-500">{payments.length} recorded</span>
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <input
+                      inputMode="decimal"
+                      value={paymentAmount}
+                      onChange={(e) => setPaymentAmount(e.target.value)}
+                      placeholder="Amount in INR"
+                      className="w-40 rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs"
+                    />
+                    <button
+                      onClick={createPayment}
+                      disabled={loading}
+                      className="rounded-lg border border-emerald-300/20 bg-emerald-300/10 px-3 py-2 text-xs font-bold text-emerald-100 disabled:opacity-50"
+                    >
+                      Create payment
+                    </button>
+                  </div>
+                  {paymentMessage && <p className="mt-2 text-[10px] text-emerald-200">{paymentMessage}</p>}
+                  {payments.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      {payments.slice(0, 5).map((payment) => (
+                        <div key={payment.payment_id} className="flex items-center justify-between rounded-lg border border-white/5 bg-black/10 p-2 text-[10px]">
+                          <span className="font-mono text-slate-300">{payment.payment_id}</span>
+                          <span className="text-slate-400">{(payment.amount_minor / 100).toFixed(2)} {payment.currency}</span>
+                          <span className="text-cyan-200">{payment.status}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {notifications.length > 0 && (
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+                    <div className="flex items-center justify-between gap-2">
+                      <h3 className="font-semibold">Workspace notifications</h3>
+                      <span className="text-[10px] text-slate-500">{notifications.length} recent</span>
+                    </div>
+                    <div className="mt-3 space-y-2">
+                      {notifications.map((notice) => (
+                        <div key={notice.id} className="rounded-lg border border-white/5 bg-black/10 p-2">
+                          <div className="flex justify-between gap-2 text-[10px]">
+                            <span className="text-slate-200">{notice.event_type}</span>
+                            <span className="text-slate-500">{notice.status}</span>
+                          </div>
+                          <p className="mt-1 text-[9px] text-slate-500">{notice.case_id || 'workspace'} · {notice.created_at || ''}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {caseData.documents && caseData.documents.length > 0 && (
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-5 w-5 text-cyan-300" />
+                      <h3 className="font-semibold">Document vault</h3>
+                      <span className="text-[10px] text-slate-500">{caseData.documents.length} uploaded</span>
+                    </div>
+                    <div className="mt-4 space-y-2">
+                      {caseData.documents.slice(-8).map((document) => (
+                        <div key={document.document_id} className="rounded-xl border border-white/5 bg-black/10 p-3">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <span className="text-xs font-medium text-slate-200">{document.document_type} · {document.filename}</span>
+                            <span className="text-[10px] text-cyan-200">{document.extraction_mode}</span>
+                          </div>
+                          <p className="mt-1 break-all text-[9px] text-slate-500">SHA-256 {document.sha256}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {caseData.execution_events && caseData.execution_events.length > 0 && (
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <h3 className="font-semibold">Audit trail</h3>
+                        <p className="mt-1 text-xs text-slate-500">Recent tamper-evident execution events for this case.</p>
+                      </div>
+                      <span className="text-[10px] text-slate-500">{caseData.execution_events.length} events shown</span>
+                    </div>
+                    <div className="mt-4 space-y-2">
+                      {caseData.execution_events.slice(-10).reverse().map((event) => (
+                        <div key={String(event.sequence) + event.action} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/5 bg-black/10 p-2 text-[10px]">
+                          <div className="min-w-0">
+                            <span className="font-medium text-slate-200">{event.action}</span>
+                            {event.actor && <span className="ml-2 text-slate-500">by {event.actor}</span>}
+                          </div>
+                          <span className="text-slate-500">{event.timestamp || ''}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="rounded-2xl border border-emerald-300/20 bg-emerald-300/5 p-5">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="h-5 w-5 text-emerald-300" />
+                    <h3 className="font-semibold">Evidence ledger</h3>
+                  </div>
+                  <p className="mt-2 text-xs text-slate-400">
+                    {caseData.evidence.length} evidence entries recorded. Execution events remain auditable on the case.
+                  </p>
+                </div>
+              </>
+            )}
+          </section>
+        </section>
+      </div>
+    </main>
+  );
+};
+
+const Metric = ({ label, value }: { label: string; value: string }) => (
+  <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
+    <p className="text-[11px] uppercase tracking-wide text-slate-500">{label}</p>
+    <p className="mt-1 truncate text-xl font-bold">{value}</p>
+  </div>
+);
+
+const TaskRow = ({ task }: { task: Task }) => {
+  const done = task.status === 'completed';
+  const human = task.status === 'human_review';
+  const exception = task.status === 'exception';
+  return (
+    <div className="rounded-xl border border-white/5 bg-black/10 p-3">
+      <div className="flex items-start gap-3">
+        {done
+          ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
+          : exception
+            ? <CircleAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
+            : human
+              ? <UserRound className="mt-0.5 h-4 w-4 shrink-0 text-violet-300" />
+              : <Activity className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" />}
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium">{task.name}</p>
+          <p className="mt-1 text-[11px] text-slate-500">{task.department} · {task.worker} · attempts {task.attempts ?? 0}</p>
+        </div>
+        <span className="text-[10px] uppercase text-slate-500">{task.status.replace('_', ' ')}</span>
+      </div>
+    </div>
+  );
+};
