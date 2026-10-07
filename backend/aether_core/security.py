@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import hashlib
 import hmac
 import os
+from datetime import datetime, timezone
 from typing import Optional
 
 import httpx
@@ -10,6 +12,7 @@ from fastapi import Depends, HTTPException, Request
 from sqlalchemy import text
 
 from backend.database import SessionLocal
+from .persistence_models import AetherApiKeyRecord
 
 
 @dataclass(frozen=True)
@@ -29,14 +32,42 @@ def auth_mode() -> str:
 def _api_key_principal(request: Request) -> Principal:
     configured = os.getenv("AETHER_API_KEY")
     supplied = request.headers.get("X-Aether-API-Key")
-    if not configured or not supplied or not hmac.compare_digest(supplied, configured):
-        raise HTTPException(status_code=401, detail="Valid Aether API key required")
-    return Principal(
-        subject=os.getenv("AETHER_API_KEY_SUBJECT", "api-client"),
-        role=os.getenv("AETHER_API_KEY_ROLE", "service"),
-        tenant_id=os.getenv("AETHER_API_KEY_TENANT_ID"),
-        auth_mode="api_key",
-    )
+    if not supplied:
+        raise HTTPException(status_code=401, detail="Aether API key required")
+
+    if configured and hmac.compare_digest(supplied, configured):
+        return Principal(
+            subject=os.getenv("AETHER_API_KEY_SUBJECT", "api-client"),
+            role=os.getenv("AETHER_API_KEY_ROLE", "service"),
+            tenant_id=os.getenv("AETHER_API_KEY_TENANT_ID"),
+            auth_mode="api_key",
+        )
+
+    key_hash = hashlib.sha256(supplied.encode("utf-8")).hexdigest()
+    try:
+        with SessionLocal() as db:
+            row = db.query(AetherApiKeyRecord).filter_by(
+                key_hash=key_hash,
+                status="active",
+            ).one_or_none()
+            if not row:
+                raise HTTPException(status_code=401, detail="Invalid or revoked Aether API key")
+            if row.expires_at and row.expires_at <= datetime.now(timezone.utc).replace(tzinfo=None):
+                row.status = "expired"
+                db.commit()
+                raise HTTPException(status_code=401, detail="Aether API key expired")
+            row.last_used_at = datetime.utcnow()
+            db.commit()
+            return Principal(
+                subject=f"api-key:{row.key_prefix}",
+                role=row.role,
+                tenant_id=row.tenant_id,
+                auth_mode="api_key",
+            )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="API key store unavailable") from exc
 
 
 def _supabase_principal(request: Request) -> Principal:
