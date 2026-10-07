@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable, List
+from typing import Dict, Iterable, List
 
 from .domain import Case, TaskState, TaskStatus
 
@@ -14,12 +14,37 @@ class DependencySnapshot:
 
 
 class DependencyEngine:
-    """Recalculates task availability without globally pausing the case."""
+    """Recalculates task availability without globally pausing the case.
+
+    A normal digital task remains pending behind a human/physical prerequisite.
+    A statutory-authority task is marked blocked when its unresolved dependency
+    chain contains a human/physical action, making the authority boundary
+    visible without treating the case itself as failed.
+    """
 
     def refresh(self, case: Case) -> DependencySnapshot:
         ready: List[str] = []
         waiting: List[str] = []
         blocked: List[str] = []
+
+        def has_unresolved_authority_ancestor(task_id: str, seen: set[str] | None = None) -> bool:
+            seen = seen or set()
+            if task_id in seen or task_id not in case.tasks:
+                return False
+            seen.add(task_id)
+            current = case.tasks[task_id]
+            if current.status == TaskStatus.HUMAN_REVIEW:
+                return True
+            for dependency_id in current.definition.dependencies:
+                dependency = case.tasks.get(dependency_id)
+                if not dependency:
+                    continue
+                if dependency.definition.authority_required or dependency.definition.physical_action:
+                    if dependency.status != TaskStatus.COMPLETED:
+                        return True
+                if dependency.status in {TaskStatus.PENDING, TaskStatus.BLOCKED} and has_unresolved_authority_ancestor(dependency_id, seen):
+                    return True
+            return False
 
         for task in case.tasks.values():
             if task.status in {
@@ -39,7 +64,7 @@ class DependencyEngine:
             if any(dep.status == TaskStatus.EXCEPTION for dep in dependencies):
                 task.status = TaskStatus.BLOCKED
                 blocked.append(task.definition.id)
-            elif any(dep.status == TaskStatus.HUMAN_REVIEW for dep in dependencies):
+            elif task.definition.authority_required and has_unresolved_authority_ancestor(task.definition.id):
                 task.status = TaskStatus.BLOCKED
                 blocked.append(task.definition.id)
             elif all(dep.status == TaskStatus.COMPLETED for dep in dependencies):
