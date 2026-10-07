@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -15,3 +15,7 @@ class StartCaseRequest(BaseModel):
 class HumanDecisionRequest(BaseModel):
     approved: bool
     note: Optional[str] = None
+
+
+class DocumentSubmissionRequest(BaseModel):
+    documents: List[Any] = Field(default_factory=list)
