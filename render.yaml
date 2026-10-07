@@ -26,5 +26,9 @@ services:
         value: https://aether-govos.netlify.app
       - key: AETHER_ENABLE_PRODUCTION_CONNECTORS
         value: "false"
+      - key: AETHER_ENABLE_LEGACY_API
+        value: "false"
+      - key: AETHER_ENCRYPTION_KEY
+        sync: false
       - key: AETHER_DOCUMENT_BUCKET
         value: aether-documents
