@@ -250,6 +250,11 @@ class AetherExecutionEngine:
                         "service_id": case.service_id,
                         "service_outcome": case.service_outcome,
                         "jurisdiction": case.jurisdiction,
+                        "required_documents": [
+                            document
+                            for requirement in case.requirements
+                            for document in requirement.get("documents", [])
+                        ],
                         "case_id": case.case_id,
                         "idempotency_key": task.idempotency_key,
                     },
