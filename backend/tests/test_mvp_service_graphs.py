@@ -68,3 +68,4 @@ def test_customer_type_limits_service_resolution():
     assert registry.resolve("I want to incorporate a company", "business").id == "company_registration"
     assert registry.resolve("I need a scholarship", "citizen").id == "scholarship"
     assert registry.resolve("I need a scholarship", "business") is None
+    assert registry.resolve("I need GST registration", "enterprise").id == "gst_registration"
