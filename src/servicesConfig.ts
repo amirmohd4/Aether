@@ -46,5 +46,5 @@ export const servicesConfig: ServiceConfig[] = [
   { id: 'e-court', label: 'E-Court', icon: '💻', component: 'ECourtApplication', endpoint: '/e-court' },
   { id: 'passport', label: 'Passport Application', icon: '📔', component: 'PassportApplication', endpoint: '/passport' },
   { id: 'visa', label: 'Visa Services', icon: '✈️', component: 'VisaApplication', endpoint: '/visa' },
-  { id: 'food-business-license', label: 'Food Business License / Registration', icon: '🍲', component: 'TradeLicenseApplication', endpoint: '/food-business-license' },
+  { id: 'food-business-license', label: 'Food Business License / Registration', icon: '🍲', component: 'FoodBusinessLicenseApplication', endpoint: '/food-business-license' },
 ];
