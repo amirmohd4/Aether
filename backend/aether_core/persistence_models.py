@@ -38,6 +38,8 @@ class AetherExecutionEventRecord(Base):
     tenant_id = Column(String(128), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), nullable=False)
     data = Column(JSON, nullable=False)
+    previous_hash = Column(String(128), nullable=True)
+    event_hash = Column(String(128), nullable=False, index=True)
 
 
 class AetherTaskQueueRecord(Base):
