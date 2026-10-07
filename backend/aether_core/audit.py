@@ -53,6 +53,12 @@ class AuditTrail:
         self._last_hashes: Dict[str, str] = {}
         self._lock = RLock()
 
+    def seed_case(self, case_id: str, previous_hash: str | None) -> None:
+        """Seed a recovered case so a restarted process continues its chain."""
+        if previous_hash:
+            with self._lock:
+                self._last_hashes.setdefault(case_id, previous_hash)
+
     def record(self, action: str, actor: str, case_id: str, data: Dict[str, Any] | None = None):
         with self._lock:
             previous = self._last_hashes.get(case_id)
