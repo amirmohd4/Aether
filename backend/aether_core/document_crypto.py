@@ -48,3 +48,11 @@ def decrypt_text(value: str) -> str:
         return fernet.decrypt(token.encode("ascii")).decode("utf-8")
     except (InvalidToken, ValueError) as exc:
         raise RuntimeError("Encrypted document text could not be decrypted") from exc
+
+
+def encryption_key_ready() -> bool:
+    """Return whether the configured encryption key is present and valid."""
+    try:
+        return _fernet() is not None
+    except RuntimeError:
+        return False
