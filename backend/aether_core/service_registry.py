@@ -21,7 +21,44 @@ class ServiceDefinition:
         return list(self.required_documents or [])
 
 
-STOPWORDS = {"a", "an", "the", "to", "my", "i", "want", "need", "please", "me", "for", "this", "get", "apply", "application"}
+STOPWORDS = {"a", "an", "the", "to", "my", "i", "want", "need", "please", "me", "for", "this", "get", "apply", "application", "service", "process"}
+
+SERVICE_ALIASES = {
+    "property_registration": ["register a property", "property registry", "sale deed registration"],
+    "mutation": ["mutation of property", "change land owner", "land record transfer", "record mutation"],
+    "encumbrance_certificate": ["encumbrance", "property ec", "non encumbrance certificate"],
+    "land_conversion": ["land use conversion", "agricultural to commercial land", "land diversion"],
+    "title_verification": ["title check", "property title check", "real estate due diligence", "land verification"],
+    "trade_license": ["municipal trade licence", "shop license", "business permit"],
+    "building_permit": ["building approval", "construction permit", "building sanction"],
+    "water_connection": ["new water connection", "water supply connection"],
+    "birth_certificate": ["birth registration certificate", "register birth"],
+    "death_certificate": ["death registration certificate", "register death"],
+    "medical_license": ["doctor license", "clinic license", "medical establishment license"],
+    "scholarship": ["student scholarship", "education scholarship"],
+    "admission": ["school admission", "college admission", "education admission"],
+    "transfer_certificate": ["school leaving certificate", "tc certificate"],
+    "driving_license": ["driver license", "learner license", "driving licence"],
+    "vehicle_registration": ["register vehicle", "rc registration", "motor vehicle registration"],
+    "factory_license": ["factory licence", "factory approval", "industrial licence"],
+    "pf_esi_registration": ["epf registration", "esic registration", "employee provident fund", "employees state insurance"],
+    "gst_registration": ["register for gst", "goods and services tax registration", "gst number"],
+    "company_registration": ["incorporate company", "company incorporation", "mca incorporation", "register private limited company"],
+    "ration_card": ["food ration card", "public distribution ration card"],
+    "pds_subsidy": ["food subsidy", "pds benefit"],
+    "police_clearance": ["police clearance certificate", "pcc certificate"],
+    "fir_report": ["file fir", "first information report"],
+    "farmer_id": ["farmer registration", "farmer identity"],
+    "crop_insurance": ["crop insurance claim", "farmer crop insurance"],
+    "pmay": ["pradhan mantri awas yojana", "pmay housing benefit"],
+    "affordable_housing": ["affordable housing project", "housing development project"],
+    "rera_registration": ["real estate regulation registration", "register real estate project"],
+    "court_case_filing": ["start a court case", "file a lawsuit", "legal case filing"],
+    "e_court": ["e court services", "online court service"],
+    "passport": ["new passport", "passport renewal"],
+    "visa": ["visa application", "travel visa"],
+    "food_business_license": ["food business registration", "restaurant license", "fssai registration", "cafe license"],
+}
 
 
 def _normalize(value: str) -> str:
@@ -120,7 +157,7 @@ class ServiceRegistry:
                 name=row[1],
                 department=row[2],
                 customer_types=row[3],
-                keywords=row[4],
+                keywords=list(dict.fromkeys([*row[4], row[1], *SERVICE_ALIASES.get(row[0], [])])),
                 template=row[5],
                 outcome=row[6],
                 required_documents=_document_defaults(row[0]),
@@ -136,31 +173,60 @@ class ServiceRegistry:
         service, _, _, _ = self.resolve_with_score(objective, customer_type)
         return service
 
-    def resolve_with_score(
-        self, objective: str, customer_type: str = ""
-    ) -> Tuple[Optional[ServiceDefinition], int, List[str], int]:
+    def _rank_candidates(self, objective: str, customer_type: str = ""):
         text = _normalize(objective)
+        tokens = set(text.split())
         candidates = []
         for service in self._services.values():
             if customer_type and customer_type.lower() not in service.customer_types:
                 continue
-            matches = [
-                keyword
-                for keyword in service.keywords
-                if _normalize(keyword) and _normalize(keyword) in text
-            ]
-            score = len(matches)
+            matches: List[str] = []
+            score = 0
+            for keyword in service.keywords:
+                normalized = _normalize(keyword)
+                if not normalized:
+                    continue
+                if normalized in text:
+                    # Exact phrase matches are stronger than loose token overlap.
+                    weight = 6 if len(normalized.split()) >= 2 else 4
+                    score = max(score, weight)
+                    matches.append(keyword)
+                    continue
+                keyword_tokens = set(normalized.split())
+                overlap = len(tokens & keyword_tokens)
+                if overlap and overlap >= max(1, len(keyword_tokens) // 2):
+                    score += overlap
+                    matches.append(keyword)
+            if service.id and _normalize(service.name) in text:
+                score += 3
             if score:
-                candidates.append((score, service, matches))
-        candidates.sort(
-            key=lambda item: (item[0], len(max(item[2], key=len, default=""))),
-            reverse=True,
-        )
+                candidates.append((score, service, sorted(set(matches))))
+        candidates.sort(key=lambda item: (item[0], len(max(item[2], key=len, default=""))), reverse=True)
+        return candidates
+
+    def resolve_with_score(
+        self, objective: str, customer_type: str = ""
+    ) -> Tuple[Optional[ServiceDefinition], int, List[str], int]:
+        candidates = self._rank_candidates(objective, customer_type)
         if not candidates:
             return None, 0, [], 0
         best = candidates[0]
         second_score = candidates[1][0] if len(candidates) > 1 else 0
         return best[1], best[0], best[2], best[0] - second_score
+
+    def candidates(
+        self, objective: str, customer_type: str = "", limit: int = 5
+    ) -> List[Dict[str, object]]:
+        return [
+            {
+                "service_id": service.id,
+                "service_name": service.name,
+                "department": service.department,
+                "score": score,
+                "matched_keywords": matches,
+            }
+            for score, service, matches in self._rank_candidates(objective, customer_type)[:limit]
+        ]
 
     def catalog(self) -> List[Dict[str, object]]:
         return [
