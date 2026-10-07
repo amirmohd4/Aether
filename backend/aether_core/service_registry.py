@@ -21,13 +21,21 @@ class ServiceDefinition:
         return list(self.required_documents or [])
 
 
+STOPWORDS = {"a", "an", "the", "to", "my", "i", "want", "need", "please", "me", "for", "this", "get", "apply", "application"}
+
+
+def _normalize(value: str) -> str:
+    import re
+    tokens = re.findall(r"[a-z0-9]+(?:[-/][a-z0-9]+)*", value.lower())
+    return " ".join(token for token in tokens if token not in STOPWORDS)
+
 SERVICE_DEFINITIONS = [
     ("property_registration", "Property Registration", "Registration", ["citizen", "business", "bank", "developer", "insurer"], ["property registration", "register property"], "commercial_project", "registration_record"),
     ("mutation", "Land/Property Mutation", "Revenue", ["citizen", "business", "bank", "developer"], ["mutation", "transfer land record"], None, "updated_land_record"),
     ("encumbrance_certificate", "Encumbrance Certificate", "Registration", ["citizen", "business", "bank", "developer", "insurer"], ["encumbrance certificate", "ec"], "property_loan", "encumbrance_certificate"),
     ("land_conversion", "Land Conversion", "Revenue", ["citizen", "business", "developer"], ["land conversion", "convert land"], "commercial_project", "land_conversion_order"),
-    ("title_verification", "Title Verification", "Revenue", ["bank", "insurer", "developer", "business"], ["title verification", "verify title"], "property_loan", "title_evidence_package"),
-    ("trade_license", "Trade License", "Municipal", ["citizen", "business"], ["trade license", "business license"], "restaurant", "trade_license"),
+    ("title_verification", "Title Verification", "Revenue", ["bank", "insurer", "developer", "business"], ["title verification", "verify title", "property verification", "verify property", "bank loan", "property loan"], "property_loan", "title_evidence_package"),
+    ("trade_license", "Trade License", "Municipal", ["citizen", "business", "developer"], ["trade license", "business license", "commercial license"], "restaurant", "trade_license"),
     ("building_permit", "Building Permit", "Municipal", ["citizen", "business", "developer"], ["building permit", "building permission"], "commercial_project", "building_permission"),
     ("water_connection", "Water Connection", "Municipal", ["citizen", "business"], ["water connection"], None, "water_connection"),
     ("birth_certificate", "Birth Certificate", "Health", ["citizen"], ["birth certificate"], None, "birth_certificate"),
@@ -41,7 +49,7 @@ SERVICE_DEFINITIONS = [
     ("factory_license", "Factory License", "Labour", ["business", "developer"], ["factory license", "factory licence"], "commercial_project", "factory_license"),
     ("pf_esi_registration", "PF/ESI Registration", "Labour", ["business"], ["pf registration", "esi registration", "pf/esi"], None, "labour_registration"),
     ("gst_registration", "GST Registration", "Tax", ["business"], ["gst registration"], None, "gst_registration"),
-    ("company_registration", "Company Registration", "Corporate Registry", ["business"], ["company registration", "register company"], None, "company_registration"),
+    ("company_registration", "Company Registration", "Corporate Registry", ["business"], ["company registration", "register company", "register a company", "incorporate company"], None, "company_registration"),
     ("ration_card", "Ration Card", "Food & Civil Supplies", ["citizen"], ["ration card"], None, "ration_card"),
     ("pds_subsidy", "PDS Subsidy", "Food & Civil Supplies", ["citizen"], ["pds subsidy", "food subsidy"], None, "subsidy_decision"),
     ("police_clearance", "Police Clearance", "Police", ["citizen", "business"], ["police clearance", "pcc"], None, "police_clearance"),
@@ -55,7 +63,7 @@ SERVICE_DEFINITIONS = [
     ("e_court", "E-Court Service", "Courts", ["citizen", "business"], ["e-court", "ecourt"], None, "court_service"),
     ("passport", "Passport Application", "Passport", ["citizen"], ["passport application", "passport"], None, "passport"),
     ("visa", "Visa Service", "Passport", ["citizen", "business"], ["visa service", "visa application"], None, "visa_service"),
-    ("food_business_license", "Food Business License/Registration", "Food Safety", ["citizen", "business"], ["restaurant", "cafe", "food business", "food license", "fssai"], "restaurant", "food_business_license"),
+    ("food_business_license", "Food Business License/Registration", "Food Safety", ["citizen", "business", "developer"], ["restaurant", "cafe", "food business", "food license", "fssai"], "restaurant", "food_business_license"),
 ]
 
 
@@ -131,16 +139,23 @@ class ServiceRegistry:
     def resolve_with_score(
         self, objective: str, customer_type: str = ""
     ) -> Tuple[Optional[ServiceDefinition], int, List[str], int]:
-        text = objective.lower()
+        text = _normalize(objective)
         candidates = []
         for service in self._services.values():
             if customer_type and customer_type.lower() not in service.customer_types:
                 continue
-            matches = [keyword for keyword in service.keywords if keyword in text]
+            matches = [
+                keyword
+                for keyword in service.keywords
+                if _normalize(keyword) and _normalize(keyword) in text
+            ]
             score = len(matches)
             if score:
                 candidates.append((score, service, matches))
-        candidates.sort(key=lambda item: (item[0], len(max(item[2], key=len, default=""))), reverse=True)
+        candidates.sort(
+            key=lambda item: (item[0], len(max(item[2], key=len, default=""))),
+            reverse=True,
+        )
         if not candidates:
             return None, 0, [], 0
         best = candidates[0]
