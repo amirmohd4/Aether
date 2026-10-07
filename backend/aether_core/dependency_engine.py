@@ -40,7 +40,7 @@ class DependencyEngine:
                 if not dependency:
                     continue
                 if dependency.definition.authority_required or dependency.definition.physical_action:
-                    if dependency.status != TaskStatus.COMPLETED:
+                    if dependency.status == TaskStatus.HUMAN_REVIEW:
                         return True
                 if dependency.status in {TaskStatus.PENDING, TaskStatus.BLOCKED} and has_unresolved_authority_ancestor(dependency_id, seen):
                     return True
