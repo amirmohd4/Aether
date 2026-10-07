@@ -15,6 +15,15 @@ if not raw_database_url:
     raw_database_url = "sqlite:///./aether.db"
 
 DATABASE_URL = raw_database_url
+
+# Render already stores the full DATABASE_URL, including its password. When a
+# legacy connection string contains a malformed Supabase pooler hostname, allow
+# the host to be corrected without exposing or rewriting the stored secret.
+host_override = os.getenv("AETHER_DATABASE_HOST_OVERRIDE", "").strip()
+if host_override and not DATABASE_URL.startswith("sqlite"):
+    parsed_database_url = make_url(DATABASE_URL)
+    DATABASE_URL = str(parsed_database_url.set(hostname=host_override))
+
 _database_url = make_url(DATABASE_URL)
 
 
