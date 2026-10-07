@@ -554,8 +554,17 @@ class AetherExecutionEngine:
                 "data": data or {},
             }
             case.execution_events.append(entry)
-            self.audit.record(action, actor, case.case_id, data)
-            self.store.append_event(case.case_id, action, actor, data)
+            audit_entry = self.audit.record(action, actor, case.case_id, data)
+            entry["previous_hash"] = audit_entry.get("previous_hash")
+            entry["event_hash"] = audit_entry.get("event_hash")
+            self.store.append_event(
+                case.case_id,
+                action,
+                actor,
+                data,
+                previous_hash=audit_entry.get("previous_hash"),
+                event_hash=audit_entry.get("event_hash"),
+            )
             return entry
 
 
