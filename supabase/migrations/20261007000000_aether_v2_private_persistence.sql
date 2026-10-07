@@ -77,3 +77,33 @@ alter table aether_internal.aether_v2_task_queue enable row level security;
 -- The execution schema is never a browser/client data surface.
 revoke all on schema aether_internal from anon, authenticated;
 revoke all on all tables in schema aether_internal from anon, authenticated;
+
+
+-- Server-controlled authorization membership registry.
+create table if not exists public.aether_memberships (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  tenant_id varchar(128) not null,
+  role varchar(64) not null,
+  status varchar(32) not null default 'active',
+  department varchar(128),
+  jurisdiction jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  primary key (user_id, tenant_id)
+);
+
+create index if not exists idx_aether_memberships_tenant
+  on public.aether_memberships(tenant_id);
+create index if not exists idx_aether_memberships_status
+  on public.aether_memberships(status);
+
+alter table public.aether_memberships enable row level security;
+
+revoke all on public.aether_memberships from anon;
+revoke all on public.aether_memberships from authenticated;
+grant select on public.aether_memberships to authenticated;
+
+create policy "members can read their own membership"
+  on public.aether_memberships
+  for select to authenticated
+  using (user_id = (select auth.uid()));
