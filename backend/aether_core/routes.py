@@ -80,11 +80,13 @@ def release_readiness():
         "database_url": bool(os.getenv("DATABASE_URL")),
         "supabase_auth": os.getenv("AETHER_AUTH_MODE", "none").strip().lower() == "supabase",
         "encryption_key": bool(os.getenv("AETHER_ENCRYPTION_KEY")),
-        "private_document_storage": bool(
-            os.getenv("SUPABASE_URL") and os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+        "private_document_storage": (
+            document_store.storage_ready()
+            if production
+            else bool(os.getenv("SUPABASE_URL") and os.getenv("SUPABASE_SERVICE_ROLE_KEY"))
         ),
         "production_connectors": engine.workers.production_connectors_configured(),
-        "authoritative_rule_coverage": len(rule_registry.all()) > 0,
+        "authoritative_rule_coverage": len(rule_registry.all()) >= len(engine.services.all()),
         "notification_provider": bool(
             os.getenv("AETHER_NOTIFICATION_WEBHOOK_URL")
             or os.getenv("AETHER_NOTIFICATION_EMAIL_URL")
@@ -102,6 +104,10 @@ def release_readiness():
         blockers.append("AETHER_AUTH_MODE must be supabase")
     if production and not checks["encryption_key"]:
         blockers.append("AETHER_ENCRYPTION_KEY is not configured")
+    elif production:
+        from .document_crypto import encryption_key_ready
+        if not encryption_key_ready():
+            blockers.append("AETHER_ENCRYPTION_KEY is invalid")
     if production and not checks["private_document_storage"]:
         blockers.append("Private Supabase document storage is not configured")
     if production and not checks["production_connectors"]:
