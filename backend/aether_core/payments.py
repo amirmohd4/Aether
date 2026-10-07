@@ -30,6 +30,13 @@ class DemoPaymentProvider(PaymentProvider):
         }
 
 
+class UnavailablePaymentProvider(PaymentProvider):
+    name = "unconfigured"
+
+    def create_payment(self, payment_id: str, amount: int, currency: str, metadata: Dict[str, Any]) -> Dict[str, Any]:
+        raise RuntimeError("Payment provider is not configured")
+
+
 class ConfiguredHTTPPaymentProvider(PaymentProvider):
     """Normalized external payment adapter.
 
@@ -72,9 +79,7 @@ def configured_payment_provider() -> PaymentProvider:
     if url:
         return ConfiguredHTTPPaymentProvider(url, token)
     if production:
-        raise RuntimeError(
-            "AETHER_PAYMENT_PROVIDER_URL is required in production for payment operations"
-        )
+        return UnavailablePaymentProvider()
     return DemoPaymentProvider()
 
 
