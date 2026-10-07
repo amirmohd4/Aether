@@ -2,6 +2,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 import os
+import time
+from collections import defaultdict, deque
+from uuid import uuid4
 
 from backend.api.property_routes import router as property_router
 from backend.api.billing_routes import router as billing_router
@@ -29,14 +32,36 @@ cors_origins = [
     if origin.strip()
 ]
 
+_rate_windows = defaultdict(deque)
+
+
 @app.middleware("http")
-async def security_headers(request, call_next):
+async def platform_hardening(request, call_next):
+    request_id = request.headers.get("X-Request-ID") or uuid4().hex
+    production = os.getenv("AETHER_ENV", "development").strip().lower() == "production"
+
+    limit = max(30, int(os.getenv("AETHER_RATE_LIMIT_PER_MINUTE", "300")))
+    client_host = request.client.host if request.client else "unknown"
+    now = time.monotonic()
+    bucket = _rate_windows[client_host]
+    while bucket and now - bucket[0] >= 60:
+        bucket.popleft()
+    if production and len(bucket) >= limit:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            status_code=429,
+            content={"detail": "Rate limit exceeded", "request_id": request_id},
+            headers={"Retry-After": "60", "X-Request-ID": request_id},
+        )
+    bucket.append(now)
+
     response = await call_next(request)
+    response.headers["X-Request-ID"] = request_id
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "no-referrer"
     response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
-    if os.getenv("AETHER_ENV", "development").strip().lower() == "production":
+    if production:
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     return response
 
