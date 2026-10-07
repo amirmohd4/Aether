@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
+import os
 
 from backend.api.property_routes import router as property_router
 from backend.api.billing_routes import router as billing_router
@@ -19,11 +20,18 @@ app = FastAPI(
     version="0.4.0-aether-mvp",
 )
 
-# Production configuration will replace this wildcard with the explicit
-# Netlify/domain allow-list during the final release hardening pass.
+cors_origins = [
+    origin.strip()
+    for origin in os.getenv(
+        "AETHER_CORS_ORIGINS",
+        "http://localhost:5173,https://aether-govos.netlify.app",
+    ).split(",")
+    if origin.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
