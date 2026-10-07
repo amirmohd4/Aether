@@ -143,9 +143,6 @@ class AetherExecutionEngine:
 
         if os.getenv("AETHER_ENV", "development").strip().lower() != "production":
             return
-        if os.getenv("AETHER_ALLOW_SYNTHETIC_IN_PRODUCTION", "").strip().lower() == "true":
-            return
-
         department = task.definition.department.strip().lower()
         internal_departments = {"aether", "authorised authority", "authorised officer"}
         if department in internal_departments:
@@ -167,7 +164,7 @@ class AetherExecutionEngine:
             req for req in case.requirements
             if req.get("authority_status") != "source_backed"
         ]
-        if unverified and os.getenv("AETHER_ALLOW_BASELINE_RULES", "").strip().lower() != "true":
+        if unverified:
             raise RuntimeError(
                 "Live connector execution is blocked because one or more requirements "
                 "lack authoritative, effective-dated rule provenance."
