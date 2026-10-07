@@ -18,7 +18,7 @@ Development branch: `aether-mvp-build`
 
 ## Current status — CTO estimate
 
-Overall whole-MVP completion: **~40%**.
+Overall whole-MVP completion: **~48%**.
 
 This is a directional engineering estimate, not a measured project-management percentage.
 
@@ -41,14 +41,25 @@ This is a directional engineering estimate, not a measured project-management pe
 - Restaurant and commercial-project execution templates
 - Existing broad frontend/service surfaces from the earlier product
 - Existing backend service-specific models/connectors that can be reused while migrating
+- Objective understanding with ranked candidates and ambiguity stop
+- Reusable process graphs across the MVP service catalog
+- Explicit connector operation metadata on executable tasks
+- Evidence-aware reconciliation and decision-package workers
+- Durable case listing, resume, and incremental document submission
+- Private tenant usage metering with idempotent case/outcome events
+- Opt-in authorized HTTP connector contract for production integrations
+- Server-controlled membership/RBAC boundary with department/jurisdiction scoping
+- Tamper-evident audit hash chain and integrity verification endpoint
+- CI definitions for backend tests and frontend typecheck/build
+- Legacy browser-data lockdown migration with deny-by-default RLS
 
 ### Partially built
-- Broad service catalog → identities exist, but most do not yet have complete executable process definitions
+- Broad service catalog → all 34 identities now have a shared executable baseline; only a smaller number have evidence-backed domain-specific graphs
 - Document intelligence → foundation exists, but production-grade extraction/validation is incomplete
 - Government rules → provenance exists for a narrow verified slice, not broad jurisdiction/service coverage
-- Connector framework → synthetic execution works; production-authorized connectors are not complete
-- Frontend → many service screens exist, but there is not yet one unified objective-to-outcome Aether experience
-- Persistence → database snapshot + event ledger exists, but not full event-sourced replay/durable task claiming
+- Connector framework → synthetic execution works and an opt-in REST adapter exists; real government connector certification/access is still incomplete
+- Frontend → the unified Command Center now understands objectives, shows candidates, opens saved cases and resumes durable workflows; legacy service screens still exist and need retirement/migration
+- Persistence → durable cases, queue leases, event ledger and resume APIs exist; full distributed replay semantics and operational worker service are still incomplete
 - Error/recovery → retries exist, but distributed worker recovery is incomplete
 
 ### Major remaining build areas
