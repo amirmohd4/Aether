@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
 
 from .api_models import DocumentSubmissionRequest, HumanDecisionRequest, StartCaseRequest
 from .engine import engine
@@ -9,12 +9,20 @@ from .rule_registry import RuleRegistry
 from .verification import VerificationEngine
 from .security import Principal, require_principal, require_role
 from .understanding import ObjectiveUnderstandingEngine
+from .document_store import DocumentStore, document_summary
+from .notifications import NotificationService
+from .payments import PaymentService
+from .analytics import summarize_cases
+from backend.database import SessionLocal
 
 router = APIRouter(prefix="/api/aether/v2", tags=["Aether V2"], dependencies=[Depends(require_principal)])
 requirements_engine = RequirementEngine()
 understanding_engine = ObjectiveUnderstandingEngine()
 rule_registry = RuleRegistry()
 verification_engine = VerificationEngine()
+document_store = DocumentStore()
+notification_service = NotificationService(SessionLocal)
+payment_service = PaymentService(SessionLocal)
 
 
 def serialize(case, include_tasks: bool = True):
@@ -31,6 +39,7 @@ def serialize(case, include_tasks: bool = True):
         "exceptions": case.exceptions,
         "evidence": case.evidence,
         "outcome": case.outcome,
+        "documents": engine.store.documents_for(case.case_id, case.tenant_id),
         "verification": verification_engine.reconcile({
             task_id: task.result
             for task_id, task in case.tasks.items()
@@ -67,6 +76,132 @@ def connector_catalog():
         "default_mode": "synthetic",
         "production_connectors_configured": engine.workers.production_connectors_configured(),
     }
+
+
+@router.get("/analytics")
+def case_analytics(principal: Principal = Depends(require_principal)):
+    cases = (
+        _list_visible_cases(principal, limit=100)
+        if principal.auth_mode == "none"
+        or principal.role.lower() in {"admin", "officer", "department_admin"}
+        else engine.store.list(owner_user_id=principal.subject, limit=100)
+    )
+    return summarize_cases(cases)
+
+
+@router.get("/notifications")
+def notifications(principal: Principal = Depends(require_principal)):
+    if not principal.tenant_id:
+        raise HTTPException(status_code=403, detail="Active tenant is required")
+    return {"notifications": notification_service.list_for_tenant(principal.tenant_id)}
+
+
+@router.get("/cases/{case_id}/payments")
+def case_payments(case_id: str, principal: Principal = Depends(require_principal)):
+    try:
+        case = engine.get_case(case_id)
+        _authorize_case(case, principal)
+        return {"payments": payment_service.for_case(principal.tenant_id or case.tenant_id or principal.subject, case_id)}
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Case not found")
+
+
+@router.post("/cases/{case_id}/payments")
+def create_case_payment(
+    case_id: str,
+    amount_minor: int,
+    currency: str = "INR",
+    idempotency_key: str | None = None,
+    principal: Principal = Depends(require_principal),
+):
+    try:
+        case = engine.get_case(case_id)
+        _authorize_case(case, principal)
+        tenant_id = principal.tenant_id or case.tenant_id or principal.subject
+        payment = payment_service.create(
+            tenant_id,
+            case_id,
+            amount_minor,
+            currency,
+            idempotency_key,
+            {"service_id": case.service_id, "service_outcome": case.service_outcome},
+        )
+        notification_service.enqueue(
+            tenant_id,
+            principal.subject,
+            case_id,
+            "payment.created",
+            "in_app",
+            payload={"payment_id": payment["payment_id"], "status": payment["status"]},
+        )
+        return payment
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Case not found")
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@router.get("/cases/{case_id}/documents")
+def case_documents(case_id: str, principal: Principal = Depends(require_principal)):
+    try:
+        case = engine.get_case(case_id)
+        _authorize_case(case, principal)
+        return {"documents": engine.store.documents_for(case_id, case.tenant_id)}
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Case not found")
+
+
+@router.post("/cases/{case_id}/documents/upload")
+def upload_case_document(
+    case_id: str,
+    document_type: str,
+    file: UploadFile = File(...),
+    principal: Principal = Depends(require_principal),
+):
+    try:
+        case = engine.get_case(case_id)
+        _authorize_case(case, principal)
+        content = file.file.read()
+        stored = document_store.save(
+            case_id=case_id,
+            tenant_id=case.tenant_id or principal.tenant_id,
+            document_type=document_type,
+            filename=file.filename or "document",
+            content=content,
+            mime_type=file.content_type,
+        )
+        engine.store.put_document(stored, owner_user_id=principal.subject)
+        case.inputs.setdefault("documents", []).append({
+            "type": document_type,
+            "document_id": stored.document_id,
+            "filename": stored.filename,
+            "mime_type": stored.mime_type,
+            "size_bytes": stored.size_bytes,
+            "sha256": stored.sha256,
+            "storage_key": stored.storage_key,
+            "text": stored.extracted_text,
+            "extraction_mode": stored.extraction_mode,
+        })
+        engine.store.put(case)
+        notification_service.enqueue(
+            case.tenant_id or principal.tenant_id,
+            principal.subject,
+            case_id,
+            "document.uploaded",
+            "in_app",
+            payload={"document_id": stored.document_id, "document_type": document_type},
+        )
+        return {
+            "status": "uploaded",
+            "document": document_summary(stored),
+            "case": serialize(case, include_tasks=False),
+        }
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Case not found")
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except OSError as exc:
+        raise HTTPException(status_code=400, detail=f"Unable to store document: {exc}")
 
 
 @router.get("/usage")
@@ -194,6 +329,14 @@ def start_case(request: StartCaseRequest, principal: Principal = Depends(require
     )
     case.requirements = [r.__dict__ for r in requirements]
     case = engine.execute_until_pause(case.case_id)
+    notification_service.enqueue(
+        case.tenant_id or principal.tenant_id,
+        principal.subject,
+        case.case_id,
+        "case.started",
+        "in_app",
+        payload={"status": case.status, "service_id": case.service_id},
+    )
     return serialize(case)
 
 
