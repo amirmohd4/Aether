@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from .api_models import HumanDecisionRequest, StartCaseRequest
+from .api_models import DocumentSubmissionRequest, HumanDecisionRequest, StartCaseRequest
 from .engine import engine
 from .requirements_engine import RequirementEngine
 from .rule_registry import RuleRegistry
@@ -153,14 +153,25 @@ def start_case(request: StartCaseRequest, principal: Principal = Depends(require
     missing = [doc for doc in required_documents["documents"] if doc not in submitted]
 
     if missing:
-        return {
+        case = engine.create_case(
+            request.objective,
+            request.customer_type,
+            request.jurisdiction,
+            {**request.inputs, "enforce_intake_gate": True},
+            owner_user_id=principal.subject,
+            tenant_id=principal.tenant_id or principal.subject,
+        )
+        case.requirements = [r.__dict__ for r in requirements]
+        case.status = "needs_documents"
+        case.updated_at = case.updated_at
+        engine.store.put(case)
+        response = serialize(case)
+        response.update({
             "status": "needs_documents",
-            "objective": request.objective,
-            "understanding": understanding.as_dict(),
-            "requirements": [r.__dict__ for r in requirements],
             "documents": required_documents["documents"],
             "missing_documents": missing,
-        }
+        })
+        return response
 
     case = engine.create_case(
         request.objective,
@@ -204,6 +215,59 @@ def list_cases(
     if principal.role.lower() in {"officer", "department_admin"} and principal.tenant_id:
         return {"cases": engine.store.list(tenant_id=principal.tenant_id, status=status, limit=limit)}
     return {"cases": engine.store.list(owner_user_id=principal.subject, status=status, limit=limit)}
+
+
+@router.post("/cases/{case_id}/documents")
+def submit_case_documents(
+    case_id: str,
+    request: DocumentSubmissionRequest,
+    principal: Principal = Depends(require_principal),
+):
+    try:
+        case = engine.get_case(case_id)
+        _authorize_case(case, principal)
+
+        existing = list(case.inputs.get("documents", []))
+        combined = existing + list(request.documents)
+        deduped = []
+        seen = set()
+        for document in combined:
+            key = str(document.get("type")) if isinstance(document, dict) else str(document)
+            fingerprint = (key, repr(document))
+            if fingerprint not in seen:
+                seen.add(fingerprint)
+                deduped.append(document)
+
+        case.inputs["documents"] = deduped
+        case.inputs["enforce_intake_gate"] = True
+        requirements = requirements_engine.discover(
+            case.objective,
+            case.customer_type,
+            case.jurisdiction,
+            case.inputs,
+        )
+        case.requirements = [r.__dict__ for r in requirements]
+        required_documents = requirements_engine.document_request(requirements)
+        submitted_types = {
+            str(document.get("type")) if isinstance(document, dict) else str(document)
+            for document in deduped
+        }
+        missing = [doc for doc in required_documents["documents"] if doc not in submitted_types]
+        if missing:
+            case.status = "needs_documents"
+            case.updated_at = case.updated_at
+            engine.store.put(case)
+            response = serialize(case)
+            response.update({
+                "status": "needs_documents",
+                "documents": required_documents["documents"],
+                "missing_documents": missing,
+            })
+            return response
+
+        return serialize(engine.execute_until_pause(case_id))
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Case not found")
 
 
 @router.post("/cases/{case_id}/resume")
