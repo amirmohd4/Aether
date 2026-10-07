@@ -63,3 +63,51 @@ def test_officer_cannot_access_case_outside_authorized_jurisdiction():
         assert exc.status_code == 404
     else:
         raise AssertionError("cross-jurisdiction officer access should be rejected")
+
+
+
+def test_officer_case_listing_filters_department_and_jurisdiction(monkeypatch):
+    from aether_core.routes import _list_visible_cases
+
+    allowed = _case()
+    hidden_department = _case()
+    hidden_department.case_id = "A-HIDDEN-DEPT"
+    hidden_department.service_department = "Health"
+
+    hidden_jurisdiction = _case()
+    hidden_jurisdiction.case_id = "A-HIDDEN-JURIS"
+    hidden_jurisdiction.jurisdiction = {
+        "country": "India",
+        "state": "Maharashtra",
+        "district": "Mumbai",
+    }
+
+    cases = {
+        allowed.case_id: allowed,
+        hidden_department.case_id: hidden_department,
+        hidden_jurisdiction.case_id: hidden_jurisdiction,
+    }
+
+    monkeypatch.setattr(
+        "aether_core.routes.engine.store.list",
+        lambda **_: [{"case_id": case_id} for case_id in cases],
+    )
+    monkeypatch.setattr(
+        "aether_core.routes.engine.get_case",
+        lambda case_id: cases[case_id],
+    )
+
+    visible = _list_visible_cases(
+        Principal(
+            "officer-1",
+            "officer",
+            "tenant-1",
+            "supabase",
+            "Revenue",
+            {"country": "India", "state": "Jammu and Kashmir"},
+        ),
+        status="waiting_for_human",
+        limit=10,
+    )
+
+    assert [item["case_id"] for item in visible] == [allowed.case_id]

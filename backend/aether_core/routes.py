@@ -215,17 +215,44 @@ def _authorize_case(case, principal: Principal) -> None:
     raise HTTPException(status_code=404, detail="Case not found")
 
 
+def _list_visible_cases(
+    principal: Principal,
+    status: str | None = None,
+    limit: int = 50,
+):
+    safe_limit = max(1, min(limit, 100))
+    if principal.role.lower() == "admin" or principal.auth_mode == "none":
+        return engine.store.list(status=status, limit=safe_limit)
+
+    if principal.role.lower() in {"officer", "department_admin"} and principal.tenant_id:
+        candidates = engine.store.list(
+            tenant_id=principal.tenant_id,
+            status=status,
+            limit=100,
+        )
+        visible = []
+        for summary in candidates:
+            try:
+                _authorize_case(engine.get_case(summary["case_id"]), principal)
+            except HTTPException:
+                continue
+            visible.append(summary)
+        return visible[:safe_limit]
+
+    return engine.store.list(
+        owner_user_id=principal.subject,
+        status=status,
+        limit=safe_limit,
+    )
+
+
 @router.get("/cases")
 def list_cases(
     status: str | None = None,
     limit: int = 50,
     principal: Principal = Depends(require_principal),
 ):
-    if principal.role.lower() == "admin" or principal.auth_mode == "none":
-        return {"cases": engine.store.list(status=status, limit=limit)}
-    if principal.role.lower() in {"officer", "department_admin"} and principal.tenant_id:
-        return {"cases": engine.store.list(tenant_id=principal.tenant_id, status=status, limit=limit)}
-    return {"cases": engine.store.list(owner_user_id=principal.subject, status=status, limit=limit)}
+    return {"cases": _list_visible_cases(principal, status=status, limit=limit)}
 
 
 @router.post("/cases/{case_id}/documents")
