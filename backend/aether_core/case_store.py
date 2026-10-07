@@ -7,7 +7,7 @@ from sqlalchemy import text
 
 from backend.database import SessionLocal, engine
 from .domain import Case, TaskDefinition, TaskState, TaskStatus
-from .persistence_models import AetherCaseRecord, AetherExecutionEventRecord, AetherTaskQueueRecord
+from .persistence_models import AetherCaseRecord, AetherExecutionEventRecord, AetherTaskQueueRecord, AetherUsageRecord
 
 
 class DatabaseCaseStore:
@@ -31,7 +31,7 @@ class DatabaseCaseStore:
             # metadata from the execution-core repository. The MVP runtime only
             # owns its private case/event/task tables; all other schemas are
             # migrated independently and must not be recreated on startup.
-            for model in (AetherCaseRecord, AetherExecutionEventRecord, AetherTaskQueueRecord):
+            for model in (AetherCaseRecord, AetherExecutionEventRecord, AetherTaskQueueRecord, AetherUsageRecord):
                 model.__table__.create(bind=engine, checkfirst=True)
             self._schema_ready = True
 
@@ -77,6 +77,82 @@ class DatabaseCaseStore:
                 self._deserialize_case(row.payload).summary()
                 for row in rows
             ]
+
+    def record_usage(
+        self,
+        tenant_id: str,
+        event_type: str,
+        units: int = 1,
+        unit_type: str = "case",
+        case_id: str | None = None,
+        customer_type: str | None = None,
+        metadata: Dict[str, Any] | None = None,
+    ) -> Dict[str, Any]:
+        """Record private operational/billable usage."""
+        if not tenant_id:
+            raise ValueError("tenant_id is required for usage metering")
+        self._ensure_schema()
+        row = AetherUsageRecord(
+            tenant_id=tenant_id,
+            case_id=case_id,
+            customer_type=customer_type,
+            event_type=event_type,
+            units=max(0, int(units)),
+            unit_type=unit_type,
+            created_at=datetime.utcnow(),
+            metadata_json=metadata or {},
+        )
+        with SessionLocal() as db:
+            db.add(row)
+            db.commit()
+            db.refresh(row)
+            return {
+                "id": row.id,
+                "tenant_id": row.tenant_id,
+                "case_id": row.case_id,
+                "customer_type": row.customer_type,
+                "event_type": row.event_type,
+                "units": row.units,
+                "unit_type": row.unit_type,
+                "created_at": row.created_at.isoformat(),
+                "metadata": row.metadata_json or {},
+            }
+
+    def usage_summary(
+        self,
+        tenant_id: str,
+        event_type: str | None = None,
+        unit_type: str | None = None,
+    ) -> Dict[str, Any]:
+        self._ensure_schema()
+        from sqlalchemy import func
+        with SessionLocal() as db:
+            query = db.query(
+                AetherUsageRecord.event_type,
+                AetherUsageRecord.unit_type,
+                func.sum(AetherUsageRecord.units).label("units"),
+                func.count(AetherUsageRecord.id).label("events"),
+            ).filter(AetherUsageRecord.tenant_id == tenant_id)
+            if event_type:
+                query = query.filter(AetherUsageRecord.event_type == event_type)
+            if unit_type:
+                query = query.filter(AetherUsageRecord.unit_type == unit_type)
+            rows = query.group_by(
+                AetherUsageRecord.event_type,
+                AetherUsageRecord.unit_type,
+            ).all()
+            return {
+                "tenant_id": tenant_id,
+                "usage": [
+                    {
+                        "event_type": row.event_type,
+                        "unit_type": row.unit_type,
+                        "units": int(row.units or 0),
+                        "events": int(row.events or 0),
+                    }
+                    for row in rows
+                ],
+            }
 
     def get(self, case_id: str) -> Case:
         self._ensure_schema()
