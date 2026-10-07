@@ -27,6 +27,7 @@ def serialize(case):
                 "result": state.result,
                 "error": state.error,
                 "evidence": state.evidence,
+                "idempotency_key": state.idempotency_key,
             }
             for task_id, state in case.tasks.items()
         },
@@ -34,6 +35,7 @@ def serialize(case):
         "exceptions": case.exceptions,
         "evidence": case.evidence,
         "outcome": case.outcome,
+        "execution_events": case.execution_events[-50:],
     }
 
 
