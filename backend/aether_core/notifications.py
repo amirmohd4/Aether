@@ -24,6 +24,8 @@ class NotificationService:
         destination: str | None = None,
         payload: Dict[str, Any] | None = None,
     ) -> Dict[str, Any]:
+        from .case_store import DatabaseCaseStore
+        DatabaseCaseStore().ensure_schema()
         if channel not in self.CHANNELS:
             raise ValueError(f"Unsupported notification channel: {channel}")
         with self.session_factory() as db:
@@ -49,6 +51,8 @@ class NotificationService:
         case_id: str | None = None,
         limit: int = 50,
     ) -> List[Dict[str, Any]]:
+        from .case_store import DatabaseCaseStore
+        DatabaseCaseStore().ensure_schema()
         with self.session_factory() as db:
             query = db.query(AetherNotificationRecord).filter(
                 AetherNotificationRecord.tenant_id == tenant_id
