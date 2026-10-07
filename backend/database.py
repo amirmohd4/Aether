@@ -22,7 +22,7 @@ _database_url = make_url(DATABASE_URL)
 # independently through a non-secret deployment setting.
 host_override = os.getenv("AETHER_DATABASE_HOST_OVERRIDE", "").strip()
 if host_override and _database_url.get_backend_name() != "sqlite":
-    _database_url = _database_url.set(hostname=host_override)
+    _database_url = _database_url.set(host=host_override)
     DATABASE_URL = _database_url.render_as_string(hide_password=False)
 
 
