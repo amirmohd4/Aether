@@ -80,6 +80,8 @@ class Case:
             "service_name": self.service_name,
             "service_department": self.service_department,
             "service_outcome": self.service_outcome,
+            "ontology": self.ontology,
+            "work_graph": self.work_graph,
             "jurisdiction": self.jurisdiction,
             "status": self.status,
             "tasks_total": len(self.tasks),
