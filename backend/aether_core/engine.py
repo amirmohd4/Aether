@@ -343,6 +343,11 @@ class AetherExecutionEngine:
                             for requirement in case.requirements
                             for document in requirement.get("documents", [])
                         ],
+                        "document_extractions": (
+                            self.store.document_texts(case.case_id, case.tenant_id)
+                            if definition.worker == "DocumentWorker"
+                            else {}
+                        ),
                         "case_id": case.case_id,
                         "idempotency_key": task.idempotency_key,
                     },
