@@ -80,25 +80,33 @@ def test_supabase_auth_refuses_arbitrary_tenant_selection(monkeypatch):
         def json(self):
             return {"id": "user-multi"}
 
+    membership_rows = [
+        {"role": "user", "tenant_id": "tenant-b", "department": None, "jurisdiction": {}},
+        {"role": "user", "tenant_id": "tenant-a", "department": None, "jurisdiction": {}},
+    ]
+
     class FakeResult:
+        def __init__(self, rows):
+            self.rows = rows
         def mappings(self):
             return self
         def all(self):
-            return [
-                {"role": "user", "tenant_id": "tenant-b", "department": None, "jurisdiction": {}},
-                {"role": "user", "tenant_id": "tenant-a", "department": None, "jurisdiction": {}},
-            ]
+            return list(self.rows)
         def first(self):
-            rows = self.all()
-            return rows[0] if rows else None
+            return self.rows[0] if self.rows else None
 
     class FakeDB:
         def __enter__(self):
             return self
         def __exit__(self, *_):
             return False
-        def execute(self, *_args, **_kwargs):
-            return FakeResult()
+        def execute(self, *_args, **kwargs):
+            params = kwargs.get("parameters") or (_args[1] if len(_args) > 1 else {})
+            if params.get("tenant_id"):
+                rows = [row for row in membership_rows if row["tenant_id"] == params["tenant_id"]]
+            else:
+                rows = membership_rows
+            return FakeResult(rows)
 
     monkeypatch.setenv("SUPABASE_URL", "https://example.supabase.co")
     monkeypatch.setenv("SUPABASE_ANON_KEY", "publishable-test-key")
