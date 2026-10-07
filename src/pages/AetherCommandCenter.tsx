@@ -244,7 +244,7 @@ export const AetherCommandCenter: React.FC = () => {
                   <Activity className="mx-auto h-10 w-10 text-cyan-300" />
                   <h2 className="mt-4 text-xl font-semibold">No active case</h2>
                   <p className="mt-2 text-sm text-slate-400">
-                    Try a restaurant, property-loan, factory/project, licence, certificate, or other service from the 33-service MVP catalog.
+                    Try a restaurant, property-loan, factory/project, licence, certificate, or other service from the 34-service MVP catalog.
                   </p>
                 </div>
               </div>
