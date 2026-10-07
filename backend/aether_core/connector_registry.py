@@ -37,11 +37,20 @@ class ConnectorRegistry:
         for department, config in configs.items():
             if not isinstance(config, dict) or not config.get("base_url"):
                 raise RuntimeError(f"Production connector config for {department} needs base_url")
+            if not config.get("bearer_token"):
+                raise RuntimeError(
+                    f"Production connector config for {department} needs bearer_token"
+                )
+            base_url = str(config["base_url"]).rstrip("/")
+            if not base_url.startswith("https://"):
+                raise RuntimeError(
+                    f"Production connector config for {department} must use HTTPS"
+                )
             self.register(
                 department,
                 ConfiguredHTTPConnector(
                     department=department,
-                    base_url=str(config["base_url"]),
+                    base_url=base_url,
                     bearer_token=str(config["bearer_token"]) if config.get("bearer_token") else None,
                     timeout_seconds=float(config.get("timeout_seconds", 10)),
                 ),
@@ -59,7 +68,11 @@ class ConnectorRegistry:
         return self._connectors[department]
 
     def production_configured(self) -> bool:
-        return any(not isinstance(connector, SyntheticConnector) for connector in self._connectors.values())
+        return any(
+            isinstance(connector, ConfiguredHTTPConnector)
+            and connector.configuration_valid()
+            for connector in self._connectors.values()
+        )
 
     def is_production(self, department: str) -> bool:
         """Return whether a department has an explicitly configured live connector."""
