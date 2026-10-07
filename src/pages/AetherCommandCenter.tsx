@@ -202,6 +202,11 @@ export const AetherCommandCenter: React.FC = () => {
           return;
         }
       }
+      if (response.status === 403 && selectedTenantId) {
+        setSelectedTenantId('');
+        window.localStorage.removeItem('aether.tenant_id');
+        return;
+      }
       if (!response.ok) return;
       const body = await response.json() as Principal;
       setPrincipal(body);
@@ -278,8 +283,17 @@ export const AetherCommandCenter: React.FC = () => {
 
   function selectTenant(tenantId: string) {
     setSelectedTenantId(tenantId);
-    setTenantOptions((current) => current);
-    window.localStorage.setItem('aether.tenant_id', tenantId);
+    setCaseData(null);
+    setUnderstanding(null);
+    setMissingDocuments([]);
+    setSelectedDocuments([]);
+    setIntakeNotice('');
+    setError('');
+    if (tenantId) {
+      window.localStorage.setItem('aether.tenant_id', tenantId);
+    } else {
+      window.localStorage.removeItem('aether.tenant_id');
+    }
   }
 
   async function loadRecentCases() {
@@ -762,7 +776,7 @@ export const AetherCommandCenter: React.FC = () => {
 
             <button
               onClick={startCase}
-              disabled={loading || !objective.trim()}
+              disabled={loading || !objective.trim() || tenantSelectionRequired}
               className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-400 px-4 py-3 text-sm font-bold text-slate-950 disabled:opacity-50"
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
@@ -998,64 +1012,3 @@ export const AetherCommandCenter: React.FC = () => {
                           ))}
                         </select>
                         <input
-                          type="file"
-                          onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
-                          className="rounded-lg border border-white/10 bg-slate-900 p-2 text-xs text-slate-300"
-                        />
-                        <button
-                          onClick={uploadDocument}
-                          disabled={loading || !uploadDocumentType || !uploadFile}
-                          className="rounded-lg border border-cyan-300/20 px-3 py-2 text-xs font-bold text-cyan-100 disabled:opacity-50"
-                        >
-                          Upload
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {caseData.requirements.length > 0 && (
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-                    <h3 className="font-semibold">Requirements and evidence</h3>
-                    <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                      {caseData.requirements.map((r) => (
-                        <div key={r.name} className="rounded-xl bg-white/[0.04] p-3">
-                          <div className="flex gap-2">
-                            <FileText className="h-4 w-4 text-cyan-300" />
-                            <span className="text-sm">{r.name}</span>
-                          </div>
-                          <p className="mt-1 text-[11px] text-slate-500">{r.documents.join(', ') || 'No document input'}</p>
-                          {r.source && <p className="mt-2 truncate text-[10px] text-cyan-300/70">Source-backed: {r.source}</p>}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-                  <h3 className="font-semibold">Aether work graph</h3>
-                  <div className="mt-4 grid gap-2 md:grid-cols-2">
-                    {tasks.map((task) => <TaskRow key={task.id} task={task} />)}
-                  </div>
-                </div>
-
-                {caseData.exceptions.length > 0 && (
-                  <div className="rounded-2xl border border-amber-300/20 bg-amber-300/5 p-5">
-                    <div className="flex items-center gap-2">
-                      <CircleAlert className="h-5 w-5 text-amber-300" />
-                      <h3 className="font-semibold">Exception detected</h3>
-                    </div>
-                    {caseData.exceptions.map((e, i) => (
-                      <p key={i} className="mt-2 text-sm text-amber-100">{e.message || e.error || e.type || 'Exception'}</p>
-                    ))}
-                  </div>
-                )}
-
-                {caseData.human_actions.length > 0 && (
-                  <div className="rounded-2xl border border-violet-300/20 bg-violet-300/5 p-5">
-                    <div className="flex items-center gap-2">
-                      <UserRound className="h-5 w-5 text-violet-300" />
-                      <h3 className="font-semibold">Human authority boundary</h3>
-                    </div>
-                    {caseData.human_actions.map((action) => (
-                      <div key={action.task_id} className="mt-4 flex flex-col gap-3 rounded-xl bg-black/20 p-4 sm:flex-row sm:items-center sm:justify-between">
