@@ -69,10 +69,13 @@ class DocumentWorker(DigitalWorker):
                 ],
             }
         else:
-            normalized = [
-                item if isinstance(item, dict) else {"type": str(item), "text": ""}
-                for item in documents
-            ]
+            extractions = context.payload.get("document_extractions") or {}
+            normalized = []
+            for item in documents:
+                record = dict(item) if isinstance(item, dict) else {"type": str(item)}
+                if not record.get("text") and record.get("document_id"):
+                    record["text"] = extractions.get(record["document_id"], "")
+                normalized.append(record)
             inspection = self.intelligence.inspect(normalized, required)
 
         return {
