@@ -3,12 +3,11 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 
 from .api_models import HumanDecisionRequest, StartCaseRequest
-from .engine import AetherExecutionEngine
+from .engine import engine
 from .requirements_engine import RequirementEngine
 from .understanding import ObjectiveUnderstandingEngine
 
 router = APIRouter(prefix="/api/aether/v2", tags=["Aether V2"])
-engine = AetherExecutionEngine()
 requirements_engine = RequirementEngine()
 understanding_engine = ObjectiveUnderstandingEngine()
 
