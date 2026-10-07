@@ -91,6 +91,16 @@ class AetherExecutionEngine:
         self.cases[case.case_id] = case
         self._refresh_ready(case)
         self.store.put(case)
+        if tenant_id:
+            self.store.record_usage(
+                tenant_id=tenant_id,
+                event_type="case_started",
+                units=1,
+                unit_type="case",
+                case_id=case.case_id,
+                customer_type=customer_type,
+                metadata={"service_id": case.service_id, "service_outcome": case.service_outcome},
+            )
         return case
 
     def get_case(self, case_id: str) -> Case:
@@ -204,6 +214,7 @@ class AetherExecutionEngine:
 
             statuses = [task.status for task in case.tasks.values()]
             if statuses and all(status == TaskStatus.COMPLETED for status in statuses):
+                already_completed = case.status == "completed"
                 case.status = "completed"
                 case.outcome = {
                     "status": "completed",
@@ -211,6 +222,16 @@ class AetherExecutionEngine:
                     "service_outcome": case.service_outcome,
                 }
                 self._emit(case, "case.completed", "aether.outcome_engine", case.outcome)
+                if case.tenant_id and not already_completed:
+                    self.store.record_usage(
+                        tenant_id=case.tenant_id,
+                        event_type="case_completed",
+                        units=1,
+                        unit_type="outcome",
+                        case_id=case.case_id,
+                        customer_type=case.customer_type,
+                        metadata={"service_id": case.service_id, "service_outcome": case.service_outcome},
+                    )
             elif any(status == TaskStatus.EXCEPTION for status in statuses):
                 case.status = "exception"
             elif any(status == TaskStatus.HUMAN_REVIEW for status in statuses):
