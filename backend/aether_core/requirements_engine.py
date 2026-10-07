@@ -17,6 +17,7 @@ class RequirementDecision:
     source: Optional[str] = None
     source_title: Optional[str] = None
     effective_date: Optional[str] = None
+    verified_at: Optional[str] = None
     confidence: str = "mvp"
 
 
@@ -25,7 +26,7 @@ class RequirementEngine:
 
     A requirement is never treated as authoritative merely because a model
     inferred it. Production rules must carry an authoritative source and
-    effective version/date before Aether can auto-submit regulated work.
+    version/effective-date information before Aether can auto-submit regulated work.
     """
 
     def discover(self, objective: str, customer_type: str, jurisdiction: Dict[str, str], inputs: Dict[str, Any]) -> List[RequirementDecision]:
@@ -39,19 +40,14 @@ class RequirementEngine:
 
         decisions: List[RequirementDecision] = []
         for req in raw:
-            applicable = self._jurisdiction_matches(req, jurisdiction)
-            if not applicable:
+            if not self._jurisdiction_matches(req, jurisdiction):
                 continue
             decisions.append(RequirementDecision(
-                id=req["id"],
-                name=req["name"],
-                status="identified",
+                id=req["id"], name=req["name"], status="identified",
                 reason=req.get("reason", f"Candidate requirement for {jurisdiction.get('state', 'the selected jurisdiction')}"),
-                documents=req.get("documents", []),
-                jurisdiction=jurisdiction,
-                source=req.get("source"),
-                source_title=req.get("source_title"),
-                effective_date=req.get("effective_date"),
+                documents=req.get("documents", []), jurisdiction=jurisdiction,
+                source=req.get("source"), source_title=req.get("source_title"),
+                effective_date=req.get("effective_date"), verified_at=req.get("verified_at"),
                 confidence=req.get("confidence", "mvp"),
             ))
         return decisions
