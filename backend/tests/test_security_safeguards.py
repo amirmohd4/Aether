@@ -71,3 +71,51 @@ def test_database_backed_api_key_is_tenant_scoped(monkeypatch):
     assert principal.tenant_id == "tenant-db"
     assert principal.role == "developer"
     assert "cases:read" in principal.scopes
+
+def test_supabase_auth_refuses_arbitrary_tenant_selection(monkeypatch):
+    import aether_core.security as security
+
+    class FakeResponse:
+        status_code = 200
+        def json(self):
+            return {"id": "user-multi"}
+
+    class FakeResult:
+        def mappings(self):
+            return self
+        def all(self):
+            return [
+                {"role": "user", "tenant_id": "tenant-b", "department": None, "jurisdiction": {}},
+                {"role": "user", "tenant_id": "tenant-a", "department": None, "jurisdiction": {}},
+            ]
+        def first(self):
+            rows = self.all()
+            return rows[0] if rows else None
+
+    class FakeDB:
+        def __enter__(self):
+            return self
+        def __exit__(self, *_):
+            return False
+        def execute(self, *_args, **_kwargs):
+            return FakeResult()
+
+    monkeypatch.setenv("SUPABASE_URL", "https://example.supabase.co")
+    monkeypatch.setenv("SUPABASE_ANON_KEY", "publishable-test-key")
+    monkeypatch.setattr(security.httpx, "get", lambda *args, **kwargs: FakeResponse())
+    monkeypatch.setattr(security, "SessionLocal", lambda: FakeDB())
+
+    try:
+        security._supabase_principal(_request({"Authorization": "Bearer test-token"}))
+    except HTTPException as exc:
+        assert exc.status_code == 409
+        assert exc.detail["code"] == "multiple_active_memberships"
+        assert {item["tenant_id"] for item in exc.detail["memberships"]} == {"tenant-a", "tenant-b"}
+    else:
+        raise AssertionError("ambiguous active memberships must require an explicit tenant")
+
+    principal = security._supabase_principal(_request({
+        "Authorization": "Bearer test-token",
+        "X-Aether-Tenant-ID": "tenant-a",
+    }))
+    assert principal.tenant_id == "tenant-a"
