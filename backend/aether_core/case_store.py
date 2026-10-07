@@ -49,6 +49,30 @@ class DatabaseCaseStore:
             db.commit()
         return case
 
+    def list(
+        self,
+        tenant_id: str | None = None,
+        owner_user_id: str | None = None,
+        status: str | None = None,
+        limit: int = 50,
+    ) -> List[Dict[str, Any]]:
+        """List durable cases with server-side ownership/tenant filtering."""
+        self._ensure_schema()
+        limit = max(1, min(limit, 100))
+        with SessionLocal() as db:
+            query = db.query(AetherCaseRecord)
+            if tenant_id:
+                query = query.filter(AetherCaseRecord.tenant_id == tenant_id)
+            if owner_user_id:
+                query = query.filter(AetherCaseRecord.owner_user_id == owner_user_id)
+            if status:
+                query = query.filter(AetherCaseRecord.status == status)
+            rows = query.order_by(AetherCaseRecord.updated_at.desc()).limit(limit).all()
+            return [
+                self._deserialize_case(row.payload).summary()
+                for row in rows
+            ]
+
     def get(self, case_id: str) -> Case:
         self._ensure_schema()
         with SessionLocal() as db:
