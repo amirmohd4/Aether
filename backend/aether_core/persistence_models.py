@@ -65,7 +65,10 @@ def utc_datetime() -> datetime:
 
 class AetherUsageRecord(Base):
     __tablename__ = "aether_v2_usage"
-    __table_args__ = {"schema": PERSISTENCE_SCHEMA}
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "case_id", "event_type", name="uq_aether_usage_case_event"),
+        {"schema": PERSISTENCE_SCHEMA},
+    )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     tenant_id = Column(String(128), nullable=False, index=True)
