@@ -30,6 +30,7 @@ def test_source_backed_rule_pack_requires_effective_dates_and_sources():
             {
                 "rule_id": "RULE-001",
                 "title": "Authorized rule",
+                "service_id": "passport",
                 "requirement": "identity_document",
                 "authority_status": "source_backed",
                 "source_url": "https://gov.example/rule-001",
