@@ -5,6 +5,7 @@ on:
     branches:
       - aether-mvp-build
       - aether-mvp-final-hardening
+      - aether-integration-foundation
       - main
   pull_request:
     branches:
