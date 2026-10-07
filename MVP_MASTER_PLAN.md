@@ -18,9 +18,9 @@ Development branch: `aether-mvp-build`
 
 ## Current status — CTO estimate
 
-Overall whole-MVP software completion: **~70%**.
+Overall whole-MVP software completion: **~85% for the controlled MVP / sandbox release**.
 
-This is still a directional engineering estimate. The product is now feature-complete for a controlled MVP/synthetic-government environment, but the release remains blocked by live-government certification, authoritative legal-rule coverage and final production security/deployment validation.
+This remains a directional engineering estimate, not a project-management measurement. The software is now release-candidate complete for controlled/sandbox operation: objective understanding, requirements, 34-service catalog, cross-department graphs, parallel execution, durable queue/checkpoints/case leases, evidence and document vault, OCR adapter, audit, RBAC, API keys, payments, notifications, analytics, marketplace, worker runtime and unified Command Center are implemented.
 
 This is a directional engineering estimate, not a measured project-management percentage.
 
@@ -59,10 +59,14 @@ This is a directional engineering estimate, not a measured project-management pe
 - Broad service catalog → all 34 identities have a shared executable baseline; domain-specific legal graphs remain limited to the MVP verticals
 - Government rules → provenance/version readiness exists for a narrow verified slice, not broad jurisdiction/service coverage
 - Connector framework → synthetic execution plus an opt-in authorized REST adapter exist; live government connector certification/access remains external work
-- Document intelligence → server-side file upload, hashing, native text/PDF extraction and an external OCR adapter exist; production OCR/vision provider configuration remains external
-- Persistence → durable cases, queues, checkpoints, events and recovery exist; fully event-sourced replay remains future hardening
-- Notifications/payments → durable MVP ledgers and providers exist; external delivery/payment provider credentials are not bundled
-- Frontend → unified Command Center, guided intake, role-aware authority queue and recent-case recovery exist; legacy service screens remain for compatibility
+- Document intelligence → server-side file upload, hashing, private storage, native text/PDF extraction, encrypted extracted text and an external OCR adapter exist; production OCR/vision provider configuration remains external
+- Persistence → durable cases, queues, checkpoints, case leases, events and recovery exist; fully event-sourced replay remains future hardening
+- Notifications/payments → durable idempotent ledgers, notification outbox and provider adapters exist; external delivery/payment credentials are not bundled
+- Frontend → unified Command Center, guided intake, document upload, payments, notifications, marketplace visibility, role-aware authority queue and recent-case recovery exist; legacy service screens remain for compatibility
+
+### Controlled-MVP completion state
+
+The remaining blockers are external production prerequisites: authorized live government connectivity, authoritative effective-dated rules, certified statutory signature/issuance integrations, and final deployed environment/security validation. Those cannot be truthfully manufactured in code.
 
 ### Major remaining build areas
 1. Unified Objective/Understanding Engine
@@ -113,7 +117,7 @@ The repository still contains:
 
 These are **not yet fully removed** because existing routes still reference parts of them.
 
-## Remaining blockers before production declaration
+## Remaining blockers before production declaration (external)
 1. Connect at least one real government integration per intended launch journey using authorized credentials and sandbox/certification access.
 2. Populate authoritative, versioned, effective-dated rules for every service/jurisdiction being exposed; do not treat baseline metadata as law.
 3. Configure production OCR/document storage, notification and payment providers.
