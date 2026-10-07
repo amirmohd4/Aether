@@ -21,9 +21,9 @@ if not raw_database_url:
 DATABASE_URL = raw_database_url
 _database_url = make_url(DATABASE_URL)
 
-# Render can retain an old/mistyped Supabase pooler host or username.
-# Keep the secret-bearing URL intact and correct connection identity components
-# through explicit overrides or the canonical project ref from SUPABASE_URL.
+# Render can retain a stale Supabase database URL. Correct non-secret endpoint
+# components from deployment settings and keep the password in its own secret
+# so reserved URL characters cannot corrupt connection parsing.
 if _database_url.get_backend_name() != "sqlite":
     updates = {}
 
@@ -31,16 +31,20 @@ if _database_url.get_backend_name() != "sqlite":
     if host_override:
         updates["host"] = host_override
 
+    password_override = os.getenv("AETHER_DATABASE_PASSWORD", "")
+    if password_override:
+        updates["password"] = password_override
+
     supabase_url = os.getenv("SUPABASE_URL", "").strip()
     project_ref = ""
     if ".supabase.co" in supabase_url:
         project_ref = supabase_url.split("//", 1)[-1].split(".", 1)[0]
 
-    # Shared Supabase pooler usernames are postgres.<PROJECT-REF>. Always
-    # derive this for Supabase pooler connections; an embedded stale username
-    # in DATABASE_URL must never win over the canonical project URL.
-    if project_ref and ".pooler.supabase.com" in (host_override or _database_url.host or ""):
-        updates["username"] = f"postgres.{project_ref}"
+    pooler_host = host_override or _database_url.host or ""
+    if project_ref and ".pooler.supabase.com" in pooler_host:
+        role = os.getenv("AETHER_DATABASE_ROLE_OVERRIDE", "postgres").strip() or "postgres"
+        # Supabase shared pooler identities are <ROLE>.<PROJECT-REF>.
+        updates["username"] = f"{role}.{project_ref}"
 
     if updates:
         _database_url = _database_url.set(**updates)
