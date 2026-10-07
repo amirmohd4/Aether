@@ -8,7 +8,7 @@ Do not enable live government connectors until written authorization, credential
 
 ## Supabase
 
-Apply the latest Aether hardening migration in `supabase/migrations/20261008000000_aether_mvp_hardening.sql` to an approved environment.
+Apply the ordered Aether migrations under `supabase/migrations/`, including `20261008000000_aether_mvp_hardening.sql` and `20261008010000_aether_operational_hardening.sql`, to an approved environment.
 
 After application, verify:
 - RLS is enabled on all legacy public application tables.
