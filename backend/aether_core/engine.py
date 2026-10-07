@@ -5,6 +5,7 @@ from typing import Any, Dict, Iterable
 from uuid import uuid4
 
 from .domain import Case, TaskState, TaskStatus, now_iso
+from .ontology import GovernmentOntologyBuilder, WorkGraphBuilder
 from .synthetic_government import SyntheticGovernmentSystem
 from .templates import TEMPLATES, infer_template
 from .service_registry import ServiceRegistry
@@ -19,20 +20,27 @@ class AetherExecutionEngine:
         self.gov = SyntheticGovernmentSystem()
         self.workers = WorkerRegistry(self.gov)
         self.services = ServiceRegistry()
+        self.ontology_builder = GovernmentOntologyBuilder()
+        self.work_graph_builder = WorkGraphBuilder()
 
     def create_case(self, objective: str, customer_type: str, jurisdiction: Dict[str, str], inputs: Dict[str, Any] | None = None) -> Case:
         service = self.services.resolve(objective, customer_type)
         template = service.template if service and service.template in TEMPLATES else infer_template(objective, customer_type)
         requirements_fn, tasks_fn = TEMPLATES[template]
         tasks = {d.id: TaskState(definition=d) for d in tasks_fn()}
+        enriched_inputs = {**(inputs or {}), "customer_type": customer_type}
+        ontology = self.ontology_builder.build(enriched_inputs, objective, service)
+        work_graph = self.work_graph_builder.build(service, [state.definition for state in tasks.values()])
         case = Case(
             case_id=f"A-{uuid4().hex[:10].upper()}", objective=objective,
-            customer_type=customer_type, jurisdiction=jurisdiction, inputs=inputs or {},
+            customer_type=customer_type, jurisdiction=jurisdiction, inputs=enriched_inputs,
             requirements=requirements_fn(), tasks=tasks,
             service_id=service.id if service else None,
             service_name=service.name if service else None,
             service_department=service.department if service else None,
             service_outcome=service.outcome if service else None,
+            ontology=ontology.as_dict(),
+            work_graph=work_graph.as_dict(),
         )
         self.cases[case.case_id] = case
         self._refresh_ready(case)
