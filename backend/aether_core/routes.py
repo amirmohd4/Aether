@@ -14,6 +14,7 @@ from .notifications import NotificationService
 from .payments import PaymentService
 from .analytics import summarize_cases
 from backend.database import SessionLocal
+from sqlalchemy import text
 
 router = APIRouter(prefix="/api/aether/v2", tags=["Aether V2"], dependencies=[Depends(require_principal)])
 requirements_engine = RequirementEngine()
@@ -139,6 +140,93 @@ def create_case_payment(
         raise HTTPException(status_code=404, detail="Case not found")
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
+
+
+@router.get("/cases/{case_id}/intake")
+def case_intake(case_id: str, principal: Principal = Depends(require_principal)):
+    try:
+        case = engine.get_case(case_id)
+        _authorize_case(case, principal)
+        requirements = requirements_engine.discover(
+            case.objective,
+            case.customer_type,
+            case.jurisdiction,
+            case.inputs,
+        )
+        required = requirements_engine.document_request(requirements)["documents"]
+        submitted = {
+            str(document.get("type")) if isinstance(document, dict) else str(document)
+            for document in case.inputs.get("documents", [])
+        }
+        return {
+            "case_id": case_id,
+            "required_documents": required,
+            "submitted_documents": sorted(submitted),
+            "missing_documents": [doc for doc in required if doc not in submitted],
+            "ready_to_execute": all(doc in submitted for doc in required),
+        }
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Case not found")
+
+
+@router.get("/rules/readiness")
+def rules_readiness():
+    services = engine.services.all()
+    source_backed = len(rule_registry.all())
+    return {
+        "status": "development",
+        "services_in_catalog": len(services),
+        "source_backed_rule_records": source_backed,
+        "production_legal_coverage_complete": False,
+        "note": "Aether blocks no service because baseline metadata is explicitly non-authoritative; production execution must use verified, effective-dated rules for the target jurisdiction."
+    }
+
+
+@router.get("/admin/memberships")
+def list_memberships(principal: Principal = Depends(require_role("admin"))):
+    if engine.store is None:
+        raise HTTPException(status_code=503, detail="Membership store unavailable")
+    try:
+        with SessionLocal() as db:
+            rows = db.execute(text(
+                "SELECT user_id, tenant_id, role, status, department, jurisdiction, created_at, updated_at "
+                "FROM public.aether_memberships ORDER BY created_at DESC LIMIT 500"
+            )).mappings().all()
+            return {"memberships": [dict(row) for row in rows]}
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="Membership store unavailable") from exc
+
+
+@router.post("/admin/memberships")
+def set_membership(data: Dict[str, Any], principal: Principal = Depends(require_role("admin"))):
+    required = {"user_id", "tenant_id", "role"}
+    if not required.issubset(data):
+        raise HTTPException(status_code=400, detail="user_id, tenant_id and role are required")
+    allowed_roles = {"user", "citizen", "business", "bank", "developer", "insurer", "enterprise", "officer", "department_admin", "admin"}
+    role = str(data["role"]).lower()
+    if role not in allowed_roles:
+        raise HTTPException(status_code=400, detail="Unsupported Aether role")
+    try:
+        with SessionLocal() as db:
+            db.execute(text(
+                "INSERT INTO public.aether_memberships "
+                "(user_id, tenant_id, role, status, department, jurisdiction, updated_at) "
+                "VALUES (:user_id, :tenant_id, :role, :status, :department, CAST(:jurisdiction AS jsonb), now()) "
+                "ON CONFLICT (user_id, tenant_id) DO UPDATE SET "
+                "role = EXCLUDED.role, status = EXCLUDED.status, department = EXCLUDED.department, "
+                "jurisdiction = EXCLUDED.jurisdiction, updated_at = now()"
+            ), {
+                "user_id": data["user_id"],
+                "tenant_id": data["tenant_id"],
+                "role": role,
+                "status": str(data.get("status", "active")),
+                "department": data.get("department"),
+                "jurisdiction": __import__("json").dumps(data.get("jurisdiction") or {}),
+            })
+            db.commit()
+        return {"status": "updated", "user_id": data["user_id"], "tenant_id": data["tenant_id"], "role": role}
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="Membership store unavailable") from exc
 
 
 @router.get("/cases/{case_id}/documents")
