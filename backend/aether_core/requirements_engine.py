@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from .templates import restaurant_requirements, property_loan_requirements
 
@@ -14,13 +14,18 @@ class RequirementDecision:
     reason: str
     documents: List[str]
     jurisdiction: Dict[str, str]
+    source: Optional[str] = None
+    source_title: Optional[str] = None
+    effective_date: Optional[str] = None
+    confidence: str = "mvp"
 
 
 class RequirementEngine:
-    """MVP jurisdiction-aware requirement engine.
+    """Auditable jurisdiction-aware requirement discovery.
 
-    Rules are intentionally explicit and auditable. It does not invent legal
-    requirements; production rules will be backed by authoritative sources.
+    A requirement is never treated as authoritative merely because a model
+    inferred it. Production rules must carry an authoritative source and
+    effective version/date before Aether can auto-submit regulated work.
     """
 
     def discover(self, objective: str, customer_type: str, jurisdiction: Dict[str, str], inputs: Dict[str, Any]) -> List[RequirementDecision]:
@@ -32,17 +37,29 @@ class RequirementEngine:
         else:
             raw = []
 
-        decisions = []
+        decisions: List[RequirementDecision] = []
         for req in raw:
+            applicable = self._jurisdiction_matches(req, jurisdiction)
+            if not applicable:
+                continue
             decisions.append(RequirementDecision(
                 id=req["id"],
                 name=req["name"],
                 status="identified",
-                reason=f"Applicable candidate for the stated objective in {jurisdiction.get('state', 'the selected jurisdiction')}",
+                reason=req.get("reason", f"Candidate requirement for {jurisdiction.get('state', 'the selected jurisdiction')}"),
                 documents=req.get("documents", []),
                 jurisdiction=jurisdiction,
+                source=req.get("source"),
+                source_title=req.get("source_title"),
+                effective_date=req.get("effective_date"),
+                confidence=req.get("confidence", "mvp"),
             ))
         return decisions
+
+    @staticmethod
+    def _jurisdiction_matches(req: Dict[str, Any], jurisdiction: Dict[str, str]) -> bool:
+        allowed = req.get("states")
+        return not allowed or jurisdiction.get("state") in allowed
 
     def document_request(self, requirements: List[RequirementDecision]) -> Dict[str, Any]:
         docs = []
