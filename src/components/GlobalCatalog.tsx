@@ -62,7 +62,7 @@ export const GlobalCatalog: React.FC<GlobalCatalogProps> = ({
           <div className="flex items-center gap-2 bg-slate-800/80 p-2 rounded-xl border border-slate-700">
             <Zap className="w-4 h-4 text-emerald-400 animate-pulse" />
             <span className="text-xs text-slate-300 font-medium">
-              {country.services.length} Fully Automated Digital Services Available
+              {country.services.length} Aether Workflow Services Available
             </span>
           </div>
         </div>
