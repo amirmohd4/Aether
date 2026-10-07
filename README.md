@@ -24,9 +24,11 @@ Aether is a government execution layer. It takes a real-world objective, underst
 - Unified Aether Command Center with guided document intake, document upload/hash ledger and role-aware officer authority queue
 - Backend and frontend CI workflows
 - Production security headers/readiness endpoint and legacy API quarantine
-- Standalone resumable worker runtime and post-deployment smoke test
+- Standalone resumable worker runtime with durable case leases and notification outbox dispatch
+- Developer API marketplace catalog and tenant-scoped API keys
+- Controlled-MVP release readiness endpoint and expanded post-deployment smoke test
 
-The synthetic government system is a demo environment. It does not issue official government documents and it does not represent live government connectivity.
+The controlled MVP uses a deterministic synthetic government environment. It does not issue official government decisions/documents and does not represent live government authority.
 
 ## Architecture
 
@@ -98,7 +100,7 @@ AETHER_ENABLE_PRODUCTION_CONNECTORS=false
 Production authentication fails closed when authentication is not configured.
 
 Real government connectors are enabled only by explicit server-side configuration. Credentials must never be placed in frontend code.
-Document storage uses Supabase Storage when configured with the server-only service-role key; otherwise it uses a local development store. OCR can be connected through AETHER_OCR_BASE_URL/AETHER_OCR_TOKEN.
+Document storage uses Supabase Storage when configured with the server-only service-role key; otherwise it uses a local development store. Extracted document text is encrypted at rest when AETHER_ENCRYPTION_KEY is configured. OCR can be connected through AETHER_OCR_BASE_URL/AETHER_OCR_TOKEN.
 
 ## Deployment policy
 
@@ -110,5 +112,5 @@ See MVP_MASTER_PLAN.md and SECURITY_RELEASE_PLAN.md for the release gate.
 
 ## Truthful MVP status
 
-This repository is not yet a production government integration. Real government access, service certification, production document storage/OCR, broad legal-rule coverage, distributed worker operations, payments/fees, notifications, marketplace and full production E2E testing are still release work.
+The software MVP is release-candidate complete for controlled/sandbox operation. Production government execution remains fail-closed until authorized live connectors, authoritative effective-dated rules, certified statutory signature/issuance integrations, provider credentials and deployed Supabase/Render/Netlify security validation are in place.
 
