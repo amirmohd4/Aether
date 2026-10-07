@@ -29,6 +29,12 @@ services:
         value: "false"
       - key: AETHER_ENABLE_LEGACY_API
         value: "false"
+      - key: AETHER_EMBED_WORKER
+        value: "true"
+      - key: AETHER_WORKER_INTERVAL_SECONDS
+        value: "5"
+      - key: AETHER_WORKER_STARTUP_DELAY_SECONDS
+        value: "8"
       - key: AETHER_ENCRYPTION_KEY
         sync: false
       - key: AETHER_DOCUMENT_BUCKET
@@ -60,6 +66,8 @@ services:
         value: "false"
       - key: AETHER_ENABLE_LEGACY_API
         value: "false"
+      - key: AETHER_WORKER_INTERVAL_SECONDS
+        value: "5"
       - key: AETHER_ENCRYPTION_KEY
         sync: false
       - key: AETHER_DOCUMENT_BUCKET
