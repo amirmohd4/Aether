@@ -161,10 +161,10 @@ export const GlobalLanding: React.FC = () => {
             <Loader2 className="w-10 h-10 text-[#1a365d] animate-spin mx-auto" />
             <div className="space-y-1">
               <h3 className="text-lg font-bold text-slate-900">
-                Processing your request...
+                Preparing your Aether workflow...
               </h3>
               <p className="text-xs text-slate-500">
-                Connecting to official digital service registry
+                Running Aether's controlled workflow engine
               </p>
             </div>
           </div>

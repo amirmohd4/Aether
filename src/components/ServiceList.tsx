@@ -82,7 +82,7 @@ export const ServiceList: React.FC<ServiceListProps> = ({
     <div className="w-full space-y-3 text-left">
       <div className="flex items-center justify-between px-1">
         <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-          {isIndia ? 'Services in India (32 Services)' : 'Available Services'}
+          {isIndia ? 'Legacy reference catalog (32 services)' : 'Available Services'}
         </span>
         <span className="text-xs text-slate-400 font-medium">
           {filteredServices.length} service{filteredServices.length !== 1 ? 's' : ''}
