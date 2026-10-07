@@ -61,6 +61,10 @@ class ConnectorRegistry:
     def production_configured(self) -> bool:
         return any(not isinstance(connector, SyntheticConnector) for connector in self._connectors.values())
 
+    def is_production(self, department: str) -> bool:
+        """Return whether a department has an explicitly configured live connector."""
+        return not isinstance(self.get(department), SyntheticConnector)
+
     def catalog(self) -> List[dict]:
         return [
             {
