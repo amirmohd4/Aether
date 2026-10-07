@@ -23,6 +23,7 @@ class Principal:
     auth_mode: str
     department: Optional[str] = None
     jurisdiction: dict = field(default_factory=dict)
+    scopes: frozenset[str] = frozenset()
 
 
 def auth_mode() -> str:
@@ -63,6 +64,7 @@ def _api_key_principal(request: Request) -> Principal:
                 role=row.role,
                 tenant_id=row.tenant_id,
                 auth_mode="api_key",
+                scopes=frozenset(row.scopes or ["cases:read", "cases:write"]),
             )
     except HTTPException:
         raise
@@ -143,6 +145,14 @@ def require_principal(request: Request) -> Principal:
     if mode == "supabase":
         return _supabase_principal(request)
     raise HTTPException(status_code=500, detail=f"Unsupported Aether auth mode: {mode}")
+
+
+def require_scope(scope: str):
+    def dependency(principal: Principal = Depends(require_principal)) -> Principal:
+        if principal.auth_mode == "none" or "*" in principal.scopes or scope in principal.scopes:
+            return principal
+        raise HTTPException(status_code=403, detail=f"Missing Aether API scope: {scope}")
+    return dependency
 
 
 def require_role(*allowed_roles: str):
