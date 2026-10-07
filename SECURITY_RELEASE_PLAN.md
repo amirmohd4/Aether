@@ -2,7 +2,9 @@
 
 ## Current finding
 
-Supabase's security advisor currently reports RLS disabled on 14 tables:
+Supabase's security advisor previously reported RLS disabled on the legacy public tables. The V2 build also introduces three private execution tables and a server-controlled membership table; all must be deliberately secured before release.
+
+The legacy/public findings were:
 - public.citizens
 - public.api_keys
 - public.properties
@@ -17,6 +19,8 @@ Supabase's security advisor currently reports RLS disabled on 14 tables:
 - public.medical_licenses
 - aether_internal.aether_v2_cases
 - aether_internal.aether_v2_execution_events
+- aether_internal.aether_v2_task_queue
+- public.aether_memberships
 
 This is a release blocker for production because exposed tables without RLS can be reachable by anon/authenticated clients.
 
@@ -28,7 +32,7 @@ The remediation below is intentionally not executed on the connected Supabase pr
 
 Aether should use:
 1. Supabase Auth identity via auth.uid().
-2. Aether tenant/membership records stored in server-controlled data, not user-editable user metadata.
+2. Aether tenant/membership records stored in server-controlled data, not user-editable user metadata. The build now provisions public.aether_memberships for this purpose.
 3. Roles such as citizen, business, bank, developer, insurer, officer, department_admin, admin.
 4. Explicit object ownership or tenant predicates for every exposed row.
 5. Backend/service-role access only for privileged government connectors and internal workers.
@@ -36,11 +40,11 @@ Aether should use:
 
 ## Internal V2 policy shape
 
-Before enabling RLS on aether_internal tables, add:
-- owner_user_id uuid to aether_v2_cases
-- tenant_id uuid to aether_v2_cases
-- matching tenant_id to execution events and queue
-- a server-controlled membership table mapping auth.uid() to tenant and role
+Before production release, validate:
+- owner_user_id on aether_v2_cases
+- tenant_id on aether_v2_cases
+- matching tenant_id on execution events and queue
+- public.aether_memberships mapping auth.uid() to tenant and role
 
 Then use policies conceptually equivalent to:
 
