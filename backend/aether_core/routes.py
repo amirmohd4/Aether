@@ -18,8 +18,14 @@ verification_engine = VerificationEngine()
 
 
 def serialize(case):
+    understanding = understanding_engine.understand(
+        case.objective,
+        case.customer_type,
+        case.jurisdiction,
+    )
     return {
         "summary": case.summary(),
+        "understanding": understanding.as_dict(),
         "requirements": case.requirements,
         "tasks": {
             task_id: {
