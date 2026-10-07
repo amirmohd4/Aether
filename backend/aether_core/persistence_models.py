@@ -20,6 +20,8 @@ class AetherCaseRecord(Base):
     status = Column(String(64), nullable=False, index=True)
     objective = Column(Text, nullable=False)
     customer_type = Column(String(64), nullable=False, index=True)
+    owner_user_id = Column(String(128), nullable=True, index=True)
+    tenant_id = Column(String(128), nullable=True, index=True)
     service_id = Column(String(128), nullable=True, index=True)
     updated_at = Column(DateTime(timezone=True), nullable=False)
     payload = Column(JSON, nullable=False)
@@ -33,6 +35,7 @@ class AetherExecutionEventRecord(Base):
     case_id = Column(String(64), nullable=False, index=True)
     action = Column(String(128), nullable=False, index=True)
     actor = Column(String(128), nullable=False)
+    tenant_id = Column(String(128), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), nullable=False)
     data = Column(JSON, nullable=False)
 
