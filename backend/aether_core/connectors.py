@@ -30,7 +30,6 @@ class GovernmentConnector(ABC):
         return response.get("result") or {}
 
     def normalize(self, response: Dict[str, Any]) -> Dict[str, Any]:
-        """Convert source-specific response fields to Aether's normalized shape."""
         return {
             "request_id": response.get("request_id"),
             "status": response.get("status"),
@@ -44,13 +43,27 @@ class GovernmentConnector(ABC):
         payload: Dict[str, Any],
         idempotency_key: str | None = None,
     ) -> Dict[str, Any]:
-        return self.submit(operation, payload, idempotency_key)
+        return self.execute(operation, payload, idempotency_key)
+
+    def execute(
+        self,
+        operation: str,
+        payload: Dict[str, Any],
+        idempotency_key: str | None = None,
+    ) -> Dict[str, Any]:
+        submitted = self.submit(operation, payload, idempotency_key)
+        status = self.get_status(submitted["request_id"])
+        return self.normalize(status)
 
 
 class SyntheticConnector(GovernmentConnector):
-    def __init__(self, department: str):
+    def __init__(
+        self,
+        department: str,
+        system: SyntheticGovernmentSystem | None = None,
+    ):
         self.department = department
-        self.system = SyntheticGovernmentSystem()
+        self.system = system or SyntheticGovernmentSystem()
         self._requests: Dict[str, str] = {}
 
     def submit(
@@ -71,6 +84,22 @@ class SyntheticConnector(GovernmentConnector):
             if idempotency_key:
                 self._requests[idempotency_key] = request_id
         return {"request_id": request_id, "status": self.system.status(request_id)}
+
+    def execute(
+        self,
+        operation: str,
+        payload: Dict[str, Any],
+        idempotency_key: str | None = None,
+    ) -> Dict[str, Any]:
+        result = self.system.execute(
+            self.department,
+            operation,
+            payload,
+            idempotency_key=idempotency_key,
+        )
+        result["result"] = result.get("result") or {}
+        result["result"].setdefault("source", f"Synthetic {self.department} System")
+        return self.normalize(result)
 
     def get_status(self, request_id: str) -> Dict[str, Any]:
         status = self.system.status(request_id)
