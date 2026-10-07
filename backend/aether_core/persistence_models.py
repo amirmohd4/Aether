@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-import json
 from datetime import datetime
 import os
-from typing import Any, Dict, List
 
-from sqlalchemy import Column, DateTime, Integer, String, Text
+from sqlalchemy import Column, DateTime, Integer, String, Text, UniqueConstraint
 from sqlalchemy.types import JSON
 
 from backend.database import Base
@@ -37,6 +35,25 @@ class AetherExecutionEventRecord(Base):
     actor = Column(String(128), nullable=False)
     created_at = Column(DateTime(timezone=True), nullable=False)
     data = Column(JSON, nullable=False)
+
+
+class AetherTaskQueueRecord(Base):
+    __tablename__ = "aether_v2_task_queue"
+    __table_args__ = (
+        UniqueConstraint("case_id", "task_id", name="uq_aether_task_queue_case_task"),
+        {"schema": PERSISTENCE_SCHEMA},
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    case_id = Column(String(64), nullable=False, index=True)
+    task_id = Column(String(128), nullable=False)
+    status = Column(String(32), nullable=False, index=True)
+    available_at = Column(DateTime(timezone=True), nullable=False, index=True)
+    locked_by = Column(String(128), nullable=True, index=True)
+    lease_until = Column(DateTime(timezone=True), nullable=True, index=True)
+    attempts = Column(Integer, nullable=False, default=0)
+    last_error = Column(Text, nullable=True)
+    payload = Column(JSON, nullable=False, default=dict)
 
 
 def utc_datetime() -> datetime:
