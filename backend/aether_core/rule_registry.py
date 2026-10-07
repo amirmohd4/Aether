@@ -9,11 +9,11 @@ from .rule_packs import load_rule_pack_from_environment, rule_pack_records
 @dataclass(frozen=True)
 class RuleRecord:
     rule_id: str
-    service_id: Optional[str] = None
     title: str
     jurisdiction: Dict[str, str]
     requirement: str
     authority_status: str
+    service_id: Optional[str] = None
     source_url: Optional[str] = None
     source_title: Optional[str] = None
     verified_at: Optional[str] = None
