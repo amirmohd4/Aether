@@ -18,7 +18,9 @@ Development branch: `aether-mvp-build`
 
 ## Current status — CTO estimate
 
-Overall whole-MVP completion: **~48%**.
+Overall whole-MVP software completion: **~70%**.
+
+This is still a directional engineering estimate. The product is now feature-complete for a controlled MVP/synthetic-government environment, but the release remains blocked by live-government certification, authoritative legal-rule coverage and final production security/deployment validation.
 
 This is a directional engineering estimate, not a measured project-management percentage.
 
@@ -54,13 +56,13 @@ This is a directional engineering estimate, not a measured project-management pe
 - Legacy browser-data lockdown migration with deny-by-default RLS
 
 ### Partially built
-- Broad service catalog → all 34 identities now have a shared executable baseline; only a smaller number have evidence-backed domain-specific graphs
-- Document intelligence → foundation exists, but production-grade extraction/validation is incomplete
-- Government rules → provenance exists for a narrow verified slice, not broad jurisdiction/service coverage
-- Connector framework → synthetic execution works and an opt-in REST adapter exists; real government connector certification/access is still incomplete
-- Frontend → the unified Command Center now understands objectives, shows candidates, opens saved cases and resumes durable workflows; legacy service screens still exist and need retirement/migration
-- Persistence → durable cases, queue leases, event ledger and resume APIs exist; full distributed replay semantics and operational worker service are still incomplete
-- Error/recovery → retries exist, but distributed worker recovery is incomplete
+- Broad service catalog → all 34 identities have a shared executable baseline; domain-specific legal graphs remain limited to the MVP verticals
+- Government rules → provenance/version readiness exists for a narrow verified slice, not broad jurisdiction/service coverage
+- Connector framework → synthetic execution plus an opt-in authorized REST adapter exist; live government connector certification/access remains external work
+- Document intelligence → server-side file upload, hashing, native text/PDF extraction and an external OCR adapter exist; production OCR/vision provider configuration remains external
+- Persistence → durable cases, queues, checkpoints, events and recovery exist; fully event-sourced replay remains future hardening
+- Notifications/payments → durable MVP ledgers and providers exist; external delivery/payment provider credentials are not bundled
+- Frontend → unified Command Center, guided intake, role-aware authority queue and recent-case recovery exist; legacy service screens remain for compatibility
 
 ### Major remaining build areas
 1. Unified Objective/Understanding Engine
@@ -110,6 +112,14 @@ The repository still contains:
 - multiple deployment/configuration documents and historical artifacts
 
 These are **not yet fully removed** because existing routes still reference parts of them.
+
+## Remaining blockers before production declaration
+1. Connect at least one real government integration per intended launch journey using authorized credentials and sandbox/certification access.
+2. Populate authoritative, versioned, effective-dated rules for every service/jurisdiction being exposed; do not treat baseline metadata as law.
+3. Configure production OCR/document storage, notification and payment providers.
+4. Run the full Supabase RLS/security review against the deployed database and verify no browser role can reach private execution tables.
+5. Run the release smoke test against the final Render URL and final Netlify site.
+6. Retire or explicitly quarantine remaining legacy APIs/modules after dependency review.
 
 ## Final release gate
 
