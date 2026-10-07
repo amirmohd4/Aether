@@ -39,7 +39,7 @@ This is a release status for the controlled/sandbox product, not a claim of live
 - Unified Aether Command Center
 - Worker runtime with durable leases and notification dispatch
 - Render deployment with managed-Postgres migration discipline and database-ready worker
-- Netlify frontend deployment and SPA fallback
+- Vercel frontend deployment and SPA fallback
 - Supabase RLS/security hardening
 - Automated backend/frontend CI and deployed smoke testing
 
@@ -65,8 +65,8 @@ Verified:
 - managed PostgreSQL is migration-owned; runtime no longer attempts schema creation
 - worker failure backoff protects the service from connection storms
 
-### Netlify
-The Aether Command Center is published at the configured Netlify site and returns successfully in deployed smoke testing.
+### Vercel
+The Aether Command Center frontend is deployed successfully through the connected Vercel projects. Netlify is no longer part of the official deployment stack.
 
 ## Controlled-MVP boundaries
 
@@ -103,7 +103,7 @@ A legacy file is deleted only when:
 
 ## Next product phase
 
-The next phase is authorized real-world integration, not more controlled-MVP scaffolding:
+See `REAL_GOVERNMENT_ACTIVATION.md` for the production activation workflow. The next phase is authorized real-world integration, not more controlled-MVP scaffolding:
 - onboard the first government sandbox/certified connector;
 - load authoritative rule packs;
 - configure production providers;
