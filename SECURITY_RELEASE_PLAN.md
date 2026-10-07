@@ -1,104 +1,43 @@
 # Supabase Security Release Plan
 
-## Current finding
+## Current deployed security posture
 
-Supabase's security advisor previously reported RLS disabled on the legacy public tables. The V2 build also introduces three private execution tables and a server-controlled membership table; all must be deliberately secured before release.
+The connected Aether Supabase project has been hardened for the controlled MVP release.
 
-The legacy/public findings were:
-- public.citizens
-- public.api_keys
-- public.properties
-- public.certificates
-- public.workflow_states
-- public.fraud_detection_logs
-- public.trade_licenses
-- public.building_permits
-- public.water_connections
-- public.birth_certificates
-- public.death_certificates
-- public.medical_licenses
-- aether_internal.aether_v2_cases
-- aether_internal.aether_v2_execution_events
-- aether_internal.aether_v2_task_queue
-- public.aether_memberships
+The legacy/public application tables identified during the release review now have Row Level Security enabled with deny-by-default browser access where direct client access is not required. A server-controlled `public.aether_memberships` table is used to resolve tenant and role membership.
 
-This is a release blocker for production because exposed tables without RLS can be reachable by anon/authenticated clients.
+The private execution schema also has RLS enabled. The internal `aether_internal` tables intentionally have no browser-facing policies because the Aether API/worker is the only access path; anon/authenticated browser roles do not receive privileges on these tables.
 
-## Do not apply yet
-
-The remediation below is intentionally not executed on the connected Supabase project. Enabling RLS without matching policies can block legitimate application access, while generic authenticated-can-read-everything policies would create an authorization vulnerability.
+This is the correct controlled-MVP posture: private execution state stays server-side while the public application surface uses Aether API authorization.
 
 ## Required authorization model
 
-Aether should use:
-1. Supabase Auth identity via auth.uid().
-2. Aether tenant/membership records stored in server-controlled data, not user-editable user metadata. The build now provisions public.aether_memberships for this purpose.
-3. Roles such as citizen, business, bank, developer, insurer, officer, department_admin, admin.
-4. Explicit object ownership or tenant predicates for every exposed row.
-5. Backend/service-role access only for privileged government connectors and internal workers.
-6. No service-role or secret credentials in the browser.
+Aether uses:
+1. Supabase Auth identity for browser authentication.
+2. Server-controlled tenant/membership records in `public.aether_memberships`.
+3. Roles such as citizen, business, bank, developer, insurer, officer, department_admin and admin.
+4. Server-side ownership, tenant, department and jurisdiction checks.
+5. Backend/service-role access for privileged internal execution and government connectors.
+6. No service-role or database secrets in frontend code.
 
-## Internal V2 policy shape
+## Verification completed
 
-Before production release, validate:
-- owner_user_id on aether_v2_cases
-- tenant_id on aether_v2_cases
-- matching tenant_id on execution events and queue
-- public.aether_memberships mapping auth.uid() to tenant and role
+The deployed project was checked for:
+- RLS enabled on the legacy application tables and internal execution tables.
+- Private `aether-documents` storage bucket.
+- Server-only access to internal execution tables.
+- No critical Supabase security-advisor RLS findings.
 
-Then use policies conceptually equivalent to:
+Supabase may still report informational `rls_enabled_no_policy` notices for intentional internal tables. These are expected because browser roles are not granted access to those tables.
 
-    CREATE POLICY "case members can read their tenant cases"
-    ON aether_internal.aether_v2_cases
-    FOR SELECT TO authenticated
-    USING (
-      tenant_id = (
-        SELECT tenant_id
-        FROM public.aether_memberships
-        WHERE user_id = (SELECT auth.uid())
-          AND status = 'active'
-      )
-    );
+## Production gate still outstanding
 
-    CREATE POLICY "case owners can create cases"
-    ON aether_internal.aether_v2_cases
-    FOR INSERT TO authenticated
-    WITH CHECK (
-      owner_user_id = (SELECT auth.uid())
-      AND tenant_id = (
-        SELECT tenant_id
-        FROM public.aether_memberships
-        WHERE user_id = (SELECT auth.uid())
-          AND status = 'active'
-      )
-    );
+The controlled MVP is not a claim of live government authority. Before any real production-government declaration, Aether still requires:
+- authorized live government connectors and sandbox/certification access;
+- authoritative effective-dated legal/rule data for each launch jurisdiction and service;
+- certified statutory signature/issuance integrations;
+- production OCR, notification and payment provider credentials;
+- tenant/department/jurisdiction penetration testing;
+- final production load/chaos testing.
 
-The exact policy set must be finalized after the membership table and case ownership columns are migrated.
-
-## Legacy public tables
-
-The existing legacy tables should not receive broad authenticated read/write policies. For tables no longer used directly by the MVP UI, the safest interim policy is deny-by-default while backend access is migrated behind the Aether API.
-
-Example pattern:
-
-    ALTER TABLE public.<legacy_table> ENABLE ROW LEVEL SECURITY;
-
-    CREATE POLICY "<legacy_table> deny public client access"
-    ON public.<legacy_table>
-    FOR ALL TO anon, authenticated
-    USING (false)
-    WITH CHECK (false);
-
-Only tables that genuinely need direct client access should receive narrower ownership/tenant policies.
-
-## Release gate
-
-Production deployment must not proceed until:
-- RLS is enabled on all exposed data tables.
-- Every table has a deliberate policy set.
-- API/service credentials are server-side only.
-- Authenticated users cannot read another tenant's case or evidence.
-- Officers can only access cases authorized for their department and jurisdiction.
-- Sensitive tables such as api_keys remain inaccessible from the browser.
-- RLS tests cover SELECT, INSERT, UPDATE, and DELETE behavior.
-- Supabase security advisor returns no critical RLS findings.
+Those are external authorization/integration prerequisites and must not be simulated as completed.
