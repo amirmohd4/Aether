@@ -162,7 +162,7 @@ class AetherExecutionEngine:
                         {
                             "worker": task.definition.worker,
                             "department": task.definition.department,
-                            "operation": self._operation_for(task.definition.id),
+                            "operation": task.definition.operation or self._operation_for(task.definition.id),
                         },
                     )
 
@@ -226,7 +226,7 @@ class AetherExecutionEngine:
 
     def _execute_task(self, case: Case, task: TaskState, queue_id: int | None = None) -> None:
         definition = task.definition
-        operation = self._operation_for(definition.id)
+        operation = definition.operation or self._operation_for(definition.id)
         worker = self.workers.get(definition.worker)
         task.idempotency_key = task.idempotency_key or f"{case.case_id}:{definition.id}"
 
