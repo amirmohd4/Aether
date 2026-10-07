@@ -79,6 +79,61 @@ class AetherTaskCheckpointRecord(Base):
     updated_at = Column(DateTime(timezone=True), nullable=False)
 
 
+class AetherDocumentRecord(Base):
+    __tablename__ = "aether_v2_documents"
+    __table_args__ = {"schema": PERSISTENCE_SCHEMA}
+
+    document_id = Column(String(64), primary_key=True)
+    case_id = Column(String(64), nullable=False, index=True)
+    tenant_id = Column(String(128), nullable=True, index=True)
+    owner_user_id = Column(String(128), nullable=True, index=True)
+    document_type = Column(String(128), nullable=False, index=True)
+    filename = Column(String(512), nullable=False)
+    mime_type = Column(String(128), nullable=False)
+    size_bytes = Column(Integer, nullable=False)
+    sha256 = Column(String(128), nullable=False, index=True)
+    storage_key = Column(Text, nullable=False)
+    extracted_text = Column(Text, nullable=False, default="")
+    extraction_mode = Column(String(64), nullable=False, default="metadata-only")
+    created_at = Column(DateTime(timezone=True), nullable=False)
+
+
+class AetherNotificationRecord(Base):
+    __tablename__ = "aether_v2_notifications"
+    __table_args__ = {"schema": PERSISTENCE_SCHEMA}
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    tenant_id = Column(String(128), nullable=True, index=True)
+    user_id = Column(String(128), nullable=True, index=True)
+    case_id = Column(String(64), nullable=True, index=True)
+    event_type = Column(String(128), nullable=False, index=True)
+    channel = Column(String(32), nullable=False)
+    destination = Column(String(512), nullable=True)
+    status = Column(String(32), nullable=False, index=True)
+    payload = Column(JSON, nullable=False, default=dict)
+    created_at = Column(DateTime(timezone=True), nullable=False)
+    sent_at = Column(DateTime(timezone=True), nullable=True)
+
+
+class AetherPaymentRecord(Base):
+    __tablename__ = "aether_v2_payments"
+    __table_args__ = {"schema": PERSISTENCE_SCHEMA}
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    payment_id = Column(String(64), unique=True, nullable=False, index=True)
+    tenant_id = Column(String(128), nullable=False, index=True)
+    case_id = Column(String(64), nullable=False, index=True)
+    amount_minor = Column(Integer, nullable=False)
+    currency = Column(String(8), nullable=False, default="INR")
+    provider = Column(String(64), nullable=False)
+    provider_payment_id = Column(String(128), nullable=True)
+    status = Column(String(32), nullable=False, index=True)
+    idempotency_key = Column(String(256), nullable=False)
+    metadata_json = Column(JSON, nullable=False, default=dict)
+    created_at = Column(DateTime(timezone=True), nullable=False)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+
+
 class AetherUsageRecord(Base):
     __tablename__ = "aether_v2_usage"
     __table_args__ = (
