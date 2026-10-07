@@ -135,6 +135,8 @@ export const AetherCommandCenter: React.FC = () => {
   const [useDemoEvidence, setUseDemoEvidence] = useState(true);
   const [missingDocuments, setMissingDocuments] = useState<string[]>([]);
   const [selectedDocuments, setSelectedDocuments] = useState<string[]>([]);
+  const [uploadDocumentType, setUploadDocumentType] = useState('');
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [intakeNotice, setIntakeNotice] = useState('');
   const { session, loading: authLoading, required: authRequired, signIn, signUp, signOut } = useAuth();
 
@@ -267,6 +269,46 @@ export const AetherCommandCenter: React.FC = () => {
       await loadRecentCases();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to start Aether case');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function refreshIntake(caseId: string) {
+    const response = await fetch(
+      API_BASE + '/api/aether/v2/cases/' + caseId + '/intake',
+      { headers: authHeaders() }
+    );
+    if (!response.ok) return;
+    const body = await response.json();
+    setMissingDocuments(body.missing_documents || []);
+  }
+
+  async function uploadDocument() {
+    if (!caseData || !uploadDocumentType || !uploadFile) return;
+    setLoading(true);
+    setError('');
+    try {
+      const form = new FormData();
+      form.append('document_type', uploadDocumentType);
+      form.append('file', uploadFile);
+      const response = await fetch(
+        API_BASE + '/api/aether/v2/cases/' + caseData.summary.case_id + '/documents/upload?document_type=' + encodeURIComponent(uploadDocumentType),
+        {
+          method: 'POST',
+          headers: authHeaders(),
+          body: form,
+        }
+      );
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.detail || 'Document upload failed');
+      setCaseData(body.case || caseData);
+      setUploadDocumentType('');
+      setUploadFile(null);
+      setIntakeNotice('Document uploaded and hashed successfully.');
+      await refreshIntake(caseData.summary.case_id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to upload document');
     } finally {
       setLoading(false);
     }
@@ -652,8 +694,36 @@ export const AetherCommandCenter: React.FC = () => {
                       disabled={loading || selectedDocuments.length === 0}
                       className="mt-4 rounded-lg bg-cyan-400 px-4 py-2 text-xs font-bold text-slate-950 disabled:opacity-50"
                     >
-                      Record selected documents
+                      Record selected document types
                     </button>
+
+                    <div className="mt-4 rounded-xl border border-white/10 bg-slate-950/40 p-3">
+                      <p className="text-[11px] font-semibold text-slate-200">Upload actual document</p>
+                      <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+                        <select
+                          value={uploadDocumentType}
+                          onChange={(e) => setUploadDocumentType(e.target.value)}
+                          className="rounded-lg border border-white/10 bg-slate-900 p-2 text-xs"
+                        >
+                          <option value="">Choose required type</option>
+                          {missingDocuments.map((document) => (
+                            <option key={document} value={document}>{document}</option>
+                          ))}
+                        </select>
+                        <input
+                          type="file"
+                          onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+                          className="rounded-lg border border-white/10 bg-slate-900 p-2 text-xs text-slate-300"
+                        />
+                        <button
+                          onClick={uploadDocument}
+                          disabled={loading || !uploadDocumentType || !uploadFile}
+                          className="rounded-lg border border-cyan-300/20 px-3 py-2 text-xs font-bold text-cyan-100 disabled:opacity-50"
+                        >
+                          Upload
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 )}
 
