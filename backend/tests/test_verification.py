@@ -32,3 +32,19 @@ def test_clean_results_are_verified():
     assert result.status == "verified"
     assert result.risk_level == "low"
     assert result.findings == []
+
+
+def test_audit_chain_links_events():
+    from aether_core.audit import AuditTrail
+
+    audit = AuditTrail()
+    first = audit.record("case.created", "aether", "CASE-A", {"value": 1})
+    second = audit.record("task.completed", "worker", "CASE-A", {"value": 2})
+
+    assert first["previous_hash"] is None
+    assert first["event_hash"]
+    assert second["previous_hash"] == first["event_hash"]
+    assert second["event_hash"] != first["event_hash"]
+
+    other_case = audit.record("case.created", "aether", "CASE-B", {})
+    assert other_case["previous_hash"] is None
