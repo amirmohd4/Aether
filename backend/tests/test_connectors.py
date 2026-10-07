@@ -24,5 +24,5 @@ def test_connector_registry_reuses_department_connector_and_shared_system():
     second = registry.get("Revenue")
     assert first is second
     assert isinstance(first, SyntheticConnector)
-    first.execute("land_record", {"parcel_id": "P-1"}, "same-key")
-    assert registry.get("Revenue").get_result("SIM-PLACEHOLDER") if False else True
+    result = first.execute("land_record", {"parcel_id": "P-1"}, "same-key")
+    assert second.get_result(result["request_id"])["parcel_id"] == "P-1"
