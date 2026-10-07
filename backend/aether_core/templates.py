@@ -254,6 +254,191 @@ def generic_tasks(service: ServiceDefinition) -> List[TaskDefinition]:
         ]
         return _finish_service_tasks(service, tasks, "verification")
 
+    if sid in {"company_registration", "gst_registration"}:
+        if sid == "company_registration":
+            department_task = TaskDefinition(
+                "corporate_registry",
+                "Process company incorporation record",
+                "Corporate Registry",
+                "CorporateRegistryWorker",
+                ["document_intake", "identity_check"],
+                operation="service_processing",
+            )
+            tax_dependency = "corporate_registry"
+        else:
+            department_task = TaskDefinition(
+                "tax_registration",
+                "Process GST registration",
+                "Tax",
+                "TaxWorker",
+                ["document_intake", "identity_check"],
+                operation="service_processing",
+            )
+            tax_dependency = "tax_registration"
+        tasks = [
+            TaskDefinition("document_intake", f"Validate {service.name} inputs", "Aether", "DocumentWorker", operation="document"),
+            TaskDefinition("identity_check", "Verify applicant identity", "Identity", "IdentityWorker", operation="identity"),
+            department_task,
+            TaskDefinition(
+                "tax_record",
+                "Cross-check tax identity and registration status",
+                "Tax",
+                "TaxWorker",
+                ["identity_check", tax_dependency],
+                operation="tax_verification",
+            ),
+            TaskDefinition(
+                "cross_record_reconciliation",
+                "Reconcile incorporation/tax records",
+                "Aether",
+                "ReconciliationWorker",
+                ["corporate_registry" if sid == "company_registration" else "tax_registration", "tax_record"],
+                operation="reconciliation",
+            ),
+        ]
+        return _finish_service_tasks(service, tasks, "cross_record_reconciliation")
+
+    if sid in {"trade_license", "building_permit"}:
+        tasks = [
+            TaskDefinition("document_intake", f"Validate {service.name} documents", "Aether", "DocumentWorker", operation="document"),
+            TaskDefinition("identity_check", "Verify applicant identity", "Identity", "IdentityWorker", operation="identity"),
+            TaskDefinition("land_record", "Retrieve property/land record", "Revenue", "RevenueWorker", ["document_intake"], operation="land_record"),
+            TaskDefinition("zoning_check", "Verify zoning and permitted use", "Municipal", "MunicipalWorker", ["land_record"], operation="zoning"),
+            TaskDefinition("tax_dues", "Check municipal/property dues", "Tax", "TaxWorker", ["land_record"], operation="tax_dues"),
+            TaskDefinition(
+                "fire_check",
+                "Check fire-safety requirements",
+                "Fire",
+                "FireWorker",
+                ["document_intake"],
+                operation="fire",
+            ),
+            TaskDefinition(
+                "municipal_processing",
+                f"Process {service.name} departmental review",
+                "Municipal",
+                "MunicipalWorker",
+                ["identity_check", "zoning_check", "tax_dues", "fire_check"],
+                operation="service_processing",
+            ),
+            TaskDefinition(
+                "cross_record_reconciliation",
+                "Reconcile property, zoning, tax and safety evidence",
+                "Aether",
+                "ReconciliationWorker",
+                ["municipal_processing", "land_record", "zoning_check", "tax_dues", "fire_check"],
+                operation="reconciliation",
+            ),
+        ]
+        return _finish_service_tasks(service, tasks, "cross_record_reconciliation")
+
+    if sid == "factory_license":
+        tasks = [
+            TaskDefinition("document_intake", "Validate factory licence evidence", "Aether", "DocumentWorker", operation="document"),
+            TaskDefinition("identity_check", "Verify applicant/company identity", "Identity", "IdentityWorker", operation="identity"),
+            TaskDefinition("land_record", "Verify factory premises record", "Revenue", "RevenueWorker", ["document_intake"], operation="land_record"),
+            TaskDefinition("labour_compliance", "Check labour registration/compliance", "Labour", "LabourWorker", ["identity_check"], operation="labour_compliance"),
+            TaskDefinition("fire_check", "Check fire-safety compliance", "Fire", "FireWorker", ["document_intake"], operation="fire"),
+            TaskDefinition("environment_check", "Check environmental consent status", "Environment", "EnvironmentWorker", ["document_intake"], operation="environment"),
+            TaskDefinition(
+                "factory_processing",
+                "Process factory licence application",
+                "Labour",
+                "LabourWorker",
+                ["land_record", "labour_compliance", "fire_check", "environment_check"],
+                operation="service_processing",
+            ),
+            TaskDefinition(
+                "cross_record_reconciliation",
+                "Reconcile labour, premises, fire and environment evidence",
+                "Aether",
+                "ReconciliationWorker",
+                ["factory_processing", "land_record", "labour_compliance", "fire_check", "environment_check"],
+                operation="reconciliation",
+            ),
+        ]
+        return _finish_service_tasks(service, tasks, "cross_record_reconciliation")
+
+    if sid == "rera_registration":
+        tasks = [
+            TaskDefinition("document_intake", "Validate RERA project evidence", "Aether", "DocumentWorker", operation="document"),
+            TaskDefinition("identity_check", "Verify promoter identity/company", "Identity", "IdentityWorker", operation="identity"),
+            TaskDefinition("land_record", "Verify project land record", "Revenue", "RevenueWorker", ["document_intake"], operation="land_record"),
+            TaskDefinition("title_check", "Verify project title evidence", "Revenue", "RevenueWorker", ["land_record"], operation="title_check"),
+            TaskDefinition("court_search", "Search project litigation records", "Courts", "CourtWorker", ["land_record"], operation="court_search"),
+            TaskDefinition("tax_dues", "Check project/property dues", "Tax", "TaxWorker", ["land_record"], operation="tax_dues"),
+            TaskDefinition("building_check", "Review building/project planning evidence", "Municipal", "MunicipalWorker", ["document_intake"], operation="building"),
+            TaskDefinition("fire_check", "Check project fire-safety evidence", "Fire", "FireWorker", ["document_intake"], operation="fire"),
+            TaskDefinition(
+                "rera_processing",
+                "Process RERA registration",
+                "RERA",
+                "RERAWorker",
+                ["identity_check", "title_check", "court_search", "tax_dues", "building_check", "fire_check"],
+                operation="service_processing",
+            ),
+            TaskDefinition(
+                "cross_record_reconciliation",
+                "Reconcile land, court, tax, planning and safety evidence",
+                "Aether",
+                "ReconciliationWorker",
+                ["rera_processing", "title_check", "court_search", "tax_dues", "building_check", "fire_check"],
+                operation="reconciliation",
+            ),
+        ]
+        return _finish_service_tasks(service, tasks, "cross_record_reconciliation")
+
+    if sid in {"farmer_id", "crop_insurance"}:
+        record_task = "farmer_record" if sid == "farmer_id" else "crop_record"
+        record_operation = "farmer_record" if sid == "farmer_id" else "crop_record"
+        tasks = [
+            TaskDefinition("document_intake", f"Validate {service.name} evidence", "Aether", "DocumentWorker", operation="document"),
+            TaskDefinition("identity_check", "Verify farmer identity", "Identity", "IdentityWorker", operation="identity"),
+            TaskDefinition("land_record", "Verify agricultural land record", "Revenue", "RevenueWorker", ["document_intake"], operation="land_record"),
+            TaskDefinition(record_task, f"Retrieve {service.name.lower()} record", "Agriculture", "AgricultureWorker", ["identity_check"], operation=record_operation),
+            TaskDefinition("eligibility", "Check benefit/insurance eligibility", "Agriculture", "AgricultureWorker", ["land_record", record_task], operation="eligibility"),
+            TaskDefinition(
+                "cross_record_reconciliation",
+                "Reconcile identity, land and agriculture evidence",
+                "Aether",
+                "ReconciliationWorker",
+                ["identity_check", "land_record", record_task, "eligibility"],
+                operation="reconciliation",
+            ),
+        ]
+        return _finish_service_tasks(service, tasks, "cross_record_reconciliation")
+
+    if sid in {"medical_license", "ration_card", "scholarship"}:
+        if sid == "medical_license":
+            tasks = [
+                TaskDefinition("document_intake", "Validate medical licence evidence", "Aether", "DocumentWorker", operation="document"),
+                TaskDefinition("identity_check", "Verify applicant/professional identity", "Identity", "IdentityWorker", operation="identity"),
+                TaskDefinition("professional_registry", "Verify professional registration", "Health", "HealthWorker", ["identity_check"], operation="professional_registry"),
+                TaskDefinition("premises_check", "Check health premises evidence", "Health", "HealthWorker", ["document_intake"], operation="premises"),
+                TaskDefinition("inspection", "Physical premises inspection where legally required", "Authorised Authority", "InspectionCoordinator", ["premises_check"], physical_action=True, operation="inspection"),
+                TaskDefinition("health_processing", "Process medical licence case", "Health", "HealthWorker", ["professional_registry", "inspection"], operation="service_processing"),
+                TaskDefinition("cross_record_reconciliation", "Reconcile professional, premises and inspection evidence", "Aether", "ReconciliationWorker", ["health_processing"], operation="reconciliation"),
+            ]
+        elif sid == "ration_card":
+            tasks = [
+                TaskDefinition("document_intake", "Validate household eligibility evidence", "Aether", "DocumentWorker", operation="document"),
+                TaskDefinition("identity_check", "Verify household applicant identity", "Identity", "IdentityWorker", operation="identity"),
+                TaskDefinition("household_record", "Check household/beneficiary record", "Food & Civil Supplies", "CivilSuppliesWorker", ["identity_check"], operation="household_record"),
+                TaskDefinition("duplicate_check", "Check for duplicate ration benefits", "Food & Civil Supplies", "CivilSuppliesWorker", ["identity_check"], operation="duplicate_check"),
+                TaskDefinition("eligibility", "Check scheme eligibility", "Food & Civil Supplies", "CivilSuppliesWorker", ["household_record", "duplicate_check"], operation="eligibility"),
+                TaskDefinition("cross_record_reconciliation", "Reconcile identity, household and eligibility evidence", "Aether", "ReconciliationWorker", ["eligibility"], operation="reconciliation"),
+            ]
+        else:
+            tasks = [
+                TaskDefinition("document_intake", "Validate scholarship evidence", "Aether", "DocumentWorker", operation="document"),
+                TaskDefinition("identity_check", "Verify student identity", "Identity", "IdentityWorker", operation="identity"),
+                TaskDefinition("education_record", "Verify education/enrolment record", "Education", "EducationWorker", ["identity_check"], operation="education_record"),
+                TaskDefinition("eligibility", "Check scholarship eligibility", "Education", "EducationWorker", ["education_record", "document_intake"], operation="eligibility"),
+                TaskDefinition("bank_check", "Verify beneficiary payment details", "Finance", "FinanceWorker", ["identity_check"], operation="beneficiary_check"),
+                TaskDefinition("cross_record_reconciliation", "Reconcile student, eligibility and payment evidence", "Aether", "ReconciliationWorker", ["eligibility", "bank_check"], operation="reconciliation"),
+            ]
+        return _finish_service_tasks(service, tasks, "cross_record_reconciliation")
+
     # All other services receive the same safe end-to-end baseline. This is
     # intentionally not described as the service's authoritative legal process.
     tasks = [
