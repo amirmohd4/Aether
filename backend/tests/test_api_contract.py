@@ -129,3 +129,63 @@ def test_upload_payment_analytics_and_notifications_mvp_surfaces(tmp_path, monke
     analytics = client.get("/api/aether/v2/analytics")
     assert analytics.status_code == 200
     assert analytics.json()["case_count"] >= 1
+
+
+def test_uploaded_document_can_be_downloaded_and_verified(tmp_path, monkeypatch):
+    monkeypatch.setenv("AETHER_DOCUMENT_ROOT", str(tmp_path))
+    client = TestClient(app)
+    create = client.post(
+        "/api/aether/v2/cases",
+        json={
+            "objective": "I need a driving licence",
+            "customer_type": "citizen",
+            "jurisdiction": {"country": "India", "state": "Jammu and Kashmir"},
+            "inputs": {"documents": ["identity_document", "address_proof"]},
+        },
+    )
+    assert create.status_code == 200
+    case_id = create.json()["summary"]["case_id"]
+    upload = client.post(
+        f"/api/aether/v2/cases/{case_id}/documents/upload",
+        params={"document_type": "identity_document"},
+        files={"file": ("identity.txt", b"owner: Demo Owner", "text/plain")},
+    )
+    assert upload.status_code == 200
+    document_id = upload.json()["document"]["document_id"]
+    download = client.get(f"/api/aether/v2/cases/{case_id}/documents/{document_id}/download")
+    assert download.status_code == 200
+    assert download.content == b"owner: Demo Owner"
+    assert len(download.headers["X-Document-SHA256"]) == 64
+
+
+def test_complete_document_upload_auto_resumes_case(tmp_path, monkeypatch):
+    monkeypatch.setenv("AETHER_DOCUMENT_ROOT", str(tmp_path))
+    client = TestClient(app)
+    create = client.post(
+        "/api/aether/v2/cases",
+        json={
+            "objective": "I need a driving licence",
+            "customer_type": "citizen",
+            "jurisdiction": {"country": "India", "state": "Jammu and Kashmir"},
+            "inputs": {"documents": []},
+        },
+    )
+    assert create.status_code == 200
+    body = create.json()
+    assert body["status"] == "needs_documents"
+    case_id = body["summary"]["case_id"]
+    first = client.post(
+        f"/api/aether/v2/cases/{case_id}/documents/upload",
+        params={"document_type": "identity_document"},
+        files={"file": ("identity.txt", b"owner: Demo Owner", "text/plain")},
+    )
+    assert first.status_code == 200
+    assert first.json()["case_status"] == "needs_documents"
+    second = client.post(
+        f"/api/aether/v2/cases/{case_id}/documents/upload",
+        params={"document_type": "address_proof"},
+        files={"file": ("address.txt", b"address: Jammu", "text/plain")},
+    )
+    assert second.status_code == 200
+    assert second.json()["status"] == "uploaded_and_resumed"
+    assert second.json()["case"]["summary"]["tasks_total"] > 0
