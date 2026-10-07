@@ -58,6 +58,9 @@ class ConnectorRegistry:
             )
         return self._connectors[department]
 
+    def production_configured(self) -> bool:
+        return any(not isinstance(connector, SyntheticConnector) for connector in self._connectors.values())
+
     def catalog(self) -> List[dict]:
         return [
             {
