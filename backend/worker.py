@@ -1,8 +1,54 @@
 import os
+import threading
+import time
 
 from aether_core.worker_runtime import AetherWorkerRuntime
 
 
-if __name__ == "__main__":
-    interval = int(os.getenv("AETHER_WORKER_INTERVAL_SECONDS", "5"))
+def run_background_worker() -> None:
+    """Run durable case/notification work beside the web process."""
+    runtime = AetherWorkerRuntime()
+    interval = max(1, int(os.getenv("AETHER_WORKER_INTERVAL_SECONDS", "5")))
+    startup_delay = max(0, int(os.getenv("AETHER_WORKER_STARTUP_DELAY_SECONDS", "5")))
+
+    if startup_delay:
+        time.sleep(startup_delay)
+
+    while True:
+        try:
+            result = runtime.run_once()
+            print(
+                "[Aether Worker] tick "
+                f"processed={result.get('count', 0)} "
+                f"notifications={result.get('notifications', {})}",
+                flush=True,
+            )
+        except Exception as exc:
+            # Never take the web API down because the worker backend is unavailable.
+            print(f"[Aether Worker] tick failed: {exc}", flush=True)
+        time.sleep(interval)
+
+
+def run_worker_only() -> None:
+    interval = max(1, int(os.getenv("AETHER_WORKER_INTERVAL_SECONDS", "5")))
     AetherWorkerRuntime().run_forever(interval)
+
+
+if __name__ == "__main__":
+    if os.getenv("AETHER_EMBED_WORKER", "false").strip().lower() == "true":
+        import uvicorn
+
+        worker_thread = threading.Thread(
+            target=run_background_worker,
+            name="aether-worker",
+            daemon=True,
+        )
+        worker_thread.start()
+
+        uvicorn.run(
+            "backend.main:app",
+            host="0.0.0.0",
+            port=int(os.getenv("PORT", "8081")),
+        )
+    else:
+        run_worker_only()
