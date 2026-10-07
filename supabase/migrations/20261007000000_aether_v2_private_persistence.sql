@@ -37,6 +37,12 @@ create table if not exists aether_internal.aether_v2_execution_events (
   data jsonb not null default '{}'::jsonb
 );
 
+alter table if exists aether_internal.aether_v2_execution_events
+  add column if not exists sequence integer;
+
+create unique index if not exists uq_aether_v2_events_case_sequence
+  on aether_internal.aether_v2_execution_events(case_id, sequence);
+
 create index if not exists idx_aether_v2_events_case_id
   on aether_internal.aether_v2_execution_events(case_id);
 create index if not exists idx_aether_v2_events_action
