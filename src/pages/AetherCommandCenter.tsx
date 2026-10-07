@@ -77,6 +77,16 @@ type CaseResponse = {
   evidence: Array<{ source: string; request_id?: string; operation?: string }>;
   tasks: Record<string, Omit<Task, 'id'>> | Task[];
   outcome?: Record<string, unknown> | null;
+  documents?: Array<{
+    document_id: string;
+    document_type: string;
+    filename: string;
+    mime_type: string;
+    size_bytes: number;
+    sha256: string;
+    extraction_mode: string;
+    created_at?: string | null;
+  }>;
 };
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8081';
@@ -787,6 +797,27 @@ export const AetherCommandCenter: React.FC = () => {
                         ) : null}
                       </div>
                     ))}
+                  </div>
+                )}
+
+                {caseData.documents && caseData.documents.length > 0 && (
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-5 w-5 text-cyan-300" />
+                      <h3 className="font-semibold">Document vault</h3>
+                      <span className="text-[10px] text-slate-500">{caseData.documents.length} uploaded</span>
+                    </div>
+                    <div className="mt-4 space-y-2">
+                      {caseData.documents.slice(-8).map((document) => (
+                        <div key={document.document_id} className="rounded-xl border border-white/5 bg-black/10 p-3">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <span className="text-xs font-medium text-slate-200">{document.document_type} · {document.filename}</span>
+                            <span className="text-[10px] text-cyan-200">{document.extraction_mode}</span>
+                          </div>
+                          <p className="mt-1 break-all text-[9px] text-slate-500">SHA-256 {document.sha256}</p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 
