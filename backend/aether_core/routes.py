@@ -136,7 +136,7 @@ def start_case(request: StartCaseRequest):
         request.objective,
         request.customer_type,
         request.jurisdiction,
-        request.inputs,
+        {**request.inputs, "enforce_intake_gate": True},
     )
     case.requirements = [r.__dict__ for r in requirements]
     case = engine.execute_until_pause(case.case_id)
