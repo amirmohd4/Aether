@@ -30,6 +30,10 @@ class TaskDefinition:
     authority_required: bool = False
     physical_action: bool = False
     description: str = ""
+    # Connector operation is explicit process metadata. Keeping it on the
+    # definition lets new service graphs use stable operations without growing
+    # a fragile global task-id switch in the execution engine.
+    operation: str = ""
 
 
 @dataclass
@@ -213,6 +217,7 @@ class WorkNode:
     authority_required: bool = False
     physical_action: bool = False
     reason: str = ""
+    operation: str = ""
 
 
 @dataclass
@@ -241,6 +246,7 @@ class WorkGraph:
                     "authority_required": n.authority_required,
                     "physical_action": n.physical_action,
                     "reason": n.reason,
+                    "operation": n.operation,
                 }
                 for n in self.nodes.values()
             ]
