@@ -5,6 +5,7 @@ from typing import Any, Dict, Iterable
 from uuid import uuid4
 
 from .audit import AuditTrail
+from .case_store import DatabaseCaseStore
 from .domain import Case, TaskState, TaskStatus, now_iso
 from .dependency_engine import DependencyEngine
 from .ontology import GovernmentOntologyBuilder, WorkGraphBuilder
@@ -19,7 +20,7 @@ class AetherExecutionEngine:
     """Objective-driven, dependency-aware execution engine for the Aether MVP."""
 
     def __init__(self) -> None:
-        self.cases: Dict[str, Case] = {}
+        self.cases: Dict[str, Case] = {}  # compatibility cache; durable state lives in DatabaseCaseStore
         self.gov = SyntheticGovernmentSystem()
         self.workers = WorkerRegistry(self.gov)
         self.services = ServiceRegistry()
@@ -28,6 +29,7 @@ class AetherExecutionEngine:
         self.dependencies = DependencyEngine()
         self.retry_policy = RetryPolicy(max_attempts=3)
         self.audit = AuditTrail()
+        self.store = DatabaseCaseStore()
 
     def create_case(self, objective: str, customer_type: str, jurisdiction: Dict[str, str], inputs: Dict[str, Any] | None = None) -> Case:
         service = self.services.resolve(objective, customer_type)
@@ -50,12 +52,15 @@ class AetherExecutionEngine:
         )
         self.cases[case.case_id] = case
         self._refresh_ready(case)
+        self.store.put(case)
         return case
 
     def get_case(self, case_id: str) -> Case:
-        if case_id not in self.cases:
-            raise KeyError(case_id)
-        return self.cases[case_id]
+        if case_id in self.cases:
+            return self.cases[case_id]
+        case = self.store.get(case_id)
+        self.cases[case_id] = case
+        return case
 
     def _refresh_ready(self, case: Case) -> None:
         self.dependencies.refresh(case)
@@ -113,6 +118,7 @@ class AetherExecutionEngine:
         else:
             case.status = "waiting"
         case.updated_at = now_iso()
+        self.store.put(case)
         return case
 
     def _execute_task(self, case: Case, task: TaskState) -> None:
@@ -179,6 +185,7 @@ class AetherExecutionEngine:
         }
         case.execution_events.append(entry)
         self.audit.record(action, actor, case.case_id, data)
+        self.store.append_event(case.case_id, action, actor, data)
     def _reconcile_property(self, case: Case) -> None:
         land, registration = case.tasks.get("land_record"), case.tasks.get("registration_record")
         if not land or not registration or not land.result or not registration.result:
