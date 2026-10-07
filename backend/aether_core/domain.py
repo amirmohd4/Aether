@@ -120,3 +120,101 @@ class Case:
             for t in self.tasks.values()
             if t.status not in {TaskStatus.COMPLETED}
         )
+
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Any, Dict, List
+
+
+@dataclass(frozen=True)
+class OntologyEntity:
+    id: str
+    type: str
+    label: str
+    attributes: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class OntologyRelationship:
+    subject_id: str
+    relation: str
+    object_id: str
+
+
+@dataclass
+class GovernmentOntology:
+    entities: Dict[str, OntologyEntity] = field(default_factory=dict)
+    relationships: List[OntologyRelationship] = field(default_factory=list)
+
+    def add_entity(self, entity: OntologyEntity) -> None:
+        self.entities[entity.id] = entity
+
+    def add_relationship(self, relationship: OntologyRelationship) -> None:
+        if relationship.subject_id in self.entities and relationship.object_id in self.entities:
+            self.relationships.append(relationship)
+
+    def related(self, entity_id: str, relation: str | None = None) -> List[OntologyRelationship]:
+        return [
+            r for r in self.relationships
+            if r.subject_id == entity_id or r.object_id == entity_id
+            if relation is None or r.relation == relation
+        ]
+
+    def as_dict(self) -> Dict[str, Any]:
+        return {
+            "entities": [
+                {"id": e.id, "type": e.type, "label": e.label, "attributes": e.attributes}
+                for e in self.entities.values()
+            ],
+            "relationships": [
+                {"subject_id": r.subject_id, "relation": r.relation, "object_id": r.object_id}
+                for r in self.relationships
+            ],
+        }
+
+
+@dataclass(frozen=True)
+class WorkNode:
+    id: str
+    task_id: str
+    department: str
+    worker: str
+    action: str
+    dependencies: List[str] = field(default_factory=list)
+    authority_required: bool = False
+    physical_action: bool = False
+    reason: str = ""
+
+
+@dataclass
+class WorkGraph:
+    nodes: Dict[str, WorkNode] = field(default_factory=dict)
+
+    def add(self, node: WorkNode) -> None:
+        self.nodes[node.id] = node
+
+    def ready(self, completed: set[str]) -> List[WorkNode]:
+        return [
+            node for node in self.nodes.values()
+            if node.id not in completed and all(dep in completed for dep in node.dependencies)
+        ]
+
+    def as_dict(self) -> Dict[str, Any]:
+        return {
+            "nodes": [
+                {
+                    "id": n.id,
+                    "task_id": n.task_id,
+                    "department": n.department,
+                    "worker": n.worker,
+                    "action": n.action,
+                    "dependencies": n.dependencies,
+                    "authority_required": n.authority_required,
+                    "physical_action": n.physical_action,
+                    "reason": n.reason,
+                }
+                for n in self.nodes.values()
+            ]
+        }
