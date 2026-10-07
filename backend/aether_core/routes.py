@@ -241,6 +241,14 @@ def case_intake(case_id: str, principal: Principal = Depends(require_scope("case
         raise HTTPException(status_code=404, detail="Case not found")
 
 
+@router.get("/rules/pack")
+def rule_pack_metadata():
+    return {
+        "pack": rule_registry.pack_metadata(),
+        "rule_count": len(rule_registry.all()),
+    }
+
+
 @router.get("/rules/readiness")
 def rules_readiness():
     services = engine.services.all()
@@ -257,6 +265,7 @@ def rules_readiness():
         "services_in_catalog": len(services),
         "source_backed_rule_records": source_backed,
         "effective_dated_source_backed_records": effective_dated,
+        "rule_pack": rule_registry.pack_metadata(),
         "production_legal_coverage_complete": False,
         "note": "Aether blocks no service because baseline metadata is explicitly non-authoritative; production execution must use verified, effective-dated rules for the target jurisdiction."
     }
