@@ -1,9 +1,13 @@
+import logging
 import os
 
 from sqlalchemy import create_engine
 from sqlalchemy.engine import make_url
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+
+
+logger = logging.getLogger(__name__)
 
 
 # Read DATABASE_URL from the environment. Render/Supabase use PostgreSQL;
@@ -27,23 +31,27 @@ if _database_url.get_backend_name() != "sqlite":
     if host_override:
         updates["host"] = host_override
 
-    user_override = os.getenv("AETHER_DATABASE_USER_OVERRIDE", "").strip()
-    if user_override:
-        updates["username"] = user_override
-    else:
-        # Shared Supabase pooler usernames are postgres.<PROJECT-REF>.
-        # Derive the ref from the public project URL so a stale/mistyped
-        # username embedded in DATABASE_URL cannot select the wrong tenant.
-        supabase_url = os.getenv("SUPABASE_URL", "").strip()
-        project_ref = ""
-        if ".supabase.co" in supabase_url:
-            project_ref = supabase_url.split("//", 1)[-1].split(".", 1)[0]
-        if project_ref and ".pooler.supabase.com" in (_database_url.host or ""):
-            updates["username"] = f"postgres.{project_ref}"
+    supabase_url = os.getenv("SUPABASE_URL", "").strip()
+    project_ref = ""
+    if ".supabase.co" in supabase_url:
+        project_ref = supabase_url.split("//", 1)[-1].split(".", 1)[0]
+
+    # Shared Supabase pooler usernames are postgres.<PROJECT-REF>. Always
+    # derive this for Supabase pooler connections; an embedded stale username
+    # in DATABASE_URL must never win over the canonical project URL.
+    if project_ref and ".pooler.supabase.com" in (host_override or _database_url.host or ""):
+        updates["username"] = f"postgres.{project_ref}"
 
     if updates:
         _database_url = _database_url.set(**updates)
         DATABASE_URL = _database_url.render_as_string(hide_password=False)
+
+    logger.info(
+        "Aether database endpoint configured: host=%s port=%s user=%s",
+        _database_url.host,
+        _database_url.port,
+        _database_url.username,
+    )
 
 
 if _database_url.get_backend_name() == "sqlite":
