@@ -41,6 +41,8 @@ class DatabaseCaseStore:
             row.status = case.status
             row.objective = case.objective
             row.customer_type = case.customer_type
+            row.owner_user_id = case.owner_user_id
+            row.tenant_id = case.tenant_id
             row.service_id = case.service_id
             row.updated_at = self._to_datetime(case.updated_at)
             row.payload = payload
@@ -69,6 +71,7 @@ class DatabaseCaseStore:
                 case_id=case_id,
                 action=action,
                 actor=actor,
+                tenant_id=self._case_tenant(case_id),
                 created_at=datetime.utcnow(),
                 data=entry["data"],
             )
@@ -96,12 +99,22 @@ class DatabaseCaseStore:
                 for row in rows
             ]
 
+    def _case_tenant(self, case_id: str) -> str | None:
+        try:
+            with SessionLocal() as db:
+                row = db.get(AetherCaseRecord, case_id)
+                return row.tenant_id if row else None
+        except Exception:
+            return None
+
     @staticmethod
     def _serialize_case(case: Case) -> Dict[str, Any]:
         return {
             "case_id": case.case_id,
             "objective": case.objective,
             "customer_type": case.customer_type,
+            "owner_user_id": case.owner_user_id,
+            "tenant_id": case.tenant_id,
             "jurisdiction": case.jurisdiction,
             "inputs": case.inputs,
             "requirements": case.requirements,
@@ -173,6 +186,8 @@ class DatabaseCaseStore:
             case_id=payload["case_id"],
             objective=payload["objective"],
             customer_type=payload["customer_type"],
+            owner_user_id=payload.get("owner_user_id"),
+            tenant_id=payload.get("tenant_id"),
             jurisdiction=payload.get("jurisdiction", {}),
             inputs=payload.get("inputs", {}),
             requirements=payload.get("requirements", []),
