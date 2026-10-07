@@ -68,29 +68,20 @@ This is a directional engineering estimate, not a measured project-management pe
 
 The remaining blockers are external production prerequisites: authorized live government connectivity, authoritative effective-dated rules, certified statutory signature/issuance integrations, and final deployed environment/security validation. Those cannot be truthfully manufactured in code.
 
-### Major remaining build areas
-1. Unified Objective/Understanding Engine
-2. Complete Service Definition schema for every MVP service
-3. Government Ontology expansion + entity resolution
-4. Dynamic Work Graph generation from services/entities/rules
-5. Durable worker queue, locking, leases, resumability and replay
-6. Production connector abstraction with authorized API/portal/RPA adapters
-7. Government rules/version/effective-date registry
-8. Document extraction, validation, comparison and evidence packaging
-9. Verification/reconciliation/risk/exception engine
-10. Human Authority Console
-11. Citizen/Business/Bank/Developer/Insurer/Enterprise workspaces
-12. Developer/API gateway and authentication
-13. Identity, tenancy, RBAC, secrets and security hardening
-14. Payment/fee workflow
-15. Notification/event delivery
-16. Billing/usage metering for private customers
-17. Marketplace foundations
-18. Government service analytics and critical-path analytics
-19. Unified frontend + backend integration
-20. Full integration/E2E/security/load test suite
-21. Cleanup of superseded legacy modules and artifacts
-22. Final deployment, migration, smoke tests and rollback plan
+### Production / scale extensions (not missing controlled-MVP software)
+
+1. Authorized live government connectors and endpoint certifications — external dependency
+2. Authoritative, versioned, effective-dated rule packs for each production jurisdiction/service — external/legal-data dependency
+3. Certified statutory signatures, certificates and issuance integrations — external authority dependency
+4. Production OCR/vision provider credentials and service-level integration — external provider dependency
+5. Production notification delivery providers and credentials — external provider dependency
+6. Production payment processor contracts/credentials — external provider dependency
+7. Deployed Supabase RLS/security-advisor verification — deployment gate
+8. Distributed event-sourced replay and large-scale worker orchestration — scale hardening
+9. Full production load/chaos testing — release validation
+10. Retirement of legacy modules after dependency proof — cleanup/maintenance
+
+The controlled MVP intentionally keeps synthetic government connectors and non-authoritative baseline service metadata behind explicit boundaries. These are not silently promoted to legal/production authority.
 
 ## Legacy-code policy
 
