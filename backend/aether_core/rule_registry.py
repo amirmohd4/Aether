@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass, asdict
 from typing import Dict, List, Optional
 
+from .rule_packs import load_rule_pack_from_environment, rule_pack_records
+
 
 @dataclass(frozen=True)
 class RuleRecord:
@@ -80,8 +82,27 @@ class RuleRegistry:
     dates where applicable.
     """
 
-    def __init__(self, records: List[RuleRecord] | None = None):
-        self._records = records or SOURCE_BACKED_RULES
+    def __init__(
+        self,
+        records: List[RuleRecord] | None = None,
+        pack_path: str | None = None,
+    ):
+        external = None
+        if pack_path:
+            from .rule_packs import load_rule_pack
+            external = load_rule_pack(pack_path)
+        elif records is None:
+            external = load_rule_pack_from_environment()
+
+        if external is not None:
+            self.pack = external
+            self._records = [
+                RuleRecord(**record)
+                for record in rule_pack_records(external)
+            ]
+        else:
+            self.pack = None
+            self._records = records or SOURCE_BACKED_RULES
 
     def for_jurisdiction(self, jurisdiction: Dict[str, str]) -> List[RuleRecord]:
         return [
@@ -108,3 +129,28 @@ class RuleRegistry:
 
     def all(self) -> List[Dict]:
         return [record.as_dict() for record in self._records]
+
+    def pack_metadata(self) -> Dict:
+        if self.pack is None:
+            return {
+                "source": "embedded",
+                "pack_id": "embedded-mvp",
+                "version": "code",
+                "production_ready": all(
+                    record.authority_status == "source_backed"
+                    and record.source_url
+                    and record.verified_at
+                    and record.effective_date
+                    for record in self._records
+                ),
+            }
+        return {
+            "source": "external",
+            "pack_id": self.pack.pack_id,
+            "version": self.pack.version,
+            "jurisdiction": dict(self.pack.jurisdiction),
+            "authority_status": self.pack.authority_status,
+            "verified_at": self.pack.verified_at,
+            "effective_from": self.pack.effective_from,
+            "production_ready": self.pack.production_ready,
+        }
