@@ -16,4 +16,6 @@ COPY scripts /app/scripts
 
 EXPOSE 8081
 
-CMD ["sh", "-c", "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8081}"]
+# worker.py starts the web API plus the durable worker when
+# AETHER_EMBED_WORKER=true; otherwise it runs worker-only.
+CMD ["python", "backend/worker.py"]
