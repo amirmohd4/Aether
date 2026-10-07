@@ -14,6 +14,7 @@ class UnderstandingResult:
     service_name: str | None
     confidence: float
     matched_keywords: List[str]
+    candidates: List[Dict[str, Any]]
     ambiguous: bool
     missing_context: List[str]
     customer_type: str
@@ -43,7 +44,8 @@ class ObjectiveUnderstandingEngine:
         service, score, matches, margin = self.registry.resolve_with_score(
             normalized, customer_type
         )
-        confidence = min(0.99, 0.45 + 0.18 * score + 0.12 * max(margin, 0))
+        candidates = self.registry.candidates(normalized, customer_type, limit=5)
+        confidence = min(0.99, 0.45 + 0.08 * min(score, 6) + 0.12 * max(margin, 0))
         ambiguous = service is None or (score > 0 and margin <= 0)
         missing: List[str] = []
         if not customer_type:
@@ -59,6 +61,7 @@ class ObjectiveUnderstandingEngine:
             service_name=service.name if service else None,
             confidence=confidence if service else 0.0,
             matched_keywords=matches,
+            candidates=candidates,
             ambiguous=ambiguous,
             missing_context=missing,
             customer_type=customer_type,
