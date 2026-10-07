@@ -8,6 +8,9 @@
 - [ ] API key tenant/scopes/revocation tests pass.
 - [ ] Document upload/download/hash integrity tests pass.
 - [ ] Notification and payment idempotency tests pass.
+- [ ] Durable worker case leases prevent duplicate processing.
+- [ ] Marketplace exposes all 34 MVP services as sandbox contracts.
+- [ ] Production execution fail-closes when live connectors/rules are absent.
 - [ ] Human authority and cross-tenant/department/jurisdiction authorization tests pass.
 
 ## Supabase gate
@@ -21,7 +24,7 @@
 
 ## Render gate
 - [ ] Configure `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and server-only `SUPABASE_SERVICE_ROLE_KEY`.
-- [ ] Configure `AETHER_ENCRYPTION_KEY` as a 128/192/256-bit URL-safe base64 key.
+- [ ] Configure `AETHER_ENCRYPTION_KEY` as a valid Fernet key (32-byte URL-safe base64).
 - [ ] Keep `AETHER_ENABLE_LEGACY_API=false`.
 - [ ] Staging/MVP: keep synthetic connectors explicitly enabled by environment intent.
 - [ ] Production: set `AETHER_ENV=production` only after live connectors and authoritative rules are verified.
@@ -46,3 +49,17 @@ Run:
     AETHER_API_URL=https://<render-host> python scripts/release_smoke_test.py
 
 Then execute one controlled restaurant case, one generic service case, one document-upload/resume case, and one human-approval case. Verify the audit chain after each.
+
+## Controlled MVP declaration
+
+Once the repository CI gate is green, Aether can be released as a controlled/sandbox MVP using the deterministic synthetic government environment. This is deliberately distinct from live government production.
+
+## Production-only prerequisites
+
+Do not bypass these through feature flags:
+- authorized government connector credentials and endpoint contracts;
+- authoritative, effective-dated rules for every exposed service/jurisdiction;
+- certified statutory e-signature/certificate/issuance integrations where legally required;
+- production OCR, notification and payment provider configuration;
+- deployed Supabase RLS/security verification;
+- final Render + Netlify smoke tests and rollback validation.
