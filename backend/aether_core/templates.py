@@ -3,14 +3,47 @@ from typing import Dict, List
 from .domain import TaskDefinition
 
 
+def _jk(source: str, title: str, reason: str, documents: List[str]) -> Dict:
+    return {
+        "states": ["Jammu and Kashmir"],
+        "source": source,
+        "source_title": title,
+        "effective_date": "2026-10-07",
+        "confidence": "source-backed-mvp",
+        "reason": reason,
+        "documents": documents,
+    }
+
+
 def restaurant_requirements() -> List[Dict]:
     return [
         {"id": "identity", "name": "Identity verification", "documents": ["identity_document"]},
         {"id": "premises", "name": "Premises verification", "documents": ["lease_or_ownership"]},
         {"id": "business", "name": "Business structure", "documents": ["business_registration"]},
-        {"id": "food", "name": "Food-business requirements", "documents": ["food_business_details"]},
-        {"id": "fire", "name": "Fire-safety requirements", "documents": ["floor_plan"]},
-        {"id": "municipal", "name": "Municipal/trade requirements", "documents": ["premises_plan"]},
+        {"id": "food", "name": "Food-business licensing/registration", **_jk(
+            "https://www.fssai.gov.in/business/licensing",
+            "FSSAI — Business Licensing",
+            "Food business operators must be licensed/registered under the FSS Act framework.",
+            ["food_business_details"],
+        )},
+        {"id": "fire", "name": "Fire-safety requirements", **_jk(
+            "https://singlewindow.jk.gov.in/assets/services/procedurechecklist/12/procedurechecklist_file_0721931001649670909.pdf",
+            "J&K Fire & Emergency Services — Provisional NOC checklist",
+            "The J&K checklist identifies site plan, building/floor plan and fire-safety information as required inputs for the cited service.",
+            ["site_plan", "building_plan", "floor_plan", "fire_safety_details"],
+        )},
+        {"id": "municipal", "name": "Municipal/commercial-establishment requirements", **_jk(
+            "https://jansugam.jk.gov.in/getServiceDesc.html?serviceId=16810006",
+            "J&K Municipal Corporation — commercial-establishment NOC service",
+            "The cited service lists premises, identity, building/parking/site information and related NOCs among its inputs depending on applicability.",
+            ["identity_document", "legal_occupancy", "site_plan", "parking_plan", "premises_photo"],
+        )},
+        {"id": "shops_establishment", "name": "Shops & Establishments registration", **_jk(
+            "https://singlewindow.jk.gov.in/assets/services/sop_file/8/sop_file_0304369001648350632.pdf",
+            "J&K Labour & Employment — Shops & Establishments registration",
+            "The J&K SOP lists rent deed/affidavit, employer photograph, identity proof and premises photograph as mandatory inputs for the cited registration service.",
+            ["rent_deed_or_affidavit", "employer_photo", "identity_document", "premises_photo"],
+        )},
         {"id": "tax", "name": "Tax registration requirements", "documents": ["tax_details"]},
     ]
 
