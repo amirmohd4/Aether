@@ -428,8 +428,6 @@ def upload_case_document(
             "mime_type": stored.mime_type,
             "size_bytes": stored.size_bytes,
             "sha256": stored.sha256,
-            "storage_key": stored.storage_key,
-            "text": stored.extracted_text,
             "extraction_mode": stored.extraction_mode,
         })
         engine.store.put(case)
@@ -447,6 +445,7 @@ def upload_case_document(
             "document.uploaded",
             "in_app",
             payload={"document_id": stored.document_id, "document_type": document_type},
+            idempotency_key=f"{case_id}:document:{stored.sha256}",
         )
         if missing:
             return {
