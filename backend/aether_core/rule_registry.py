@@ -9,6 +9,7 @@ from .rule_packs import load_rule_pack_from_environment, rule_pack_records
 @dataclass(frozen=True)
 class RuleRecord:
     rule_id: str
+    service_id: Optional[str] = None
     title: str
     jurisdiction: Dict[str, str]
     requirement: str
@@ -29,6 +30,7 @@ class RuleRecord:
 SOURCE_BACKED_RULES = [
     RuleRecord(
         rule_id="JK-FOOD-001",
+        service_id="food_business_license",
         title="Food business licensing/registration",
         jurisdiction={"country": "India", "state": "Jammu and Kashmir"},
         requirement="food_business_details",
@@ -40,6 +42,7 @@ SOURCE_BACKED_RULES = [
     ),
     RuleRecord(
         rule_id="JK-FIRE-001",
+        service_id="food_business_license",
         title="Fire provisional NOC inputs",
         jurisdiction={"country": "India", "state": "Jammu and Kashmir"},
         requirement="fire_safety_details",
@@ -51,6 +54,7 @@ SOURCE_BACKED_RULES = [
     ),
     RuleRecord(
         rule_id="JK-MUNI-001",
+        service_id="trade_license",
         title="Commercial-establishment municipal inputs",
         jurisdiction={"country": "India", "state": "Jammu and Kashmir"},
         requirement="municipal_commercial_establishment",
@@ -62,6 +66,7 @@ SOURCE_BACKED_RULES = [
     ),
     RuleRecord(
         rule_id="JK-LAB-001",
+        service_id="trade_license",
         title="Shops & Establishments registration inputs",
         jurisdiction={"country": "India", "state": "Jammu and Kashmir"},
         requirement="shops_establishment_registration",
