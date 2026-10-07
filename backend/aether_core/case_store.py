@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Dict, List
 from threading import Lock
+from sqlalchemy import text
 
 from backend.database import SessionLocal, engine
 from .domain import Case, TaskDefinition, TaskState, TaskStatus
@@ -22,7 +23,10 @@ class DatabaseCaseStore:
         with self._schema_lock:
             if self._schema_ready:
                 return
-            from database import Base
+            from backend.database import Base
+            if engine.dialect.name == "postgresql":
+                with engine.begin() as connection:
+                    connection.execute(text("CREATE SCHEMA IF NOT EXISTS aether_internal"))
             Base.metadata.create_all(bind=engine)
             self._schema_ready = True
 
