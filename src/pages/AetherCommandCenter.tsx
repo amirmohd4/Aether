@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import {
   Activity, ArrowRight, CheckCircle2, CircleAlert, FileText,
   Globe2, Loader2, ShieldCheck, UserRound, RefreshCw
@@ -95,11 +96,26 @@ export const AetherCommandCenter: React.FC = () => {
   const [caseData, setCaseData] = useState<CaseResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
+  const [authMessage, setAuthMessage] = useState('');
+  const { session, loading: authLoading, required: authRequired, signIn, signUp, signOut } = useAuth();
 
   const completedPercent = useMemo(() => {
     if (!caseData?.summary.tasks_total) return 0;
     return Math.round((caseData.summary.tasks_completed / caseData.summary.tasks_total) * 100);
   }, [caseData]);
+
+  const authHeaders = () => session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
+
+  async function submitAuth() {
+    setAuthMessage('');
+    const message = authMode === 'signin'
+      ? await signIn(authEmail, authPassword)
+      : await signUp(authEmail, authPassword);
+    setAuthMessage(message || (authMode === 'signin' ? 'Signed in.' : 'Account created. Check your email if confirmation is enabled.'));
+  }
 
   async function startCase() {
     setLoading(true);
@@ -107,7 +123,7 @@ export const AetherCommandCenter: React.FC = () => {
     try {
       const response = await fetch(`${API_BASE}/api/aether/v2/cases`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({
           objective,
           customer_type: customerType,
@@ -142,7 +158,7 @@ export const AetherCommandCenter: React.FC = () => {
         `${API_BASE}/api/aether/v2/cases/${caseData.summary.case_id}/human/${taskId}`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...authHeaders() },
           body: JSON.stringify({ approved, note: 'MVP authorised-human action' }),
         }
       );
@@ -157,6 +173,48 @@ export const AetherCommandCenter: React.FC = () => {
   }
 
   const tasks = caseData ? taskList(caseData.tasks) : [];
+
+  if (authRequired && !session) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-slate-950 px-5 text-slate-100">
+        <section className="w-full max-w-md rounded-2xl border border-white/10 bg-white/[0.04] p-6">
+          <div className="mb-6">
+            <p className="text-sm font-semibold text-cyan-300">Aether GovOS</p>
+            <h1 className="mt-2 text-2xl font-bold">Secure workspace</h1>
+            <p className="mt-2 text-sm text-slate-400">Sign in before accessing government case data.</p>
+          </div>
+          <input
+            type="email"
+            value={authEmail}
+            onChange={(e) => setAuthEmail(e.target.value)}
+            placeholder="Email"
+            className="mb-3 w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm"
+          />
+          <input
+            type="password"
+            value={authPassword}
+            onChange={(e) => setAuthPassword(e.target.value)}
+            placeholder="Password"
+            className="w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm"
+          />
+          {authMessage && <p className="mt-3 text-xs text-cyan-200">{authMessage}</p>}
+          <button
+            onClick={submitAuth}
+            disabled={authLoading || !authEmail || !authPassword}
+            className="mt-5 w-full rounded-xl bg-cyan-400 px-4 py-3 text-sm font-bold text-slate-950 disabled:opacity-50"
+          >
+            {authMode === 'signin' ? 'Sign in' : 'Create account'}
+          </button>
+          <button
+            onClick={() => setAuthMode(authMode === 'signin' ? 'signup' : 'signin')}
+            className="mt-3 w-full rounded-xl border border-white/10 px-4 py-2 text-xs text-slate-300"
+          >
+            {authMode === 'signin' ? 'Create a new account' : 'Back to sign in'}
+          </button>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100">
@@ -173,8 +231,13 @@ export const AetherCommandCenter: React.FC = () => {
               Objective → understanding → requirements → work graph → parallel execution → verification → human authority → outcome.
             </p>
           </div>
-          <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-slate-300">
-            MVP mode: synthetic government systems
+          <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-slate-300">
+            <span>MVP mode: synthetic government systems</span>
+            {session && (
+              <button onClick={signOut} className="rounded-lg border border-white/10 px-2 py-1 text-[10px] hover:bg-white/5">
+                Sign out
+              </button>
+            )}
           </div>
         </header>
 
