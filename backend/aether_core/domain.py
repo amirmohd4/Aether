@@ -132,6 +132,27 @@ class Case:
             if t.status not in {TaskStatus.COMPLETED}
         )
 
+    def execution_metrics(self) -> Dict[str, Any]:
+        completed = [t for t in self.tasks.values() if t.completed_at]
+        running = [t for t in self.tasks.values() if t.started_at and not t.completed_at]
+        attempts = sum(t.attempts for t in self.tasks.values())
+        return {
+            "tasks_total": len(self.tasks),
+            "tasks_completed": len(completed),
+            "tasks_running": len(running),
+            "task_attempts": attempts,
+            "human_actions_required": sum(
+                1 for t in self.tasks.values() if t.definition.authority_required or t.definition.physical_action
+            ),
+            "exceptions": len(self.exceptions),
+            "handoff_events": sum(
+                1 for event in self.execution_events
+                if event.get("action") in {"human_action.requested", "government.query", "exception.escalated"}
+            ),
+            "critical_path_length": len(self.critical_path()),
+            "human_work_remaining_minutes": self.human_work_remaining(),
+        }
+
 
 @dataclass(frozen=True)
 class OntologyEntity:
