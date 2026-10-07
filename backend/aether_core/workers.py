@@ -122,3 +122,6 @@ class WorkerRegistry:
 
     def connector_catalog(self) -> list[dict]:
         return self._connectors.catalog()
+
+    def production_connectors_configured(self) -> bool:
+        return self._connectors.production_configured()
