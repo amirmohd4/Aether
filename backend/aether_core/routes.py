@@ -82,7 +82,7 @@ def connector_catalog():
 
 
 @router.get("/analytics")
-def case_analytics(principal: Principal = Depends(require_principal)):
+def case_analytics(principal: Principal = Depends(require_scope("analytics:read"))):
     cases = (
         _list_visible_cases(principal, limit=100)
         if principal.auth_mode == "none"
@@ -100,7 +100,7 @@ def notifications(principal: Principal = Depends(require_principal)):
 
 
 @router.get("/cases/{case_id}/payments")
-def case_payments(case_id: str, principal: Principal = Depends(require_principal)):
+def case_payments(case_id: str, principal: Principal = Depends(require_scope("payments:read"))):
     try:
         case = engine.get_case(case_id)
         _authorize_case(case, principal)
@@ -115,7 +115,7 @@ def create_case_payment(
     amount_minor: int,
     currency: str = "INR",
     idempotency_key: str | None = None,
-    principal: Principal = Depends(require_principal),
+    principal: Principal = Depends(require_scope("payments:write")),
 ):
     try:
         case = engine.get_case(case_id)
@@ -312,7 +312,7 @@ def set_membership(data: Dict[str, Any], principal: Principal = Depends(require_
 
 
 @router.get("/cases/{case_id}/documents")
-def case_documents(case_id: str, principal: Principal = Depends(require_principal)):
+def case_documents(case_id: str, principal: Principal = Depends(require_scope("documents:read"))):
     try:
         case = engine.get_case(case_id)
         _authorize_case(case, principal)
@@ -326,7 +326,7 @@ def upload_case_document(
     case_id: str,
     document_type: str,
     file: UploadFile = File(...),
-    principal: Principal = Depends(require_principal),
+    principal: Principal = Depends(require_scope("documents:write")),
 ):
     try:
         case = engine.get_case(case_id)
@@ -443,7 +443,7 @@ def current_principal(principal: Principal = Depends(require_principal)):
 
 
 @router.post("/cases")
-def start_case(request: StartCaseRequest, principal: Principal = Depends(require_principal)):
+def start_case(request: StartCaseRequest, principal: Principal = Depends(require_scope("cases:write"))):
     understanding = understanding_engine.understand(
         request.objective,
         request.customer_type,
@@ -565,7 +565,7 @@ def _list_visible_cases(
 def list_cases(
     status: str | None = None,
     limit: int = 50,
-    principal: Principal = Depends(require_principal),
+    principal: Principal = Depends(require_scope("cases:read")),
 ):
     return {"cases": _list_visible_cases(principal, status=status, limit=limit)}
 
@@ -574,7 +574,7 @@ def list_cases(
 def submit_case_documents(
     case_id: str,
     request: DocumentSubmissionRequest,
-    principal: Principal = Depends(require_principal),
+    principal: Principal = Depends(require_scope("documents:write")),
 ):
     try:
         case = engine.get_case(case_id)
@@ -623,7 +623,7 @@ def submit_case_documents(
 
 
 @router.post("/cases/{case_id}/resume")
-def resume_case(case_id: str, principal: Principal = Depends(require_principal)):
+def resume_case(case_id: str, principal: Principal = Depends(require_scope("cases:write"))):
     try:
         case = engine.get_case(case_id)
         _authorize_case(case, principal)
@@ -658,7 +658,7 @@ def case_events(case_id: str, principal: Principal = Depends(require_principal))
 
 
 @router.get("/cases/{case_id}")
-def get_case(case_id: str, principal: Principal = Depends(require_principal)):
+def get_case(case_id: str, principal: Principal = Depends(require_scope("cases:read"))):
     try:
         case = engine.get_case(case_id)
         _authorize_case(case, principal)
