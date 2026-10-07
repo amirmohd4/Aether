@@ -42,7 +42,6 @@ export const servicesConfig: ServiceConfig[] = [
   { id: 'pmay', label: 'PMAY Application', icon: '🏠', component: 'PMAYApplication', endpoint: '/pmay' },
   { id: 'housing', label: 'Affordable Housing', icon: '🏘️', component: 'AffordableHousingApplication', endpoint: '/housing' },
   { id: 'rera-project', label: 'RERA Project Registration', icon: '🏗️', component: 'RERAProjectApplication', endpoint: '/rera-project' },
-  { id: 'rera-certificate', label: 'RERA Certificate', icon: '📜', component: 'RERACertificateApplication', endpoint: '/rera-certificate' },
   { id: 'court-case', label: 'Court Case Filing', icon: '⚖️', component: 'CourtCaseApplication', endpoint: '/court-case' },
   { id: 'e-court', label: 'E-Court', icon: '💻', component: 'ECourtApplication', endpoint: '/e-court' },
   { id: 'passport', label: 'Passport Application', icon: '📔', component: 'PassportApplication', endpoint: '/passport' },
