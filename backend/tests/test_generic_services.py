@@ -18,7 +18,8 @@ def test_non_specialized_service_uses_generic_process_instead_of_project_process
 
     case = engine.execute_until_pause(case.case_id)
     assert case.tasks["department_processing"].status == TaskStatus.COMPLETED
-    assert case.tasks["final_approval"].status == TaskStatus.HUMAN_REVIEW
+    assert case.tasks["driving_test"].status == TaskStatus.HUMAN_REVIEW
+    assert case.tasks["final_approval"].status == TaskStatus.PENDING
 
 
 def test_human_approval_resumes_generic_service_to_outcome():
