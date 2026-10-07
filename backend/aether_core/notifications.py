@@ -10,6 +10,7 @@ from typing import Any, Dict, List
 from uuid import uuid4
 
 import httpx
+from sqlalchemy.exc import IntegrityError
 
 from .persistence_models import AetherNotificationRecord
 
@@ -65,9 +66,19 @@ class NotificationService:
                 created_at=datetime.utcnow(),
             )
             db.add(row)
-            db.commit()
-            db.refresh(row)
-            return self._serialize(row)
+            try:
+                db.commit()
+                db.refresh(row)
+                return self._serialize(row)
+            except IntegrityError:
+                db.rollback()
+                existing = db.query(AetherNotificationRecord).filter_by(
+                    tenant_id=tenant_id,
+                    idempotency_key=key,
+                ).one_or_none()
+                if existing is None:
+                    raise
+                return self._serialize(existing)
 
     def dispatch_queued(self, limit: int = 50) -> Dict[str, Any]:
         """Deliver queued notifications without double-send races."""
