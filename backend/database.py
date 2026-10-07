@@ -17,6 +17,14 @@ if not raw_database_url:
 DATABASE_URL = raw_database_url
 _database_url = make_url(DATABASE_URL)
 
+# Render can retain an old/mistyped Supabase pooler host in DATABASE_URL.
+# Keep the secret-bearing URL intact and allow the host to be corrected
+# independently through a non-secret deployment setting.
+host_override = os.getenv("AETHER_DATABASE_HOST_OVERRIDE", "").strip()
+if host_override and _database_url.get_backend_name() != "sqlite":
+    _database_url = _database_url.set(hostname=host_override)
+    DATABASE_URL = _database_url.render_as_string(hide_password=False)
+
 
 if _database_url.get_backend_name() == "sqlite":
     engine = create_engine(
