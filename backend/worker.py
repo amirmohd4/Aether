@@ -1,6 +1,15 @@
 import os
+import sys
 import threading
 import time
+from pathlib import Path
+
+# When executed as "python backend/worker.py", Python puts /app/backend on
+# sys.path but not the repository root. Add the root so backend.* imports
+# resolve consistently in Render and local container execution.
+REPOSITORY_ROOT = str(Path(__file__).resolve().parents[1])
+if REPOSITORY_ROOT not in sys.path:
+    sys.path.insert(0, REPOSITORY_ROOT)
 
 from aether_core.worker_runtime import AetherWorkerRuntime
 
@@ -9,7 +18,7 @@ def run_background_worker() -> None:
     """Run durable case/notification work beside the web process."""
     runtime = AetherWorkerRuntime()
     interval = max(1, int(os.getenv("AETHER_WORKER_INTERVAL_SECONDS", "5")))
-    startup_delay = max(0, int(os.getenv("AETHER_WORKER_STARTUP_DELAY_SECONDS", "5")))
+    startup_delay = max(0, int(os.getenv("AETHER_WORKER_STARTUP_DELAY_SECONDS", "8")))
 
     if startup_delay:
         time.sleep(startup_delay)
