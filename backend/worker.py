@@ -11,7 +11,9 @@ REPOSITORY_ROOT = str(Path(__file__).resolve().parents[1])
 if REPOSITORY_ROOT not in sys.path:
     sys.path.insert(0, REPOSITORY_ROOT)
 
-from aether_core.worker_runtime import AetherWorkerRuntime
+# Import through the backend package so the web app and worker share the same
+# Python module namespace and SQLAlchemy metadata.
+from backend.aether_core.worker_runtime import AetherWorkerRuntime
 
 
 def run_background_worker() -> None:
