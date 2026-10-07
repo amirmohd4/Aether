@@ -38,3 +38,27 @@ def test_cross_tenant_user_cannot_access_case():
 
 def test_admin_can_access_case():
     _authorize_case(_case(), Principal("admin-1", "admin", "tenant-x", "supabase"))
+
+
+def test_officer_cannot_access_case_outside_authorized_department():
+    try:
+        _authorize_case(
+            _case(),
+            Principal("officer-2", "officer", "tenant-1", "supabase", "Health", {"country": "India"}),
+        )
+    except HTTPException as exc:
+        assert exc.status_code == 404
+    else:
+        raise AssertionError("cross-department officer access should be rejected")
+
+
+def test_officer_cannot_access_case_outside_authorized_jurisdiction():
+    try:
+        _authorize_case(
+            _case(),
+            Principal("officer-3", "officer", "tenant-1", "supabase", "business", {"country": "India", "state": "Maharashtra"}),
+        )
+    except HTTPException as exc:
+        assert exc.status_code == 404
+    else:
+        raise AssertionError("cross-jurisdiction officer access should be rejected")
