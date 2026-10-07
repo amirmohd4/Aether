@@ -41,3 +41,29 @@ def test_queue_reclaims_expired_lease():
     assert reclaimed is not None
     assert reclaimed.task_id == "task-a"
     assert reclaimed.attempts == 2
+
+
+def test_usage_metering_is_idempotent_for_case_event():
+    from aether_core.case_store import DatabaseCaseStore
+
+    store = DatabaseCaseStore()
+    first = store.record_usage(
+        tenant_id="meter-tenant",
+        case_id="meter-case-001",
+        customer_type="bank",
+        event_type="case_completed",
+        unit_type="outcome",
+        units=1,
+    )
+    second = store.record_usage(
+        tenant_id="meter-tenant",
+        case_id="meter-case-001",
+        customer_type="bank",
+        event_type="case_completed",
+        unit_type="outcome",
+        units=1,
+    )
+
+    assert first["id"] == second["id"]
+    usage = store.usage_summary("meter-tenant", event_type="case_completed")
+    assert usage["usage"][0]["units"] == 1
