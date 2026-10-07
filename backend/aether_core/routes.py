@@ -242,7 +242,14 @@ def human_decision(case_id: str, task_id: str, request: HumanDecisionRequest, pr
         case = engine.get_case(case_id)
         _authorize_case(case, principal)
         decision = "approved" if request.approved else "rejected"
-        case = engine.complete_human_task(case_id, task_id, decision, request.note or "")
+        case = engine.complete_human_task(
+            case_id,
+            task_id,
+            decision,
+            request.note or "",
+            actor_id=principal.subject,
+            actor_role=principal.role,
+        )
         return serialize(case)
     except KeyError:
         raise HTTPException(status_code=404, detail="Case or task not found")
