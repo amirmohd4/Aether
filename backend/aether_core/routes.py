@@ -5,11 +5,15 @@ from fastapi import APIRouter, HTTPException
 from .api_models import HumanDecisionRequest, StartCaseRequest
 from .engine import engine
 from .requirements_engine import RequirementEngine
+from .rule_registry import RuleRegistry
+from .verification import VerificationEngine
 from .understanding import ObjectiveUnderstandingEngine
 
 router = APIRouter(prefix="/api/aether/v2", tags=["Aether V2"])
 requirements_engine = RequirementEngine()
 understanding_engine = ObjectiveUnderstandingEngine()
+rule_registry = RuleRegistry()
+verification_engine = VerificationEngine()
 
 
 def serialize(case):
@@ -37,7 +41,21 @@ def serialize(case):
         "exceptions": case.exceptions,
         "evidence": case.evidence,
         "outcome": case.outcome,
+        "verification": verification_engine.reconcile({
+            task_id: task.result
+            for task_id, task in case.tasks.items()
+            if task.result
+        }).as_dict(),
+        "queue": engine.queue.for_case(case.case_id),
         "execution_events": case.execution_events[-50:],
+    }
+
+
+@router.get("/rules")
+def rule_catalog():
+    return {
+        "count": len(rule_registry.all()),
+        "rules": rule_registry.all(),
     }
 
 
