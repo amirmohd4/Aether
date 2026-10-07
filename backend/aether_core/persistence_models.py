@@ -117,7 +117,10 @@ class AetherNotificationRecord(Base):
 
 class AetherPaymentRecord(Base):
     __tablename__ = "aether_v2_payments"
-    __table_args__ = {"schema": PERSISTENCE_SCHEMA}
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "idempotency_key", name="uq_aether_payment_tenant_key"),
+        {"schema": PERSISTENCE_SCHEMA},
+    )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     payment_id = Column(String(64), unique=True, nullable=False, index=True)
