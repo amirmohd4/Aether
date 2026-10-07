@@ -1,7 +1,6 @@
-// ============================================================
-// HARDCODED BACKEND URL – DO NOT CHANGE UNLESS BACKEND URL CHANGES
-// ============================================================
-const BACKEND_URL = 'https://aether-backend-zaa9.onrender.com/api';
+// Backend base URL is supplied by the environment for local, preview, and
+// production deployments. The browser must never depend on a historical Render URL.
+const BACKEND_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8081').replace(/\/$/, '') + '/api';
 
 // ============================================================
 // Generic API call function
