@@ -5,6 +5,7 @@ from typing import Any, Dict, Iterable
 from uuid import uuid4
 
 from .domain import Case, TaskState, TaskStatus, now_iso
+from .dependency_engine import DependencyEngine
 from .ontology import GovernmentOntologyBuilder, WorkGraphBuilder
 from .synthetic_government import SyntheticGovernmentSystem
 from .templates import TEMPLATES, infer_template
@@ -22,6 +23,7 @@ class AetherExecutionEngine:
         self.services = ServiceRegistry()
         self.ontology_builder = GovernmentOntologyBuilder()
         self.work_graph_builder = WorkGraphBuilder()
+        self.dependencies = DependencyEngine()
 
     def create_case(self, objective: str, customer_type: str, jurisdiction: Dict[str, str], inputs: Dict[str, Any] | None = None) -> Case:
         service = self.services.resolve(objective, customer_type)
@@ -52,19 +54,10 @@ class AetherExecutionEngine:
         return self.cases[case_id]
 
     def _refresh_ready(self, case: Case) -> None:
-        for task in case.tasks.values():
-            if task.status in {TaskStatus.COMPLETED, TaskStatus.RUNNING, TaskStatus.EXCEPTION, TaskStatus.HUMAN_REVIEW}:
-                continue
-            deps = [case.tasks[d] for d in task.definition.dependencies if d in case.tasks]
-            if any(d.status in {TaskStatus.EXCEPTION, TaskStatus.BLOCKED, TaskStatus.HUMAN_REVIEW} for d in deps):
-                task.status = TaskStatus.BLOCKED
-            elif all(d.status == TaskStatus.COMPLETED for d in deps):
-                task.status = TaskStatus.READY
-            else:
-                task.status = TaskStatus.BLOCKED
+        self.dependencies.refresh(case)
 
     def ready_tasks(self, case: Case) -> Iterable[TaskState]:
-        return [t for t in case.tasks.values() if t.status == TaskStatus.READY]
+        return self.dependencies.ready_tasks(case)
 
     def execute_until_pause(self, case_id: str) -> Case:
         case = self.get_case(case_id)
@@ -101,9 +94,9 @@ class AetherExecutionEngine:
                         task.error = str(exc)
                         case.exceptions.append({"task_id": task.definition.id, "error": str(exc), "timestamp": now_iso()})
 
+            # A human-review branch must not pause unrelated executable branches.
+            # Recalculate dependencies and continue until no executable work remains.
             self._refresh_ready(case)
-            if any(t.status == TaskStatus.HUMAN_REVIEW for t in case.tasks.values()):
-                break
 
         statuses = [t.status for t in case.tasks.values()]
         if statuses and all(s == TaskStatus.COMPLETED for s in statuses):
