@@ -108,3 +108,26 @@ def test_marketplace_exposes_all_mvp_services_as_sandbox_contracts():
     assert catalog["count"] == 34
     assert all(item["sandbox"] is True for item in catalog["apis"])
     assert all(item["live_connector_required"] is True for item in catalog["apis"])
+
+
+
+def test_document_store_rejects_mismatched_binary_signature(tmp_path, monkeypatch):
+    from aether_core.document_store import DocumentStore
+
+    monkeypatch.setenv("AETHER_DOCUMENT_ROOT", str(tmp_path))
+    monkeypatch.delenv("SUPABASE_URL", raising=False)
+    monkeypatch.delenv("SUPABASE_SERVICE_ROLE_KEY", raising=False)
+
+    try:
+        DocumentStore().save(
+            "case-signature",
+            "tenant-signature",
+            "passport_document",
+            'bad"\nname.pdf',
+            b"not a pdf",
+            "application/pdf",
+        )
+    except ValueError as exc:
+        assert "signature" in str(exc).lower()
+    else:
+        raise AssertionError("mismatched PDF signature must be rejected")
