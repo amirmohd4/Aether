@@ -123,11 +123,12 @@ def start_case(request: StartCaseRequest, principal: Principal = Depends(require
     submitted = set(request.inputs.get("documents", []))
     missing = [doc for doc in required_documents["documents"] if doc not in submitted]
 
-    if understanding.service_id is None:
+    if understanding.service_id is None or understanding.ambiguous:
         return {
             "status": "needs_clarification",
             "objective": request.objective,
             "understanding": understanding.as_dict(),
+            "candidates": understanding.candidates,
             "requirements": [r.__dict__ for r in requirements],
         }
 
