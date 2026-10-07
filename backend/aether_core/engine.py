@@ -7,6 +7,7 @@ from uuid import uuid4
 from .domain import Case, TaskState, TaskStatus, now_iso
 from .dependency_engine import DependencyEngine
 from .ontology import GovernmentOntologyBuilder, WorkGraphBuilder
+from .reliability import RetryPolicy
 from .synthetic_government import SyntheticGovernmentSystem
 from .templates import TEMPLATES, infer_template
 from .service_registry import ServiceRegistry
@@ -24,6 +25,7 @@ class AetherExecutionEngine:
         self.ontology_builder = GovernmentOntologyBuilder()
         self.work_graph_builder = WorkGraphBuilder()
         self.dependencies = DependencyEngine()
+        self.retry_policy = RetryPolicy(max_attempts=3)
 
     def create_case(self, objective: str, customer_type: str, jurisdiction: Dict[str, str], inputs: Dict[str, Any] | None = None) -> Case:
         service = self.services.resolve(objective, customer_type)
@@ -112,40 +114,67 @@ class AetherExecutionEngine:
         return case
 
     def _execute_task(self, case: Case, task: TaskState) -> None:
-        task.status = TaskStatus.RUNNING
-        task.started_at = now_iso()
-        task.attempts += 1
         definition = task.definition
         operation = self._operation_for(definition.id)
         worker = self.workers.get(definition.worker)
-        result = worker.execute(WorkerContext(
-            case_id=case.case_id,
-            department=definition.department,
-            operation=operation,
-            payload={**case.inputs, "jurisdiction": case.jurisdiction, "case_id": case.case_id},
-        ))
+        task.idempotency_key = task.idempotency_key or f"{case.case_id}:{definition.id}"
 
-        if definition.id == "registration_record" and case.inputs.get("simulate_conflict"):
-            result["result"]["area"] = case.inputs.get("conflicting_registration_area", 2.08)
+        last_error = None
+        for _ in range(self.retry_policy.max_attempts):
+            task.status = TaskStatus.RUNNING
+            task.started_at = task.started_at or now_iso()
+            task.attempts += 1
+            self._emit(case, "task.attempted", "aether.execution_engine", {
+                "task_id": definition.id, "attempt": task.attempts,
+                "idempotency_key": task.idempotency_key,
+            })
+            try:
+                result = worker.execute(WorkerContext(
+                    case_id=case.case_id, department=definition.department,
+                    operation=operation,
+                    payload={
+                        **case.inputs, "jurisdiction": case.jurisdiction,
+                        "case_id": case.case_id, "idempotency_key": task.idempotency_key,
+                    },
+                ))
+                if definition.id == "registration_record" and case.inputs.get("simulate_conflict"):
+                    result["result"]["area"] = case.inputs.get("conflicting_registration_area", 2.08)
+                task.result = result["result"]
+                evidence = {
+                    "source": result["result"].get("source", definition.department),
+                    "request_id": result["request_id"], "operation": operation,
+                    "idempotency_key": task.idempotency_key, "verified": True, "timestamp": now_iso(),
+                }
+                task.evidence.append(evidence)
+                case.evidence.append(evidence)
+                task.status = TaskStatus.COMPLETED
+                task.completed_at = now_iso()
+                self._emit(case, "task.completed", definition.worker, {
+                    "task_id": definition.id, "attempts": task.attempts, "request_id": result["request_id"],
+                })
+                if definition.id == "risk_reconciliation":
+                    self._reconcile_property(case)
+                elif definition.id == "cross_record_reconciliation":
+                    self._reconcile_restaurant(case)
+                return
+            except Exception as exc:
+                last_error = exc
+                self._emit(case, "task.failed_attempt", definition.worker, {
+                    "task_id": definition.id, "attempt": task.attempts, "error": str(exc),
+                })
+        task.status = TaskStatus.EXCEPTION
+        task.error = str(last_error or "Task failed")
+        self._emit(case, "task.exception", definition.worker, {
+            "task_id": definition.id, "attempts": task.attempts, "error": task.error,
+        })
+        raise RuntimeError(task.error)
 
-        task.result = result["result"]
-        evidence = {
-            "source": result["result"].get("source", definition.department),
-            "request_id": result["request_id"],
-            "operation": operation,
-            "verified": True,
-            "timestamp": now_iso(),
-        }
-        task.evidence.append(evidence)
-        case.evidence.append(evidence)
-        task.status = TaskStatus.COMPLETED
-        task.completed_at = now_iso()
-
-        if definition.id == "risk_reconciliation":
-            self._reconcile_property(case)
-        elif definition.id == "cross_record_reconciliation":
-            self._reconcile_restaurant(case)
-
+    @staticmethod
+    def _emit(case: Case, action: str, actor: str, data: Dict[str, Any] | None = None) -> None:
+        case.execution_events.append({
+            "sequence": len(case.execution_events) + 1, "timestamp": now_iso(),
+            "action": action, "actor": actor, "data": data or {},
+        })
     def _reconcile_property(self, case: Case) -> None:
         land, registration = case.tasks.get("land_record"), case.tasks.get("registration_record")
         if not land or not registration or not land.result or not registration.result:
