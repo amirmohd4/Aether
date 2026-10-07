@@ -7,7 +7,7 @@ from sqlalchemy import text
 
 from backend.database import SessionLocal, engine
 from .domain import Case, TaskDefinition, TaskState, TaskStatus
-from .persistence_models import AetherCaseRecord, AetherExecutionEventRecord
+from .persistence_models import AetherCaseRecord, AetherExecutionEventRecord, AetherTaskQueueRecord
 
 
 class DatabaseCaseStore:
@@ -23,11 +23,16 @@ class DatabaseCaseStore:
         with self._schema_lock:
             if self._schema_ready:
                 return
-            from backend.database import Base
             if engine.dialect.name == "postgresql":
                 with engine.begin() as connection:
                     connection.execute(text("CREATE SCHEMA IF NOT EXISTS aether_internal"))
-            Base.metadata.create_all(bind=engine)
+
+            # Never bootstrap the entire application's legacy SQLAlchemy
+            # metadata from the execution-core repository. The MVP runtime only
+            # owns its private case/event/task tables; all other schemas are
+            # migrated independently and must not be recreated on startup.
+            for model in (AetherCaseRecord, AetherExecutionEventRecord, AetherTaskQueueRecord):
+                model.__table__.create(bind=engine, checkfirst=True)
             self._schema_ready = True
 
     def put(self, case: Case) -> Case:
