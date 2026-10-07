@@ -42,6 +42,9 @@ def _api_key_principal(request: Request) -> Principal:
             role=os.getenv("AETHER_API_KEY_ROLE", "service"),
             tenant_id=os.getenv("AETHER_API_KEY_TENANT_ID"),
             auth_mode="api_key",
+            scopes=frozenset(
+                item.strip() for item in os.getenv("AETHER_API_KEY_SCOPES", "*").split(",") if item.strip()
+            ),
         )
 
     key_hash = hashlib.sha256(supplied.encode("utf-8")).hexdigest()
