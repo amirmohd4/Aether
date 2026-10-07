@@ -21,9 +21,8 @@ if not raw_database_url:
 DATABASE_URL = raw_database_url
 _database_url = make_url(DATABASE_URL)
 
-# Render can retain a stale Supabase database URL. Correct non-secret endpoint
-# components from deployment settings and keep the password in its own secret
-# so reserved URL characters cannot corrupt connection parsing.
+# Render can retain a stale Supabase database URL. Correct endpoint components
+# from deployment settings and support dedicated Aether database credentials.
 if _database_url.get_backend_name() != "sqlite":
     updates = {}
 
@@ -42,19 +41,24 @@ if _database_url.get_backend_name() != "sqlite":
 
     pooler_host = host_override or _database_url.host or ""
     if project_ref and ".pooler.supabase.com" in pooler_host:
-        role = os.getenv("AETHER_DATABASE_ROLE_OVERRIDE", "postgres").strip() or "postgres"
-        # Supabase shared pooler identities are <ROLE>.<PROJECT-REF>.
-        updates["username"] = f"{role}.{project_ref}"
+        role_override = os.getenv("AETHER_DATABASE_ROLE_OVERRIDE", "").strip()
+        if role_override:
+            # Shared pooler identities are <ROLE>.<PROJECT-REF>.
+            updates["username"] = f"{role_override}.{project_ref}"
+        elif not _database_url.username or _database_url.username == "postgres":
+            # Default PostgreSQL role over the shared pooler uses the project ref.
+            updates["username"] = f"postgres.{project_ref}"
 
     if updates:
         _database_url = _database_url.set(**updates)
         DATABASE_URL = _database_url.render_as_string(hide_password=False)
 
     logger.info(
-        "Aether database endpoint configured: host=%s port=%s user=%s",
+        "Aether database endpoint configured: host=%s port=%s user=%s password_override=%s",
         _database_url.host,
         _database_url.port,
         _database_url.username,
+        bool(password_override),
     )
 
 
