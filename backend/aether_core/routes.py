@@ -124,6 +124,19 @@ def discover_requirements(request: StartCaseRequest):
     }
 
 
+@router.get("/me")
+def current_principal(principal: Principal = Depends(require_principal)):
+    """Return the server-resolved Aether identity and authorization scope."""
+    return {
+        "subject": principal.subject,
+        "role": principal.role,
+        "tenant_id": principal.tenant_id,
+        "department": principal.department,
+        "jurisdiction": principal.jurisdiction,
+        "auth_mode": principal.auth_mode,
+    }
+
+
 @router.post("/cases")
 def start_case(request: StartCaseRequest, principal: Principal = Depends(require_principal)):
     understanding = understanding_engine.understand(
@@ -313,7 +326,7 @@ def get_case(case_id: str, principal: Principal = Depends(require_principal)):
 
 
 @router.post("/cases/{case_id}/human/{task_id}")
-def human_decision(case_id: str, task_id: str, request: HumanDecisionRequest, principal: Principal = Depends(require_role("officer", "admin"))):
+def human_decision(case_id: str, task_id: str, request: HumanDecisionRequest, principal: Principal = Depends(require_role("officer", "department_admin", "admin"))):
     try:
         case = engine.get_case(case_id)
         _authorize_case(case, principal)
