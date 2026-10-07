@@ -1,15 +1,16 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
 from .api_models import HumanDecisionRequest, StartCaseRequest
 from .engine import engine
 from .requirements_engine import RequirementEngine
 from .rule_registry import RuleRegistry
 from .verification import VerificationEngine
+from .security import Principal, require_principal, require_role
 from .understanding import ObjectiveUnderstandingEngine
 
-router = APIRouter(prefix="/api/aether/v2", tags=["Aether V2"])
+router = APIRouter(prefix="/api/aether/v2", tags=["Aether V2"], dependencies=[Depends(require_principal)])
 requirements_engine = RequirementEngine()
 understanding_engine = ObjectiveUnderstandingEngine()
 rule_registry = RuleRegistry()
@@ -151,7 +152,7 @@ def get_case(case_id: str):
 
 
 @router.post("/cases/{case_id}/human/{task_id}")
-def human_decision(case_id: str, task_id: str, request: HumanDecisionRequest):
+def human_decision(case_id: str, task_id: str, request: HumanDecisionRequest, principal: Principal = Depends(require_role("officer", "admin"))):
     try:
         decision = "approved" if request.approved else "rejected"
         case = engine.complete_human_task(case_id, task_id, decision, request.note or "")
