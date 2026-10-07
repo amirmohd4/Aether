@@ -7,15 +7,44 @@ from .synthetic_government import SyntheticGovernmentSystem
 
 
 class GovernmentConnector(ABC):
-    """Stable connector contract for authorised government integrations."""
+    """Stable contract shared by synthetic and authorised production adapters."""
+
+    def authenticate(self) -> Dict[str, Any]:
+        return {"status": "not_required"}
 
     @abstractmethod
-    def submit(self, operation: str, payload: Dict[str, Any], idempotency_key: str | None = None) -> Dict[str, Any]:
+    def submit(
+        self,
+        operation: str,
+        payload: Dict[str, Any],
+        idempotency_key: str | None = None,
+    ) -> Dict[str, Any]:
         raise NotImplementedError
 
     @abstractmethod
     def get_status(self, request_id: str) -> Dict[str, Any]:
         raise NotImplementedError
+
+    def get_result(self, request_id: str) -> Dict[str, Any]:
+        response = self.get_status(request_id)
+        return response.get("result") or {}
+
+    def normalize(self, response: Dict[str, Any]) -> Dict[str, Any]:
+        """Convert source-specific response fields to Aether's normalized shape."""
+        return {
+            "request_id": response.get("request_id"),
+            "status": response.get("status"),
+            "result": response.get("result"),
+            "source": response.get("source"),
+        }
+
+    def retry(
+        self,
+        operation: str,
+        payload: Dict[str, Any],
+        idempotency_key: str | None = None,
+    ) -> Dict[str, Any]:
+        return self.submit(operation, payload, idempotency_key)
 
 
 class SyntheticConnector(GovernmentConnector):
@@ -24,11 +53,21 @@ class SyntheticConnector(GovernmentConnector):
         self.system = SyntheticGovernmentSystem()
         self._requests: Dict[str, str] = {}
 
-    def submit(self, operation: str, payload: Dict[str, Any], idempotency_key: str | None = None) -> Dict[str, Any]:
+    def submit(
+        self,
+        operation: str,
+        payload: Dict[str, Any],
+        idempotency_key: str | None = None,
+    ) -> Dict[str, Any]:
         if idempotency_key and idempotency_key in self._requests:
             request_id = self._requests[idempotency_key]
         else:
-            request_id = self.system.submit(self.department, operation, payload)
+            request_id = self.system.submit(
+                self.department,
+                operation,
+                payload,
+                idempotency_key=idempotency_key,
+            )
             if idempotency_key:
                 self._requests[idempotency_key] = request_id
         return {"request_id": request_id, "status": self.system.status(request_id)}
@@ -36,4 +75,17 @@ class SyntheticConnector(GovernmentConnector):
     def get_status(self, request_id: str) -> Dict[str, Any]:
         status = self.system.status(request_id)
         result = self.system.result(request_id) if status == "completed" else None
-        return {"request_id": request_id, "status": status, "result": result}
+        return {
+            "request_id": request_id,
+            "status": status,
+            "result": result,
+            "source": f"Synthetic {self.department} System",
+        }
+
+    def get_result(self, request_id: str) -> Dict[str, Any]:
+        return self.system.result(request_id)
+
+    def normalize(self, response: Dict[str, Any]) -> Dict[str, Any]:
+        result = super().normalize(response)
+        result["department"] = self.department
+        return result
