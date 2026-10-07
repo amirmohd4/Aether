@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
+import os
 from typing import Any, Dict, List
 
 from sqlalchemy import Column, DateTime, Integer, String, Text
@@ -10,8 +11,12 @@ from sqlalchemy.types import JSON
 from backend.database import Base
 
 
+PERSISTENCE_SCHEMA = "aether_internal" if os.getenv("DATABASE_URL") else None
+
+
 class AetherCaseRecord(Base):
     __tablename__ = "aether_v2_cases"
+    __table_args__ = {"schema": PERSISTENCE_SCHEMA}
 
     case_id = Column(String(64), primary_key=True)
     status = Column(String(64), nullable=False, index=True)
@@ -24,6 +29,7 @@ class AetherCaseRecord(Base):
 
 class AetherExecutionEventRecord(Base):
     __tablename__ = "aether_v2_execution_events"
+    __table_args__ = {"schema": PERSISTENCE_SCHEMA}
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     case_id = Column(String(64), nullable=False, index=True)
