@@ -185,4 +185,5 @@ class DocumentStore:
 def document_summary(document: StoredDocument) -> Dict[str, Any]:
     payload = document.as_dict()
     payload.pop("extracted_text", None)
+    payload.pop("storage_key", None)
     return payload
