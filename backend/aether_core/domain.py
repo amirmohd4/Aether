@@ -42,6 +42,7 @@ class TaskState:
     started_at: Optional[str] = None
     completed_at: Optional[str] = None
     attempts: int = 0
+    idempotency_key: Optional[str] = None
 
 
 @dataclass
@@ -64,6 +65,7 @@ class Case:
     service_outcome: Optional[str] = None
     ontology: Dict[str, Any] = field(default_factory=dict)
     work_graph: Dict[str, Any] = field(default_factory=dict)
+    execution_events: List[Dict[str, Any]] = field(default_factory=list)
     created_at: str = field(default_factory=now_iso)
     updated_at: str = field(default_factory=now_iso)
 
@@ -82,6 +84,7 @@ class Case:
             "service_outcome": self.service_outcome,
             "ontology": self.ontology,
             "work_graph": self.work_graph,
+            "execution_events": self.execution_events[-50:],
             "jurisdiction": self.jurisdiction,
             "status": self.status,
             "tasks_total": len(self.tasks),
