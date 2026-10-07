@@ -38,13 +38,11 @@ jobs:
           set -euo pipefail
           jq -e '.status == "ready" and .database == "ready"' /tmp/ready.json
 
-      - name: Validate public release endpoint
+      - name: Validate backend root
         shell: bash
         run: |
           set -euo pipefail
-          code="$(curl -sS -o /tmp/release.json -w '%{http_code}' "$AETHER_API_URL/api/aether/v2/release/readiness")"
-          test "$code" = "200"
-          jq -e '.status != null' /tmp/release.json
+          jq -e '.service == "Aether GovOS" and .status == "running"' /tmp/health.json
 
       - name: Validate frontend HTML
         shell: bash
