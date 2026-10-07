@@ -13,6 +13,7 @@ from .persistence_models import (
     AetherTaskQueueRecord,
     AetherTaskCheckpointRecord,
     AetherUsageRecord,
+    AetherDocumentRecord,
 )
 
 
@@ -43,6 +44,7 @@ class DatabaseCaseStore:
                 AetherTaskQueueRecord,
                 AetherTaskCheckpointRecord,
                 AetherUsageRecord,
+                AetherDocumentRecord,
             ):
                 model.__table__.create(bind=engine, checkfirst=True)
             self._schema_ready = True
@@ -193,6 +195,48 @@ class DatabaseCaseStore:
             if row is None:
                 raise KeyError(case_id)
             return self._deserialize_case(row.payload)
+
+    def put_document(self, document, owner_user_id: str | None = None) -> None:
+        self._ensure_schema()
+        with SessionLocal() as db:
+            row = AetherDocumentRecord(
+                document_id=document.document_id,
+                case_id=document.case_id,
+                tenant_id=document.tenant_id,
+                owner_user_id=owner_user_id,
+                document_type=document.document_type,
+                filename=document.filename,
+                mime_type=document.mime_type,
+                size_bytes=document.size_bytes,
+                sha256=document.sha256,
+                storage_key=document.storage_key,
+                extracted_text=document.extracted_text,
+                extraction_mode=document.extraction_mode,
+                created_at=self._to_datetime(document.created_at),
+            )
+            db.add(row)
+            db.commit()
+
+    def documents_for(self, case_id: str, tenant_id: str | None = None) -> List[Dict[str, Any]]:
+        self._ensure_schema()
+        with SessionLocal() as db:
+            query = db.query(AetherDocumentRecord).filter(AetherDocumentRecord.case_id == case_id)
+            if tenant_id is not None:
+                query = query.filter(AetherDocumentRecord.tenant_id == tenant_id)
+            rows = query.order_by(AetherDocumentRecord.created_at.asc()).all()
+            return [{
+                "document_id": row.document_id,
+                "case_id": row.case_id,
+                "tenant_id": row.tenant_id,
+                "owner_user_id": row.owner_user_id,
+                "document_type": row.document_type,
+                "filename": row.filename,
+                "mime_type": row.mime_type,
+                "size_bytes": row.size_bytes,
+                "sha256": row.sha256,
+                "extraction_mode": row.extraction_mode,
+                "created_at": row.created_at.isoformat() if row.created_at else None,
+            } for row in rows]
 
     def put_task_checkpoint(self, case_id: str, task: TaskState) -> None:
         """Persist the latest state of one task independently of the case blob.
