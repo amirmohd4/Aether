@@ -73,3 +73,7 @@ create index if not exists idx_aether_v2_queue_lease_until
 alter table aether_internal.aether_v2_cases enable row level security;
 alter table aether_internal.aether_v2_execution_events enable row level security;
 alter table aether_internal.aether_v2_task_queue enable row level security;
+
+-- The execution schema is never a browser/client data surface.
+revoke all on schema aether_internal from anon, authenticated;
+revoke all on all tables in schema aether_internal from anon, authenticated;
