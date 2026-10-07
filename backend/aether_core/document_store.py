@@ -4,6 +4,7 @@ import base64
 import hashlib
 import mimetypes
 import os
+import re
 from dataclasses import dataclass, asdict
 from pathlib import Path
 from typing import Any, Dict, List
@@ -44,6 +45,7 @@ class DocumentStore:
         self.root = Path(os.getenv("AETHER_DOCUMENT_ROOT", "./data/documents"))
         self.supabase_url = os.getenv("SUPABASE_URL", "").rstrip("/")
         self.service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+        self._bucket_ready = False
 
     def save(
         self,
@@ -54,14 +56,39 @@ class DocumentStore:
         content: bytes,
         mime_type: str | None = None,
     ) -> StoredDocument:
+        if os.getenv("AETHER_ENV", "development").strip().lower() == "production" and not self._supabase_configured():
+            raise RuntimeError("Server-side Supabase document storage is required in production")
         if not content:
             raise ValueError("Document is empty")
         if len(content) > self._max_bytes():
             raise ValueError("Document exceeds the configured upload limit")
 
         document_id = f"DOC-{uuid4().hex[:16].upper()}"
-        safe_name = Path(filename or "document").name
+        safe_name = re.sub(
+            r'[\r\n"]',
+            "_",
+            Path(filename or "document").name,
+        )
         resolved_mime = mime_type or mimetypes.guess_type(safe_name)[0] or "application/octet-stream"
+        allowed = {
+            item.strip() for item in os.getenv(
+                "AETHER_ALLOWED_DOCUMENT_MIME_TYPES",
+                "application/pdf,text/plain,text/csv,application/json,image/jpeg,image/png,"
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            ).split(",") if item.strip()
+        }
+        if resolved_mime not in allowed:
+            raise ValueError(f"Unsupported document type: {resolved_mime}")
+
+        signature_checks = {
+            "application/pdf": lambda body: body.lstrip().startswith(b"%PDF-"),
+            "image/png": lambda body: body.startswith(b"\x89PNG\r\n\x1a\n"),
+            "image/jpeg": lambda body: body.startswith(b"\xff\xd8\xff"),
+        }
+        checker = signature_checks.get(resolved_mime)
+        if checker is not None and not checker(content):
+            raise ValueError(f"File signature does not match declared MIME type: {resolved_mime}")
+
         digest = hashlib.sha256(content).hexdigest()
         storage_key = f"{tenant_id or 'unscoped'}/{case_id}/{document_id}-{safe_name}"
 
@@ -109,16 +136,6 @@ class DocumentStore:
             return response.content
         return Path(storage_key).read_bytes()
 
-    def _ensure_supabase_bucket(self) -> None:
-        response = httpx.post(
-            f"{self.supabase_url}/storage/v1/bucket",
-            json={"id": self.bucket, "name": self.bucket, "public": False},
-            headers={**self._headers(), "Content-Type": "application/json"},
-            timeout=15.0,
-        )
-        if response.status_code not in {200, 201, 409}:
-            response.raise_for_status()
-
     def _supabase_configured(self) -> bool:
         return bool(self.supabase_url and self.service_key)
 
@@ -130,6 +147,50 @@ class DocumentStore:
         if content_type:
             headers["Content-Type"] = content_type
         return headers
+
+    def storage_ready(self) -> bool:
+        """Check that Supabase Storage is configured and the bucket is private."""
+        if not self._supabase_configured():
+            return False
+        try:
+            check = httpx.get(
+                f"{self.supabase_url}/storage/v1/bucket/{self.bucket}",
+                headers=self._headers(),
+                timeout=10.0,
+            )
+            if check.status_code != 200:
+                return False
+            data = check.json()
+            return data.get("public") is False
+        except Exception:
+            return False
+
+    def _ensure_supabase_bucket(self) -> None:
+        if self._bucket_ready or not self._supabase_configured():
+            return
+
+        check = httpx.get(
+            f"{self.supabase_url}/storage/v1/bucket/{self.bucket}",
+            headers=self._headers(),
+            timeout=15.0,
+        )
+        if check.status_code == 200:
+            if check.json().get("public") is True:
+                raise RuntimeError("Aether document bucket must be private")
+            self._bucket_ready = True
+            return
+        if check.status_code != 404:
+            check.raise_for_status()
+
+        create = httpx.post(
+            f"{self.supabase_url}/storage/v1/bucket",
+            json={"id": self.bucket, "name": self.bucket, "public": False},
+            headers=self._headers("application/json"),
+            timeout=15.0,
+        )
+        if create.status_code not in {200, 201, 409}:
+            create.raise_for_status()
+        self._bucket_ready = True
 
     def _save_supabase(self, key: str, content: bytes, mime_type: str) -> None:
         self._ensure_supabase_bucket()
@@ -185,4 +246,5 @@ class DocumentStore:
 def document_summary(document: StoredDocument) -> Dict[str, Any]:
     payload = document.as_dict()
     payload.pop("extracted_text", None)
+    payload.pop("storage_key", None)
     return payload

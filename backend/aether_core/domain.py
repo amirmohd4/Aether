@@ -30,6 +30,10 @@ class TaskDefinition:
     authority_required: bool = False
     physical_action: bool = False
     description: str = ""
+    # Connector operation is explicit process metadata. Keeping it on the
+    # definition lets new service graphs use stable operations without growing
+    # a fragile global task-id switch in the execution engine.
+    operation: str = ""
 
 
 @dataclass
@@ -54,6 +58,8 @@ class Case:
     inputs: Dict[str, Any]
     requirements: List[Dict[str, Any]]
     tasks: Dict[str, TaskState]
+    owner_user_id: Optional[str] = None
+    tenant_id: Optional[str] = None
     status: str = "executing"
     human_actions: List[Dict[str, Any]] = field(default_factory=list)
     exceptions: List[Dict[str, Any]] = field(default_factory=list)
@@ -78,6 +84,8 @@ class Case:
             "case_id": self.case_id,
             "objective": self.objective,
             "customer_type": self.customer_type,
+            "owner_user_id": self.owner_user_id,
+            "tenant_id": self.tenant_id,
             "service_id": self.service_id,
             "service_name": self.service_name,
             "service_department": self.service_department,
@@ -96,6 +104,7 @@ class Case:
             "ready": counts["ready"],
             "critical_path": self.critical_path(),
             "human_work_remaining": self.human_work_remaining(),
+            "execution_metrics": self.execution_metrics(),
             "updated_at": self.updated_at,
         }
 
@@ -123,10 +132,31 @@ class Case:
     def human_work_remaining(self) -> int:
         # Demo estimate only; never presented as a real-world government SLA.
         return sum(
-            15 if t.definition.authority_required else 0
+            15 if (t.definition.authority_required or t.definition.physical_action) else 0
             for t in self.tasks.values()
             if t.status not in {TaskStatus.COMPLETED}
         )
+
+    def execution_metrics(self) -> Dict[str, Any]:
+        completed = [t for t in self.tasks.values() if t.completed_at]
+        running = [t for t in self.tasks.values() if t.started_at and not t.completed_at]
+        attempts = sum(t.attempts for t in self.tasks.values())
+        return {
+            "tasks_total": len(self.tasks),
+            "tasks_completed": len(completed),
+            "tasks_running": len(running),
+            "task_attempts": attempts,
+            "human_actions_required": sum(
+                1 for t in self.tasks.values() if t.definition.authority_required or t.definition.physical_action
+            ),
+            "exceptions": len(self.exceptions),
+            "handoff_events": sum(
+                1 for event in self.execution_events
+                if event.get("action") in {"human_action.requested", "government.query", "exception.escalated"}
+            ),
+            "critical_path_length": len(self.critical_path()),
+            "human_work_remaining_minutes": self.human_work_remaining(),
+        }
 
 
 @dataclass(frozen=True)
@@ -187,6 +217,7 @@ class WorkNode:
     authority_required: bool = False
     physical_action: bool = False
     reason: str = ""
+    operation: str = ""
 
 
 @dataclass
@@ -215,6 +246,7 @@ class WorkGraph:
                     "authority_required": n.authority_required,
                     "physical_action": n.physical_action,
                     "reason": n.reason,
+                    "operation": n.operation,
                 }
                 for n in self.nodes.values()
             ]

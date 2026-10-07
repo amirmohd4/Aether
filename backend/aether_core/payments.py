@@ -1,0 +1,168 @@
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Any, Dict
+
+import os
+import hashlib
+import httpx
+
+from .persistence_models import AetherPaymentRecord
+
+
+class PaymentProvider:
+    name = "abstract"
+
+    def create_payment(self, payment_id: str, amount: int, currency: str, metadata: Dict[str, Any]) -> Dict[str, Any]:
+        raise NotImplementedError
+
+
+class DemoPaymentProvider(PaymentProvider):
+    name = "demo"
+
+    def create_payment(self, payment_id: str, amount: int, currency: str, metadata: Dict[str, Any]) -> Dict[str, Any]:
+        return {
+            "provider": self.name,
+            "provider_payment_id": f"DEMO-{payment_id}",
+            "status": "succeeded",
+            "amount": amount,
+            "currency": currency,
+            "metadata": metadata,
+        }
+
+
+class UnavailablePaymentProvider(PaymentProvider):
+    name = "unconfigured"
+
+    def create_payment(self, payment_id: str, amount: int, currency: str, metadata: Dict[str, Any]) -> Dict[str, Any]:
+        raise RuntimeError("Payment provider is not configured")
+
+
+class ConfiguredHTTPPaymentProvider(PaymentProvider):
+    """Normalized external payment adapter.
+
+    Contract:
+      POST {base_url}/payments
+      -> {provider_payment_id, status, amount, currency}
+    """
+
+    name = "http"
+
+    def __init__(self, base_url: str, token: str | None = None, timeout_seconds: float = 15.0):
+        self.base_url = base_url.rstrip("/")
+        self.token = token
+        self.timeout_seconds = timeout_seconds
+
+    def create_payment(self, payment_id: str, amount: int, currency: str, metadata: Dict[str, Any]) -> Dict[str, Any]:
+        headers = {"Content-Type": "application/json", "Idempotency-Key": payment_id}
+        if self.token:
+            headers["Authorization"] = f"Bearer {self.token}"
+        response = httpx.post(
+            f"{self.base_url}/payments",
+            json={"payment_id": payment_id, "amount_minor": amount, "currency": currency, "metadata": metadata},
+            headers=headers,
+            timeout=self.timeout_seconds,
+        )
+        response.raise_for_status()
+        data = response.json()
+        return {
+            "provider_payment_id": data.get("provider_payment_id"),
+            "status": data.get("status", "pending"),
+            "amount": data.get("amount", amount),
+            "currency": data.get("currency", currency),
+        }
+
+
+def configured_payment_provider() -> PaymentProvider:
+    url = os.getenv("AETHER_PAYMENT_PROVIDER_URL", "").strip()
+    token = os.getenv("AETHER_PAYMENT_PROVIDER_TOKEN", "").strip() or None
+    production = os.getenv("AETHER_ENV", "development").strip().lower() == "production"
+    if url:
+        return ConfiguredHTTPPaymentProvider(url, token)
+    if production:
+        return UnavailablePaymentProvider()
+    return DemoPaymentProvider()
+
+
+class PaymentService:
+    """Idempotent payment ledger with replaceable provider implementation."""
+
+    def __init__(self, session_factory, provider: PaymentProvider | None = None):
+        self.session_factory = session_factory
+        self.provider = provider or configured_payment_provider()
+
+    def create(
+        self,
+        tenant_id: str,
+        case_id: str,
+        amount_minor: int,
+        currency: str = "INR",
+        idempotency_key: str | None = None,
+        metadata: Dict[str, Any] | None = None,
+    ) -> Dict[str, Any]:
+        from .case_store import DatabaseCaseStore
+        DatabaseCaseStore().ensure_schema()
+        if amount_minor < 0:
+            raise ValueError("Payment amount cannot be negative")
+        key = idempotency_key or f"{case_id}:{amount_minor}:{currency}"
+        with self.session_factory() as db:
+            existing = db.query(AetherPaymentRecord).filter_by(
+                tenant_id=tenant_id,
+                idempotency_key=key,
+            ).one_or_none()
+            if existing:
+                return self._serialize(existing)
+
+            stable_seed = f"{tenant_id}|{case_id}|{key}".encode("utf-8")
+            payment_id = f"PAY-{hashlib.sha256(stable_seed).hexdigest()[:24].upper()}"
+            provider_result = self.provider.create_payment(
+                payment_id,
+                amount_minor,
+                currency,
+                metadata or {},
+            )
+            row = AetherPaymentRecord(
+                payment_id=payment_id,
+                tenant_id=tenant_id,
+                case_id=case_id,
+                amount_minor=amount_minor,
+                currency=currency,
+                provider=self.provider.name,
+                provider_payment_id=provider_result.get("provider_payment_id"),
+                status=provider_result.get("status", "pending"),
+                idempotency_key=key,
+                metadata_json=metadata or {},
+                created_at=datetime.utcnow(),
+                completed_at=datetime.utcnow() if provider_result.get("status") == "succeeded" else None,
+            )
+            db.add(row)
+            db.commit()
+            db.refresh(row)
+            return self._serialize(row)
+
+    def for_case(self, tenant_id: str, case_id: str) -> list[Dict[str, Any]]:
+        from .case_store import DatabaseCaseStore
+        DatabaseCaseStore().ensure_schema()
+        with self.session_factory() as db:
+            rows = db.query(AetherPaymentRecord).filter_by(
+                tenant_id=tenant_id,
+                case_id=case_id,
+            ).order_by(AetherPaymentRecord.id.desc()).all()
+            return [self._serialize(row) for row in rows]
+
+    @staticmethod
+    def _serialize(row: AetherPaymentRecord) -> Dict[str, Any]:
+        return {
+            "payment_id": row.payment_id,
+            "tenant_id": row.tenant_id,
+            "case_id": row.case_id,
+            "amount_minor": row.amount_minor,
+            "currency": row.currency,
+            "provider": row.provider,
+            "provider_payment_id": row.provider_payment_id,
+            "status": row.status,
+            "idempotency_key": row.idempotency_key,
+            "metadata": row.metadata_json or {},
+            "created_at": row.created_at.isoformat() if row.created_at else None,
+            "completed_at": row.completed_at.isoformat() if row.completed_at else None,
+        }

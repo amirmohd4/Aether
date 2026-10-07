@@ -16,3 +16,50 @@ services:
         sync: false
       - key: SUPABASE_ANON_KEY
         sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: AETHER_ENV
+        value: staging
+      - key: AETHER_AUTH_MODE
+        value: supabase
+      - key: AETHER_CORS_ORIGINS
+        value: https://aether-govos.netlify.app
+      - key: AETHER_ENABLE_PRODUCTION_CONNECTORS
+        value: "false"
+      - key: AETHER_ENABLE_LEGACY_API
+        value: "false"
+      - key: AETHER_ENCRYPTION_KEY
+        sync: false
+      - key: AETHER_DOCUMENT_BUCKET
+        value: aether-documents
+
+  - type: worker
+    name: aether-worker
+    runtime: docker
+    plan: free
+    dockerContext: .
+    dockerfilePath: ./backend/Dockerfile
+    dockerCommand: python backend/worker.py
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: AETHER_ENV
+        value: staging
+      - key: AETHER_AUTH_MODE
+        value: supabase
+      - key: AETHER_ENABLE_PRODUCTION_CONNECTORS
+        value: "false"
+      - key: AETHER_ENABLE_LEGACY_API
+        value: "false"
+      - key: AETHER_ENCRYPTION_KEY
+        sync: false
+      - key: AETHER_DOCUMENT_BUCKET
+        value: aether-documents
+      - key: AETHER_NOTIFICATION_WEBHOOK_URL
+        sync: false

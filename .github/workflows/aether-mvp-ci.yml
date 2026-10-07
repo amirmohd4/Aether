@@ -1,0 +1,46 @@
+name: Aether MVP CI
+
+on:
+  push:
+    branches:
+      - aether-mvp-build
+      - main
+  pull_request:
+    branches:
+      - aether-mvp-build
+      - main
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install backend dependencies
+        run: pip install -r requirements.txt
+      - name: Run backend tests
+        env:
+          DATABASE_URL: sqlite:///./aether_ci.db
+          AETHER_AUTH_MODE: none
+          PYTHONPATH: .:..
+        run: pytest -q
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - name: Install frontend dependencies
+        run: npm ci
+      - name: Typecheck
+        run: npm run lint
+      - name: Build frontend
+        run: npm run build

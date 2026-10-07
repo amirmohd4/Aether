@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, Iterable, List
+from typing import Iterable, List
 
 from .domain import Case, TaskState, TaskStatus
 
@@ -14,7 +14,13 @@ class DependencySnapshot:
 
 
 class DependencyEngine:
-    """Recalculates task availability without globally pausing the case."""
+    """Recalculate task availability from direct prerequisites.
+
+    Pending means the task is valid but a prerequisite has not completed yet.
+    Blocked is reserved for a dependency exception. This keeps human/physical
+    authority boundaries visible without falsely treating downstream work as
+    failed or blocked.
+    """
 
     def refresh(self, case: Case) -> DependencySnapshot:
         ready: List[str] = []
@@ -22,7 +28,12 @@ class DependencyEngine:
         blocked: List[str] = []
 
         for task in case.tasks.values():
-            if task.status in {TaskStatus.COMPLETED, TaskStatus.RUNNING, TaskStatus.EXCEPTION, TaskStatus.HUMAN_REVIEW}:
+            if task.status in {
+                TaskStatus.COMPLETED,
+                TaskStatus.RUNNING,
+                TaskStatus.EXCEPTION,
+                TaskStatus.HUMAN_REVIEW,
+            }:
                 continue
 
             dependencies = [
@@ -38,7 +49,6 @@ class DependencyEngine:
                 task.status = TaskStatus.READY
                 ready.append(task.definition.id)
             else:
-                # Unfinished prerequisites are a wait state, not a failure.
                 task.status = TaskStatus.PENDING
                 waiting.append(task.definition.id)
 

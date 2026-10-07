@@ -1,7 +1,0 @@
-{
-  "framework": "react",
-  "buildCommand": "npm run build",
-  "installCommand": "npm install",
-  "outputDirectory": "dist",
-  "ignoreCommand": "exit 0"
-}

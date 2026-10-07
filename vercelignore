@@ -1,8 +1,0 @@
-backend/
-*.py
-__pycache__/
-requirements.txt
-pyproject.toml
-setup.py
-Pipfile
-poetry.lock

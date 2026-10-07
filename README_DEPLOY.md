@@ -1,179 +1,77 @@
-# 🏛️ Aether GovOS - Government Integration Operating System
+# Aether GovOS — MVP Deployment
 
-> One API for all government land services across India
+## Release posture
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-green.svg)](https://fastapi.tiangolo.com/)
-[![React](https://img.shields.io/badge/React-19-blue.svg)](https://reactjs.org/)
+The connected public MVP is a controlled execution demo. It uses Supabase-backed persistence and authentication plus deterministic synthetic government connectors. It must not be described as live government connectivity.
 
-## 🚀 Quick Start (One Command)
+Do not enable live government connectors until written authorization, credentials, endpoint contracts, idempotency behavior, and jurisdiction-specific rule evidence have been verified.
 
-```bash
-docker-compose up
+## Supabase
+
+Apply the ordered Aether migrations under `supabase/migrations/`, including `20261008000000_aether_mvp_hardening.sql` and `20261008010000_aether_operational_hardening.sql`, to an approved environment.
+
+After application, verify:
+- RLS is enabled on all legacy public application tables.
+- Browser roles have no privileges on `aether_internal` execution tables.
+- `public.aether_memberships` only permits users to read their own membership.
+- the `aether-documents` storage bucket is private.
+- the Supabase security advisor has no critical RLS findings.
+
+Do not apply RLS remediation to a production project without explicitly reviewing the resulting policies and access impact.
+
+## Render — controlled MVP
+
+The Render service uses `backend/Dockerfile`.
+
+Recommended MVP environment:
+
+```env
+AETHER_ENV=staging
+AETHER_AUTH_MODE=supabase
+DATABASE_URL=<server-side database URL>
+SUPABASE_URL=<server-side Supabase URL>
+SUPABASE_ANON_KEY=<server-side publishable/anon key>
+SUPABASE_SERVICE_ROLE_KEY=<server-side only>
+AETHER_ENCRYPTION_KEY=<server-side URL-safe base64 key>
+AETHER_ENABLE_LEGACY_API=false
+AETHER_ENABLE_PRODUCTION_CONNECTORS=false
 ```
 
-**That's it!** Open http://localhost:3000 in your browser.
+This mode keeps the MVP usable while preventing accidental live-government execution.
 
----
+After deployment, run `GET /health`, `GET /ready`, `GET /api/aether/v2/release/readiness`, and `scripts/release_smoke_test.py`.
 
-## 📋 What You Get
+## Netlify — frontend
 
-### **5 Complete Land Services:**
-1. 🏠 **Property Registration** - End-to-end property registration workflow
-2. 🔄 **Mutation** - Ownership transfer and land record updates
-3. 📜 **Encumbrance Certificate (EC)** - 30-year transaction history
-4. 🏗️ **Land Use Conversion** - Agricultural to residential/commercial conversion
-5. 🛡️ **Title Verification** - Comprehensive title check with risk score
+Build command: `npm run build`
 
-### **8 Mock Government Connectors:**
-- Karnataka: Kaveri, eAasthi, Bhoomi
-- J&K: LRIS
-- Generic: Aadhaar, DigiLocker
-- Municipal: Zoning & Land Use
-- Court: Legal Records & Disputes
+Publish directory: `dist`
 
-### **Tech Stack:**
-- **Backend:** FastAPI + PostgreSQL + Redis
-- **Frontend:** React 19 + TypeScript + Vite + Tailwind CSS
-- **AI/ML:** Scikit-learn Isolation Forest (Fraud Detection)
-- **Data:** 10,000 mock properties with realistic variations
+Environment:
 
----
-
-## 🎯 Demo Walkthrough
-
-### **Access the Application:**
-- **Frontend:** http://localhost:3000
-- **Backend API Docs:** http://localhost:8001/api/docs
-- **API Marketplace:** http://localhost:3000 (click "API Marketplace" tab)
-
-### **Test Each Service:**
-
-#### **1. Property Search & Registration**
-```
-1. Open http://localhost:3000
-2. Select "Karnataka" from state dropdown
-3. Browse property cards (10 properties displayed)
-4. Click any property to view details
-5. Click "Start Registration" button
-6. Watch workflow progress (6 steps: title verification → encumbrance → stamp duty → payment → registration → mutation)
-7. See real-time progress percentage
+```env
+VITE_API_URL=<public Render backend URL>
+VITE_REQUIRE_AUTH=true
 ```
 
-#### **2. AI Fraud Detection**
-```
-1. Click any property card
-2. Click "Check Fraud" button
-3. View fraud score (0-100) with color coding:
-   - Green (0-25): Low risk
-   - Yellow (25-50): Medium risk
-   - Orange (50-75): High risk
-   - Red (75-100): Critical risk
-4. Read AI-generated explanation
-5. See evidence of 10 fraud rules checked
-```
+The SPA fallback is defined in `netlify.toml`.
 
-#### **3. Apply Mutation (Ownership Transfer)**
-```
-1. Click property card
-2. Click "Apply Mutation" button
-3. Enter new owner name (e.g., "John Doe")
-4. View mutation workflow progress
-5. See mutation ID and status
-6. Check updated land records
-```
+## Production transition
 
-#### **4. Generate Encumbrance Certificate**
-```
-1. Click property card
-2. Click "Get EC" button
-3. View generated EC with:
-   - EC ID
-   - Certificate status (Clear/Encumbered)
-   - 30-year transaction history
-   - Total encumbrance amount
-   - DigiLocker storage confirmation
-4. See EC added to "EC History" section
-```
+Move Render to `AETHER_ENV=production` only when:
+- the Supabase hardening migration is verified;
+- production secrets are configured;
+- private document storage is available;
+- live government connectors are authorized and configured;
+- authoritative, effective-dated rules cover the services being exposed;
+- human/physical authority boundaries are validated by the responsible authority.
 
-#### **5. Land Use Conversion**
-```
-1. Click property card
-2. Click "Convert Land Use" button
-3. Enter target use (e.g., "commercial", "residential")
-4. View conversion workflow:
-   - Zoning eligibility check
-   - Conversion fee calculation
-   - Payment processing
-   - Land use update
-5. See conversion confirmation
-```
+Production startup and execution intentionally fail closed when these dependencies are absent.
 
-#### **6. Title Verification**
-```
-1. Click property card
-2. Click "Verify Title" button
-3. View comprehensive title report:
-   - Risk score (0-100)
-   - Risk level (Very Low/Low/Medium/High/Critical)
-   - AI recommendation
-   - Risk factors list
-   - 30-year ownership chain
-   - Court dispute check
-   - Identity verification
-```
+## Rollback
 
----
+Restore the prior application commit, preserve compatible database migrations, inspect migration compatibility before rollback, and rerun health/readiness/smoke tests.
 
-## 🌍 Cloud Deployment
+## Hard rule
 
-### **Render (Recommended - Free Tier)**
-
-**One-Click Deploy:**
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
-
-**Manual Steps:**
-1. Create Render account: https://render.com
-2. Create PostgreSQL + Redis instances
-3. Deploy backend web service (Python)
-4. Deploy frontend static site
-5. **Live in 5 minutes!**
-
----
-
-### **Railway (Simplest)**
-
-**One-Click Deploy:**
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template)
-
-Railway auto-detects docker-compose.yml
-
----
-
-## 📊 API Documentation
-
-**Interactive Docs:** http://localhost:8001/api/docs
-
-**18 Endpoints Available** - View in API Marketplace tab
-
----
-
-## 🎬 Demo Video Script (2 Minutes)
-
-**[0:00-0:30]** Property Search & Registration
-**[0:30-1:00]** AI Fraud Detection + New Services
-**[1:00-1:30]** Mutation, EC, Conversion, Title Verification
-**[1:30-2:00]** Dashboards & API Marketplace
-
----
-
-## 📞 Contact
-
-- **Website:** https://aether-govos.com
-- **Email:** support@aether-govos.com
-- **Demo:** http://demo.aether-govos.com
-
----
-
-**🚀 Deploy Aether GovOS in under 5 minutes!**
+Do not claim that Aether issues official government certificates, approvals, or decisions unless the relevant authority has actually authorized and integrated that capability.

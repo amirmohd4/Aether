@@ -1,12 +1,14 @@
-name: Aether V2 Tests
+name: Aether MVP Tests
 
 on:
   push:
     branches:
-      - aether-v2-execution-core
+      - aether-mvp-build
+      - main
   pull_request:
     branches:
-      - aether-v2-execution-core
+      - main
+      - aether-mvp-build
 
 jobs:
   backend-tests:
@@ -20,4 +22,5 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt
-      - run: pytest -q tests
+      - run: python -m compileall -q aether_core
+      - run: PYTHONPATH=.:.. pytest -q tests

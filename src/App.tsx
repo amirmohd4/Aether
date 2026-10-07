@@ -1,5 +1,6 @@
 import React from 'react';
 import { LanguageProvider } from './contexts/LanguageContext';
+import { AuthProvider } from './contexts/AuthContext';
 import { AetherCommandCenter } from './pages/AetherCommandCenter';
 
 function MainAppContent() {
@@ -8,8 +9,10 @@ function MainAppContent() {
 
 export default function App() {
   return (
-    <LanguageProvider>
-      <MainAppContent />
-    </LanguageProvider>
+    <AuthProvider>
+      <LanguageProvider>
+        <MainAppContent />
+      </LanguageProvider>
+    </AuthProvider>
   );
 }
