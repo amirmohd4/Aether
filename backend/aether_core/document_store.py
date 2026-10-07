@@ -133,6 +133,23 @@ class DocumentStore:
             headers["Content-Type"] = content_type
         return headers
 
+    def storage_ready(self) -> bool:
+        """Check that Supabase Storage is configured and the bucket is private."""
+        if not self._supabase_configured():
+            return False
+        try:
+            check = httpx.get(
+                f"{self.supabase_url}/storage/v1/bucket/{self.bucket}",
+                headers=self._headers(),
+                timeout=10.0,
+            )
+            if check.status_code != 200:
+                return False
+            data = check.json()
+            return data.get("public") is False
+        except Exception:
+            return False
+
     def _ensure_supabase_bucket(self) -> None:
         if self._bucket_ready or not self._supabase_configured():
             return
@@ -143,6 +160,8 @@ class DocumentStore:
             timeout=15.0,
         )
         if check.status_code == 200:
+            if check.json().get("public") is True:
+                raise RuntimeError("Aether document bucket must be private")
             self._bucket_ready = True
             return
         if check.status_code != 404:
