@@ -891,7 +891,7 @@ export const AetherCommandCenter: React.FC = () => {
                       <div>
                         <h3 className="font-semibold">Guided document intake</h3>
                         <p className="mt-1 text-xs text-slate-400">
-                          Select the document types you have supplied. This MVP records intake metadata; binary file storage/OCR remains a later release layer.
+                          Select the document types you have supplied. Aether records intake metadata, supports real file upload, and uses extracted text in the document worker when available.
                         </p>
                       </div>
                       <span className="text-xs text-amber-200">{missingDocuments.length} missing</span>
