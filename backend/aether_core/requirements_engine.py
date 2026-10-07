@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
+from .rule_registry import RuleRegistry
 from .service_registry import ServiceRegistry
 from .templates import generic_requirements, property_loan_requirements, restaurant_requirements
 
@@ -20,6 +21,8 @@ class RequirementDecision:
     effective_date: Optional[str] = None
     verified_at: Optional[str] = None
     confidence: str = "mvp"
+    rule_id: Optional[str] = None
+    authority_status: str = "registry_baseline"
 
 
 class RequirementEngine:
@@ -29,8 +32,13 @@ class RequirementEngine:
     a baseline candidate and must not be mistaken for authoritative law.
     """
 
-    def __init__(self, registry: ServiceRegistry | None = None) -> None:
+    def __init__(
+        self,
+        registry: ServiceRegistry | None = None,
+        rule_registry: RuleRegistry | None = None,
+    ) -> None:
         self.registry = registry or ServiceRegistry()
+        self.rule_registry = rule_registry or RuleRegistry()
 
     def discover(
         self,
@@ -57,10 +65,16 @@ class RequirementEngine:
                 "confidence": "needs-clarification",
             }]
 
+        source_rules = {
+            rule.source_url: rule
+            for rule in self.rule_registry.for_jurisdiction(jurisdiction)
+            if rule.source_url
+        }
         decisions: List[RequirementDecision] = []
         for req in raw:
             if not self._jurisdiction_matches(req, jurisdiction):
                 continue
+            rule = source_rules.get(req.get("source"))
             decisions.append(RequirementDecision(
                 id=req["id"],
                 name=req["name"],
@@ -70,9 +84,11 @@ class RequirementEngine:
                 jurisdiction=jurisdiction,
                 source=req.get("source"),
                 source_title=req.get("source_title"),
-                effective_date=req.get("effective_date"),
-                verified_at=req.get("verified_at"),
+                effective_date=req.get("effective_date") or (rule.effective_date if rule else None),
+                verified_at=req.get("verified_at") or (rule.verified_at if rule else None),
                 confidence=req.get("confidence", "mvp"),
+                rule_id=rule.rule_id if rule else None,
+                authority_status="source_backed" if rule else "registry_baseline",
             ))
         return decisions
 
