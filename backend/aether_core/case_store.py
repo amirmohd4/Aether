@@ -55,6 +55,9 @@ class DatabaseCaseStore:
                 model.__table__.create(bind=engine, checkfirst=True)
             self._schema_ready = True
 
+    def ensure_schema(self) -> None:
+        self._ensure_schema()
+
     def put(self, case: Case) -> Case:
         self._ensure_schema()
         payload = self._serialize_case(case)
