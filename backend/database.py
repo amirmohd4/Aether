@@ -8,7 +8,13 @@ from sqlalchemy.orm import sessionmaker
 
 # Read DATABASE_URL from the environment. Render/Supabase use PostgreSQL;
 # local development and CI may use SQLite.
-DATABASE_URL = os.getenv("DATABASE_URL") or "sqlite:///./aether.db"
+raw_database_url = os.getenv("DATABASE_URL")
+if not raw_database_url:
+    if os.getenv("AETHER_ENV", "development").strip().lower() == "production":
+        raise RuntimeError("DATABASE_URL is required in production")
+    raw_database_url = "sqlite:///./aether.db"
+
+DATABASE_URL = raw_database_url
 _database_url = make_url(DATABASE_URL)
 
 
