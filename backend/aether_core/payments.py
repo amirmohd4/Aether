@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Any, Dict
 
 import os
+import hashlib
 import httpx
 
 from .persistence_models import AetherPaymentRecord
@@ -112,7 +113,8 @@ class PaymentService:
             if existing:
                 return self._serialize(existing)
 
-            payment_id = f"PAY-{__import__('uuid').uuid4().hex[:16].upper()}"
+            stable_seed = f"{tenant_id}|{case_id}|{key}".encode("utf-8")
+            payment_id = f"PAY-{hashlib.sha256(stable_seed).hexdigest()[:24].upper()}"
             provider_result = self.provider.create_payment(
                 payment_id,
                 amount_minor,
