@@ -16,3 +16,15 @@ services:
         sync: false
       - key: SUPABASE_ANON_KEY
         sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: AETHER_ENV
+        value: production
+      - key: AETHER_AUTH_MODE
+        value: supabase
+      - key: AETHER_CORS_ORIGINS
+        value: https://aether-govos.netlify.app
+      - key: AETHER_ENABLE_PRODUCTION_CONNECTORS
+        value: "false"
+      - key: AETHER_DOCUMENT_BUCKET
+        value: aether-documents
