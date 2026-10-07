@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import os
 import socket
 from threading import Lock
@@ -56,7 +56,7 @@ class DurableTaskQueue:
         available_at: datetime | None = None,
     ) -> AetherTaskQueueRecord:
         self._ensure_schema()
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         with SessionLocal() as db:
             row = db.query(AetherTaskQueueRecord).filter_by(
                 case_id=case_id, task_id=task_id
