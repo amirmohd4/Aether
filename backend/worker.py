@@ -21,6 +21,8 @@ def run_background_worker() -> None:
     runtime = AetherWorkerRuntime()
     interval = max(1, int(os.getenv("AETHER_WORKER_INTERVAL_SECONDS", "5")))
     startup_delay = max(0, int(os.getenv("AETHER_WORKER_STARTUP_DELAY_SECONDS", "8")))
+    max_backoff = max(interval, int(os.getenv("AETHER_WORKER_MAX_BACKOFF_SECONDS", "300")))
+    backoff = interval
 
     if startup_delay:
         time.sleep(startup_delay)
@@ -34,10 +36,13 @@ def run_background_worker() -> None:
                 f"notifications={result.get('notifications', {})}",
                 flush=True,
             )
+            backoff = interval
+            time.sleep(interval)
         except Exception as exc:
             # Never take the web API down because the worker backend is unavailable.
             print(f"[Aether Worker] tick failed: {exc}", flush=True)
-        time.sleep(interval)
+            time.sleep(backoff)
+            backoff = min(max_backoff, max(interval, backoff * 2))
 
 
 def run_worker_only() -> None:
