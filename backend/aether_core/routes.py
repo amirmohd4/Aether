@@ -52,6 +52,15 @@ def serialize(case):
     }
 
 
+@router.get("/connectors")
+def connector_catalog():
+    return {
+        "connectors": engine.workers.connector_catalog(),
+        "default_mode": "synthetic",
+        "production_connectors_configured": False,
+    }
+
+
 @router.get("/rules")
 def rule_catalog():
     return {
