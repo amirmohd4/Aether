@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 
 @dataclass(frozen=True)
@@ -13,6 +13,12 @@ class ServiceDefinition:
     keywords: List[str]
     template: Optional[str] = None
     outcome: str = "service_outcome"
+    required_documents: List[str] | None = None
+    human_authority_required: bool = True
+    physical_action_possible: bool = False
+
+    def documents(self) -> List[str]:
+        return list(self.required_documents or [])
 
 
 SERVICE_DEFINITIONS = [
@@ -53,17 +59,64 @@ SERVICE_DEFINITIONS = [
 ]
 
 
+DEFAULT_DOCUMENTS = {
+    "property": ["identity_document", "property_record"],
+    "business": ["identity_document", "business_registration"],
+    "building": ["identity_document", "site_plan", "building_plan"],
+    "land": ["identity_document", "land_record"],
+    "vehicle": ["identity_document", "vehicle_record"],
+    "birth": ["identity_document", "birth_record"],
+    "death": ["identity_document", "death_record"],
+    "education": ["identity_document", "education_record"],
+    "police": ["identity_document"],
+    "passport": ["identity_document", "address_proof"],
+    "visa": ["identity_document", "passport_document"],
+    "housing": ["identity_document", "income_or_eligibility_proof"],
+}
+
+
+def _document_defaults(service_id: str) -> List[str]:
+    if any(k in service_id for k in ("property", "mutation", "encumbrance", "land", "title", "registration")):
+        return DEFAULT_DOCUMENTS["property"]
+    if any(k in service_id for k in ("company", "gst", "factory", "trade", "medical", "pf_esi", "rera", "affordable")):
+        return DEFAULT_DOCUMENTS["business"]
+    if "building" in service_id:
+        return DEFAULT_DOCUMENTS["building"]
+    if "vehicle" in service_id:
+        return DEFAULT_DOCUMENTS["vehicle"]
+    if service_id == "birth_certificate":
+        return DEFAULT_DOCUMENTS["birth"]
+    if service_id == "death_certificate":
+        return DEFAULT_DOCUMENTS["death"]
+    if any(k in service_id for k in ("scholarship", "admission", "transfer")):
+        return DEFAULT_DOCUMENTS["education"]
+    if any(k in service_id for k in ("police", "fir")):
+        return DEFAULT_DOCUMENTS["police"]
+    if service_id == "passport":
+        return DEFAULT_DOCUMENTS["passport"]
+    if service_id == "visa":
+        return DEFAULT_DOCUMENTS["visa"]
+    if any(k in service_id for k in ("pmay", "housing", "subsidy", "ration")):
+        return DEFAULT_DOCUMENTS["housing"]
+    return ["identity_document"]
+
+
 class ServiceRegistry:
-    """Shared service identity layer for Aether's GovOS execution graph."""
+    """Shared service identity and executable-process metadata for the MVP."""
 
     def __init__(self, definitions: List[tuple] = SERVICE_DEFINITIONS):
-        self._services: Dict[str, ServiceDefinition] = {
-            row[0]: ServiceDefinition(
-                id=row[0], name=row[1], department=row[2], customer_types=row[3],
-                keywords=row[4], template=row[5], outcome=row[6],
+        self._services: Dict[str, ServiceDefinition] = {}
+        for row in definitions:
+            self._services[row[0]] = ServiceDefinition(
+                id=row[0],
+                name=row[1],
+                department=row[2],
+                customer_types=row[3],
+                keywords=row[4],
+                template=row[5],
+                outcome=row[6],
+                required_documents=_document_defaults(row[0]),
             )
-            for row in definitions
-        }
 
     def get(self, service_id: str) -> Optional[ServiceDefinition]:
         return self._services.get(service_id)
@@ -72,12 +125,39 @@ class ServiceRegistry:
         return list(self._services.values())
 
     def resolve(self, objective: str, customer_type: str = "") -> Optional[ServiceDefinition]:
-        text = f"{objective} {customer_type}".lower()
+        service, _, _, _ = self.resolve_with_score(objective, customer_type)
+        return service
+
+    def resolve_with_score(
+        self, objective: str, customer_type: str = ""
+    ) -> Tuple[Optional[ServiceDefinition], int, List[str], int]:
+        text = objective.lower()
         candidates = []
         for service in self._services.values():
-            if service.customer_types and customer_type.lower() not in service.customer_types:
+            if customer_type and customer_type.lower() not in service.customer_types:
                 continue
-            score = sum(1 for keyword in service.keywords if keyword in text)
+            matches = [keyword for keyword in service.keywords if keyword in text]
+            score = len(matches)
             if score:
-                candidates.append((score, service))
-        return max(candidates, key=lambda item: item[0])[1] if candidates else None
+                candidates.append((score, service, matches))
+        candidates.sort(key=lambda item: (item[0], len(max(item[2], key=len, default=""))), reverse=True)
+        if not candidates:
+            return None, 0, [], 0
+        best = candidates[0]
+        second_score = candidates[1][0] if len(candidates) > 1 else 0
+        return best[1], best[0], best[2], best[0] - second_score
+
+    def catalog(self) -> List[Dict[str, object]]:
+        return [
+            {
+                "id": service.id,
+                "name": service.name,
+                "department": service.department,
+                "customer_types": service.customer_types,
+                "keywords": service.keywords,
+                "template": service.template or "generic",
+                "outcome": service.outcome,
+                "required_documents": service.documents(),
+            }
+            for service in self.all()
+        ]
