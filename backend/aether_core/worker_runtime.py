@@ -32,12 +32,16 @@ class AetherWorkerRuntime:
             if not self.engine.store.try_claim_case(
                 case_id,
                 self.worker_id,
-                lease_seconds=120,
+                lease_seconds=300,
             ):
                 continue
 
             try:
-                case = self.engine.execute_until_pause(case_id)
+                case = self.engine.execute_until_pause(
+                    case_id,
+                    lease_owner=self.worker_id,
+                    lease_seconds=300,
+                )
                 processed.append({
                     "case_id": case.case_id,
                     "status": case.status,
