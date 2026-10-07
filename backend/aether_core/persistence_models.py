@@ -7,7 +7,7 @@ from typing import Any, Dict, List
 from sqlalchemy import Column, DateTime, Integer, String, Text
 from sqlalchemy.types import JSON
 
-from database import Base
+from backend.database import Base
 
 
 class AetherCaseRecord(Base):
