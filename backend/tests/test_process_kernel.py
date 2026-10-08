@@ -125,3 +125,20 @@ def test_dynamic_employee_work_atom_is_materialized_for_recipe_gap():
         inputs={"documents": ["identity_document", "property_record"]},
     )
     assert "internal_work_atom_scrutinize_deed" in case.tasks or "internal_work_atom_prepare_registration_packet" in case.tasks
+
+
+def test_production_connector_rejects_unauthorised_employee_operation():
+    from aether_core.connectors import ConfiguredHTTPConnector
+
+    connector = ConfiguredHTTPConnector(
+        department="Municipal",
+        base_url="https://example.gov",
+        bearer_token="secret",
+        allowed_operations={"assign_case"},
+    )
+    try:
+        connector.submit("delete_record", {"case_id": "A-TEST"})
+    except RuntimeError as exc:
+        assert "not authorised" in str(exc)
+    else:
+        raise AssertionError("unauthorised connector operation must be rejected")
