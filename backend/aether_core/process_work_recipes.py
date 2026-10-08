@@ -123,6 +123,12 @@ PROCESS_WORK_RECIPES = {
         "detect_discrepancy", "prepare_query", "compare_response",
         "reconcile_demand_payment", "prepare_order",
     ],
+    "corporate_incorporation": [
+        "register_case", "journey_cascade", "check_completeness",
+        "validate_entity", "prepare_form", "compare_resubmission",
+        "reconcile_registry_records", "shared_compliance_profile",
+        "prepare_certificate", "prepare_decision_brief",
+    ],
     "corporate": [
         "register_case", "check_completeness", "validate_entity",
         "prepare_form", "compare_resubmission", "reconcile_registry_records",
