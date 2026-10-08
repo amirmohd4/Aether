@@ -139,6 +139,26 @@ automatically feed the signed/authoritative field result back into the case.
 Source:
 https://www.hindustantimes.com/india-news/amid-new-ec-rules-delhi-blos-struggle-to-balance-exams-sir-duty-and-13-hour-work-days-101790641341400.html
 
+## 10. Repetitive inspections and overlapping licences are a documented reform target
+
+The Standing Committee on Commerce's 201st Report recommends an automated joint
+site-inspection framework, consolidation of inspectorate functions using risk
+based inspections, a central compliance-data repository, elimination of duplicate
+document submission, and a possible "One Licence - One Renewal" model for
+restaurants, hospitality and retail.
+
+The food-safety system is also moving toward dynamic, risk-based inspection to
+reduce repetitive inspections for compliant food businesses.
+
+**Aether response:** build a shared compliance profile for the case, generate a
+joint/coordinated inspection plan when legally permitted, reuse verified
+evidence, and prepare a single renewal bundle rather than making the applicant
+re-enter the same facts.
+
+Sources:
+https://www.pib.gov.in/PressReleasePage.aspx?PRID=2296240
+https://www.pib.gov.in/PressReleasePage.aspx?PRID=2239834
+
 ## Product requirements derived from the evidence
 
 1. One case identity across all departments.
