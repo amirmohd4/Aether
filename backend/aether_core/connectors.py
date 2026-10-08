@@ -140,11 +140,13 @@ class ConfiguredHTTPConnector(GovernmentConnector):
         base_url: str,
         bearer_token: str | None = None,
         timeout_seconds: float = 10.0,
+        allowed_operations: set[str] | None = None,
     ) -> None:
         self.department = department
         self.base_url = base_url.rstrip("/")
         self.bearer_token = bearer_token
         self.timeout_seconds = timeout_seconds
+        self.allowed_operations = set(allowed_operations or ())
 
     def _headers(self, idempotency_key: str | None = None) -> Dict[str, str]:
         headers = {"Content-Type": "application/json"}
@@ -178,6 +180,10 @@ class ConfiguredHTTPConnector(GovernmentConnector):
         payload: Dict[str, Any],
         idempotency_key: str | None = None,
     ) -> Dict[str, Any]:
+        if self.allowed_operations and operation not in self.allowed_operations:
+            raise RuntimeError(
+                f"Government connector operation not authorised for {self.department}: {operation}"
+            )
         body = {
             "operation": operation,
             "payload": payload,
