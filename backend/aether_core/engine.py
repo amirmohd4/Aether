@@ -18,6 +18,7 @@ from .templates import TEMPLATES, generic_tasks, infer_template
 from .service_registry import ServiceRegistry
 from .government_process_kernel import build_administrative_tasks, infer_process_profile
 from .process_work_recipes import work_recipe
+from .jurisdiction_process_profiles import JurisdictionProcessRegistry
 from .workers import WorkerContext, WorkerRegistry
 
 
@@ -29,6 +30,7 @@ class AetherExecutionEngine:
         self.gov = SyntheticGovernmentSystem()
         self.workers = WorkerRegistry(self.gov)
         self.services = ServiceRegistry(include_extended=True)
+        self.process_profiles = JurisdictionProcessRegistry()
         self.ontology_builder = GovernmentOntologyBuilder()
         self.work_graph_builder = WorkGraphBuilder()
         self.dependencies = DependencyEngine()
@@ -385,6 +387,13 @@ class AetherExecutionEngine:
                                 if not state.definition.id.startswith("internal_")
                             ],
                         ).key if case.service_id else "generic",
+                        "jurisdiction_process_profile": self.process_profiles.readiness(
+                            case.service_id,
+                            case.jurisdiction,
+                        ) if case.service_id else {
+                            "status": "missing",
+                            "reason": "No service resolved for this case.",
+                        },
                         "work_recipe": work_recipe(
                             infer_process_profile(
                                 self.services.get(case.service_id) if case.service_id else None,
