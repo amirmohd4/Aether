@@ -5,6 +5,7 @@ from typing import Iterable, List
 
 from .domain import TaskDefinition
 from .service_registry import ServiceDefinition
+from .process_work_recipes import work_recipe, atom_task_mapping, work_atom_metadata
 
 
 @dataclass(frozen=True)
@@ -326,6 +327,36 @@ def build_administrative_tasks(
                 "Reconcile known demand/payment records and surface any balance or mismatch.",
             )
         )
+
+    # Materialize recipe steps that are not already represented by a service
+    # task or one of the deeper administration primitives above. These nodes
+    # make employee work explicit and executable through authorised connectors.
+    existing_task_ids = {task.id for task in original_tasks} | {task.id for task in tasks}
+    recipe = work_recipe(profile.key)
+    atom_mapping = atom_task_mapping()
+    atom_meta = work_atom_metadata()
+    for atom in recipe:
+        mapped_task_id = atom_mapping.get(atom)
+        if atom == "register_case" or (mapped_task_id and mapped_task_id in existing_task_ids):
+            continue
+        task_id = "internal_work_atom_" + atom
+        if task_id in existing_task_ids:
+            continue
+        meta = atom_meta.get(atom) or {
+            "label": atom.replace("_", " ").replace("/", " / ").title(),
+            "automation": "prepare_only",
+            "human_boundary": False,
+        }
+        tasks.append(
+            _task(
+                task_id,
+                meta["label"],
+                "work_atom",
+                ["internal_data_normalization"],
+                f"Execute or prepare the {atom} employee work atom according to its authority mode.",
+            )
+        )
+        existing_task_ids.add(task_id)
 
     # This packet is intentionally available before completion; it prepares
     # the structure a statutory decision-maker will need, without making the
