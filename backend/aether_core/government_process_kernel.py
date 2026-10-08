@@ -281,6 +281,20 @@ def build_administrative_tasks(
             ["internal_case_triage", "internal_assignment"],
             "Identify ageing work, dependency waits and cases needing escalation.",
         ),
+        _task(
+            "internal_interim_response",
+            "Automatic interim progress / deficiency response",
+            "interim_response",
+            ["internal_followup_plan", "internal_sla_snapshot"],
+            "Explain what is waiting or missing without requiring the applicant to restart the case.",
+        ),
+        _task(
+            "internal_recovery_plan",
+            "Automatic exception recovery and replan",
+            "recovery_plan",
+            ["internal_followup_plan", "internal_sla_snapshot"],
+            "Preserve case state and verified evidence while identifying retry and affected branches.",
+        ),
     ]
 
     if profile.interdepartmental or len({task.department for task in original_tasks if task.department != "Aether"}) > 1:
