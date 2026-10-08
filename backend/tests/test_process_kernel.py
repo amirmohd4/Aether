@@ -178,3 +178,19 @@ def test_regulated_case_prepares_shared_compliance_and_joint_inspection():
     assert case.tasks["internal_joint_inspection"].status == TaskStatus.COMPLETED
     assert case.tasks["internal_interim_response"].status == TaskStatus.COMPLETED
     assert case.tasks["internal_recovery_plan"].status == TaskStatus.COMPLETED
+
+
+def test_property_registration_prepares_downstream_journey():
+    engine = AetherExecutionEngine()
+    case = engine.create_case(
+        objective="I want to register a property",
+        customer_type="citizen",
+        jurisdiction={"country": "India", "state": "Jammu and Kashmir"},
+        inputs={"documents": ["identity_document", "property_record"]},
+    )
+    case = engine.execute_until_pause(case.case_id)
+    result = case.tasks["internal_journey_cascade"].result or {}
+    result = result.get("result") if isinstance(result, dict) and "result" in result else result
+    downstream = result.get("downstream_journey") or []
+    ids = {item["service_id"] for item in downstream}
+    assert "mutation" in ids
