@@ -207,6 +207,13 @@ def build_administrative_tasks(
             "Convert missing or inconsistent evidence into precise applicant-fixable deficiencies.",
         ),
         _task(
+            "internal_query_response",
+            "Automatic government-query response packet",
+            "query_response",
+            ["internal_case_notes", "internal_deficiency"],
+            "Collect the current evidence relevant to a government query and prepare a response packet for authorised review.",
+        ),
+        _task(
             "internal_correspondence",
             "Automatic correspondence preparation",
             "correspondence",
