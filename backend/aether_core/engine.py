@@ -444,6 +444,11 @@ class AetherExecutionEngine:
                             else {}
                         ),
                         "case_id": case.case_id,
+                        "work_atom": (
+                            definition.id.removeprefix("internal_work_atom_")
+                            if definition.operation == "work_atom"
+                            else None
+                        ),
                         "idempotency_key": task.idempotency_key,
                     },
                 ))
