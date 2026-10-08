@@ -91,6 +91,12 @@ type OperatorBrief = {
       ask_user_to_reenter_data: boolean;
       compare_only_changed_inputs: boolean;
     };
+    bottleneck?: {
+      top_bucket: string;
+      counts: Record<string, number>;
+      tasks: Array<{ task_id: string; owner: string; reason: string }>;
+      user_message: string;
+    };
   };
   process?: {
     profile: string;
@@ -1062,6 +1068,18 @@ export const AetherCommandCenter: React.FC = () => {
                             </p>
                           </div>
                         </div>
+                        {caseData.operator.friction.bottleneck && (
+                          <div className="mt-3 rounded-lg border border-white/5 bg-black/10 px-2.5 py-2">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <p className="text-[10px] font-medium text-slate-200">Current bottleneck</p>
+                              <span className="rounded-full bg-white/5 px-2 py-1 text-[8px] uppercase tracking-wide text-slate-400">
+                                {caseData.operator.friction.bottleneck.top_bucket.replaceAll('_', ' ')}
+                              </span>
+                            </div>
+                            <p className="mt-1 text-[9px] text-slate-400">{caseData.operator.friction.bottleneck.user_message}</p>
+                          </div>
+                        )}
+
                         {caseData.operator.friction.friction_sources.slice(0, 3).map((signal, index) => (
                           <div key={signal.type + index} className="mt-2 rounded-lg border border-white/5 bg-black/10 px-2.5 py-2">
                             <p className="text-[10px] font-medium text-slate-200">{signal.type.replaceAll('_', ' ')}</p>
