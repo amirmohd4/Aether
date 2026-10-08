@@ -37,7 +37,7 @@ class RequirementEngine:
         registry: ServiceRegistry | None = None,
         rule_registry: RuleRegistry | None = None,
     ) -> None:
-        self.registry = registry or ServiceRegistry()
+        self.registry = registry or ServiceRegistry(include_extended=True)
         self.rule_registry = rule_registry or RuleRegistry()
 
     def discover(
