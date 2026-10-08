@@ -18,6 +18,7 @@ from .analytics import summarize_cases
 from .employee_automation import EmployeeAutomationService
 from .process_work_recipes import work_recipe, work_atom_metadata
 from .government_process_kernel import infer_process_profile
+from .jurisdiction_process_profiles import JurisdictionProcessRegistry
 from backend.database import SessionLocal
 from sqlalchemy import text
 
@@ -30,6 +31,7 @@ document_store = DocumentStore()
 notification_service = NotificationService(SessionLocal)
 payment_service = PaymentService(SessionLocal)
 employee_automation = EmployeeAutomationService()
+jurisdiction_process_registry = JurisdictionProcessRegistry()
 
 
 def serialize(case, include_tasks: bool = True):
@@ -75,6 +77,22 @@ def serialize(case, include_tasks: bool = True):
             for task_id, state in case.tasks.items()
         }
     return response
+
+
+@router.get("/process/profile-readiness/{service_id}")
+def process_profile_readiness(
+    service_id: str,
+    country: str = "India",
+    state: str | None = None,
+    district: str | None = None,
+    principal: Principal = Depends(require_scope("cases:read")),
+):
+    if engine.services.get(service_id) is None:
+        raise HTTPException(status_code=404, detail="Service not found")
+    return jurisdiction_process_registry.readiness(
+        service_id,
+        {"country": country, "state": state or "", "district": district or ""},
+    )
 
 
 @router.get("/process/catalog")
