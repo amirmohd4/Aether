@@ -375,6 +375,44 @@ class AetherExecutionEngine:
                         "case_exceptions": list(case.exceptions),
                         "service_id": case.service_id,
                         "service_outcome": case.service_outcome,
+                        "service_department": case.service_department,
+                        "task_states": {
+                            task_id: {
+                                "status": state.status.value,
+                                "department": state.definition.department,
+                                "worker": state.definition.worker,
+                                "authority_required": state.definition.authority_required,
+                                "physical_action": state.definition.physical_action,
+                                "attempts": state.attempts,
+                                "started_at": state.started_at,
+                                "completed_at": state.completed_at,
+                            }
+                            for task_id, state in case.tasks.items()
+                        },
+                        "original_tasks": [
+                            {
+                                "id": state.definition.id,
+                                "name": state.definition.name,
+                                "department": state.definition.department,
+                                "worker": state.definition.worker,
+                                "operation": state.definition.operation or self._operation_for(state.definition.id),
+                                "dependencies": list(state.definition.dependencies),
+                                "authority_required": state.definition.authority_required,
+                                "physical_action": state.definition.physical_action,
+                            }
+                            for state in case.tasks.values()
+                            if state.definition.department.strip().lower() != "aether"
+                        ],
+                        "physical_tasks": [
+                            {
+                                "id": state.definition.id,
+                                "name": state.definition.name,
+                                "department": state.definition.department,
+                                "inspection_checklist": case.inputs.get("inspection_checklist", []),
+                            }
+                            for state in case.tasks.values()
+                            if state.definition.physical_action
+                        ],
                         "jurisdiction": case.jurisdiction,
                         "required_documents": [
                             document
