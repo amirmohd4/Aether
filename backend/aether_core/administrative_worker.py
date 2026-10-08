@@ -6,7 +6,7 @@ from typing import Any, Dict, List
 
 from .notifications import NotificationService
 from .payments import PaymentService
-from .process_work_recipes import work_recipe
+from .process_work_recipes import work_recipe, work_atom_metadata
 from backend.database import SessionLocal
 
 
