@@ -45,7 +45,7 @@ def test_deep_employee_work_executes_before_statutory_boundary():
     )
     case = engine.execute_until_pause(case.case_id)
 
-    assert case.tasks["internal_assignment"].status == TaskStatus.COMPLETED
+    assert case.tasks["internal_assignment"].status == TaskStatus.COMPLETED, case.tasks["internal_assignment"].error
     assert case.tasks["internal_form_prep"].status == TaskStatus.COMPLETED
     assert case.tasks["internal_case_notes"].status == TaskStatus.COMPLETED
     assert case.tasks["internal_deficiency"].status == TaskStatus.COMPLETED
