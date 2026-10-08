@@ -166,6 +166,17 @@ class AdministrativeWorker:
         for task_id, result in results.items():
             if not isinstance(result, dict):
                 continue
+            inspection = result.get("document_inspection") or {}
+            for check in inspection.get("checks", []):
+                if not isinstance(check, dict):
+                    continue
+                for key, value in (check.get("extracted") or {}).items():
+                    if value is not None and key not in normalized:
+                        normalized[key] = value
+                        provenance[key] = {
+                            "source": f"document:{check.get('document_type', 'unknown')}",
+                            "task": task_id,
+                        }
             for key in (
                 "registration_id",
                 "certificate_reference",
