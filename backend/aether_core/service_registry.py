@@ -116,7 +116,8 @@ SERVICE_DEFINITIONS = [
     ("food_business_license", "Food Business License/Registration", "Food Safety", ["citizen", "business", "developer"], ["restaurant", "cafe", "food business", "food license", "fssai"], "restaurant", "food_business_license"),
 ]
 
-SERVICE_DEFINITIONS.extend(INDIA_SERVICE_FAMILY_DEFINITIONS)
+MVP_SERVICE_DEFINITIONS = list(SERVICE_DEFINITIONS)
+EXTENDED_SERVICE_DEFINITIONS = MVP_SERVICE_DEFINITIONS + INDIA_SERVICE_FAMILY_DEFINITIONS
 
 DEFAULT_DOCUMENTS = {
     "property": ["identity_document", "property_record"],
@@ -196,7 +197,9 @@ def _document_defaults(service_id: str) -> List[str]:
 class ServiceRegistry:
     """Shared service identity and executable-process metadata for the MVP."""
 
-    def __init__(self, definitions: List[tuple] = SERVICE_DEFINITIONS):
+    def __init__(self, definitions: List[tuple] | None = None, include_extended: bool = False):
+        if definitions is None:
+            definitions = EXTENDED_SERVICE_DEFINITIONS if include_extended else MVP_SERVICE_DEFINITIONS
         external_path = os.getenv("AETHER_SERVICE_CATALOG_PATH", "").strip()
         if external_path:
             definitions = merge_records(definitions, load_records(external_path))
@@ -248,7 +251,7 @@ class ServiceRegistry:
                 if not normalized:
                     continue
                 if normalized in text:
-                    weight = 6 if len(normalized.split()) >= 2 else 4
+                    weight = 20 if len(normalized.split()) >= 2 else 4
                     score = max(score, weight)
                     matches.append(keyword)
                     continue
