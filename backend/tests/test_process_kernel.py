@@ -159,3 +159,22 @@ def test_case_exposes_recovery_and_interim_response_nodes():
     operator = __import__("aether_core.employee_automation", fromlist=["EmployeeAutomationService"]).EmployeeAutomationService().brief(case)
     assert "friction" in operator
     assert operator["friction"]["recovery_plan"]["ask_user_to_reenter_data"] is False
+
+
+def test_regulated_case_prepares_shared_compliance_and_joint_inspection():
+    engine = AetherExecutionEngine()
+    case = engine.create_case(
+        objective="I want to open a restaurant",
+        customer_type="business",
+        jurisdiction={"country": "India", "state": "Jammu and Kashmir"},
+        inputs={
+            "documents": ["identity_document", "lease_or_ownership", "floor_plan"],
+            "inspection_checklist": ["premises", "fire safety", "sanitation"],
+        },
+    )
+    case = engine.execute_until_pause(case.case_id)
+
+    assert case.tasks["internal_shared_compliance_profile"].status == TaskStatus.COMPLETED
+    assert case.tasks["internal_joint_inspection"].status == TaskStatus.COMPLETED
+    assert case.tasks["internal_interim_response"].status == TaskStatus.COMPLETED
+    assert case.tasks["internal_recovery_plan"].status == TaskStatus.COMPLETED
