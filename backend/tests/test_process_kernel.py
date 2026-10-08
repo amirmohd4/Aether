@@ -52,3 +52,24 @@ def test_deep_employee_work_executes_before_statutory_boundary():
     assert case.tasks["internal_decision_brief"].status == TaskStatus.COMPLETED
     assert case.tasks["internal_inspection_packet"].status == TaskStatus.COMPLETED
     assert case.tasks["internal_post_decision"].status != TaskStatus.COMPLETED
+
+
+def test_india_service_family_catalog_expanded():
+    engine = AetherExecutionEngine()
+    catalog = engine.services.catalog()
+
+    assert len(catalog) >= 100
+    ids = {item["id"] for item in catalog}
+    assert {"gst_return_filing", "property_tax_payment", "fire_noc", "old_age_pension", "rtI_application"}.issubset(ids)
+
+    assert engine.services.resolve("I need a property tax receipt", "citizen").id == "property_tax_payment"
+    assert engine.services.resolve("I need a fire NOC for my building", "business").id == "fire_noc"
+
+
+def test_process_kernel_falls_back_by_department_for_new_family():
+    engine = AetherExecutionEngine()
+    service = engine.services.get("property_tax_payment")
+    profile = infer_process_profile(service)
+
+    assert profile.key == "municipal_license"
+    assert profile.payment_sensitive is True
