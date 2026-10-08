@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
 from .india_service_catalog import INDIA_SERVICE_FAMILY_DEFINITIONS
+from .service_catalog_loader import load_records, merge_records
+import os
 
 
 @dataclass(frozen=True)
@@ -195,6 +197,9 @@ class ServiceRegistry:
     """Shared service identity and executable-process metadata for the MVP."""
 
     def __init__(self, definitions: List[tuple] = SERVICE_DEFINITIONS):
+        external_path = os.getenv("AETHER_SERVICE_CATALOG_PATH", "").strip()
+        if external_path:
+            definitions = merge_records(definitions, load_records(external_path))
         self._services: Dict[str, ServiceDefinition] = {}
         for row in definitions:
             self._services[row[0]] = ServiceDefinition(
