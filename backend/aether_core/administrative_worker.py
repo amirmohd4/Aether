@@ -211,8 +211,20 @@ class AdministrativeWorker:
         ]
         if current_owner:
             reason.append("existing case owner retained")
+        external = self._execute_external(
+            str(service_department),
+            "assign_case",
+            {
+                "case_id": context.case_id,
+                "recommended_owner": current_owner,
+                "priority": priority,
+                "jurisdiction": payload.get("jurisdiction") or {},
+            },
+            f"{context.case_id}:admin:assign",
+        )
         return AdministrativeWorker._result(context, "assignment", {
-            "assignment_status": "recommended",
+            "assignment_status": external.get("status") if external.get("status") != "not_submitted" else "recommended",
+            "connector_response": external,
             "recommended_department": service_department,
             "recommended_owner": current_owner,
             "jurisdiction": payload.get("jurisdiction") or {},
