@@ -28,6 +28,7 @@ class AdministrativeWorker:
             "form_prep": self._form_prep,
             "case_notes": self._case_notes,
             "deficiency": self._deficiency,
+            "query_response": self._query_response,
             "correspondence": self._correspondence,
             "followup_plan": self._followup,
             "sla_snapshot": self._sla_snapshot,
@@ -315,6 +316,47 @@ class AdministrativeWorker:
             "deficiency_count": len(dedup),
             "deficiencies": list(dedup.values()),
             "ready_for_complete_scrutiny": not dedup,
+        })
+
+    @staticmethod
+    def _query_response(context) -> Dict[str, Any]:
+        payload = context.payload
+        results = payload.get("task_results") or {}
+        query_sources = []
+        evidence = []
+        for task_id, result in sorted(results.items()):
+            if not isinstance(result, dict):
+                continue
+            if result.get("status") == "query" or result.get("query"):
+                query_sources.append({
+                    "task_id": task_id,
+                    "query": result.get("query") or result.get("reason") or "Government query requires response.",
+                    "reference": result.get("reference") or result.get("request_id"),
+                })
+            evidence.append({
+                "task_id": task_id,
+                "reference": (
+                    result.get("reference")
+                    or result.get("registration_id")
+                    or result.get("certificate_reference")
+                    or result.get("record_reference")
+                ),
+                "source": result.get("source"),
+            })
+        return AdministrativeWorker._result(context, "query_response", {
+            "query_present": bool(query_sources),
+            "queries": query_sources,
+            "response_packet": (
+                {
+                    "case_id": context.case_id,
+                    "facts_supported_by_evidence": evidence,
+                    "response_draft": "Prepared from current case evidence; authorised review required before submission.",
+                    "submission_status": "not_submitted",
+                }
+                if query_sources
+                else None
+            ),
+            "authority_required": bool(query_sources),
         })
 
     def _correspondence(self, context) -> Dict[str, Any]:
