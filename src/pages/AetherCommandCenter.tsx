@@ -58,6 +58,28 @@ type TenantOption = {
   jurisdiction?: Record<string, string>;
 };
 
+type OperatorBrief = {
+  summary: {
+    automated_completed: number;
+    automation_eligible_total: number;
+    human_or_physical_total: number;
+    exceptions: number;
+    blocked: number;
+    waiting: number;
+    employee_attention_required: number;
+  };
+  time: {
+    estimated_admin_minutes_if_manual: number;
+    estimated_aether_admin_minutes: number;
+    estimated_minutes_saved: number;
+    note: string;
+  };
+  attention_items: Array<{ priority: string; type: string; task_id?: string | null; title: string; action: string }>;
+  next_best_actions: Array<{ priority: number; type: string; task_id?: string | null; owner: string; action: string }>;
+  customer_actions: Array<{ type: string; document: string; action: string }>;
+  revenue_signals: Array<{ type: string; status: string; action: string }>;
+};
+
 type CaseResponse = {
   summary: {
     case_id: string;
@@ -90,6 +112,7 @@ type CaseResponse = {
     action: string;
     actor?: string;
   }>;
+  operator?: OperatorBrief;
   documents?: Array<{
     document_id: string;
     document_type: string;
@@ -953,6 +976,78 @@ export const AetherCommandCenter: React.FC = () => {
                     <div>Human work remaining: <span className="text-slate-200">{caseData.summary.human_work_remaining} min (demo estimate)</span></div>
                   </div>
                 </div>
+
+                {caseData.operator && (
+                  <div className="rounded-2xl border border-emerald-300/20 bg-emerald-300/5 p-5">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <ShieldCheck className="h-5 w-5 text-emerald-300" />
+                          <h3 className="font-semibold">Employee work automation</h3>
+                        </div>
+                        <p className="mt-1 text-xs text-slate-400">
+                          Aether handles routine case work automatically and surfaces only the work that still needs a person.
+                        </p>
+                      </div>
+                      <span className="rounded-full border border-emerald-300/20 bg-emerald-300/10 px-2.5 py-1 text-[10px] font-semibold text-emerald-200">
+                        {caseData.operator.time.estimated_minutes_saved} min estimated saved
+                      </span>
+                    </div>
+
+                    <div className="mt-4 grid gap-2 sm:grid-cols-4">
+                      <div className="rounded-xl bg-black/10 p-3">
+                        <p className="text-[10px] uppercase tracking-wide text-slate-500">Automated</p>
+                        <p className="mt-1 text-lg font-bold text-emerald-200">{caseData.operator.summary.automated_completed}</p>
+                      </div>
+                      <div className="rounded-xl bg-black/10 p-3">
+                        <p className="text-[10px] uppercase tracking-wide text-slate-500">Human / physical</p>
+                        <p className="mt-1 text-lg font-bold text-violet-200">{caseData.operator.summary.human_or_physical_total}</p>
+                      </div>
+                      <div className="rounded-xl bg-black/10 p-3">
+                        <p className="text-[10px] uppercase tracking-wide text-slate-500">Exceptions</p>
+                        <p className="mt-1 text-lg font-bold text-amber-200">{caseData.operator.summary.exceptions}</p>
+                      </div>
+                      <div className="rounded-xl bg-black/10 p-3">
+                        <p className="text-[10px] uppercase tracking-wide text-slate-500">Employee attention</p>
+                        <p className="mt-1 text-lg font-bold text-cyan-200">{caseData.operator.summary.employee_attention_required}</p>
+                      </div>
+                    </div>
+
+                    {caseData.operator.next_best_actions.length > 0 && (
+                      <div className="mt-5">
+                        <p className="text-[11px] font-semibold text-slate-300">Next best actions</p>
+                        <div className="mt-2 space-y-2">
+                          {caseData.operator.next_best_actions.slice(0, 5).map((action, index) => (
+                            <div key={(action.task_id || 'action') + index} className="rounded-xl border border-white/5 bg-black/10 p-3">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <span className="text-xs font-medium text-slate-200">{action.action}</span>
+                                <span className="text-[9px] uppercase tracking-wide text-slate-500">{action.owner}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {caseData.operator.customer_actions.length > 0 && (
+                      <div className="mt-5 rounded-xl border border-amber-300/15 bg-amber-300/5 p-3">
+                        <p className="text-[11px] font-semibold text-amber-100">Customer action required</p>
+                        <p className="mt-1 text-[10px] text-amber-100/70">
+                          {caseData.operator.customer_actions.length} document action(s) remain.
+                        </p>
+                      </div>
+                    )}
+
+                    {caseData.operator.revenue_signals.length > 0 && (
+                      <div className="mt-4 rounded-xl border border-cyan-300/15 bg-cyan-300/5 p-3">
+                        <p className="text-[11px] font-semibold text-cyan-100">Government value signal</p>
+                        {caseData.operator.revenue_signals.map((signal, index) => (
+                          <p key={signal.type + index} className="mt-1 text-[10px] text-cyan-100/80">{signal.action}</p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {caseData.summary.status === 'needs_documents' && missingDocuments.length > 0 && (
                   <div className="rounded-2xl border border-amber-300/20 bg-amber-300/5 p-5">
