@@ -75,7 +75,8 @@ PROCESS_WORK_RECIPES = {
     "building_permit": [
         "register_case", "check_completeness", "plan_scrutiny",
         "lookup_property", "zoning_scrutiny", "check_dues",
-        "coordinate_nocs", "schedule_inspection", "prepare_committee_agenda",
+        "coordinate_nocs", "schedule_inspection", "joint_inspection_plan",
+        "shared_compliance_profile", "prepare_committee_agenda",
         "prepare_decision_brief",
     ],
     "fire_safety": [
@@ -86,6 +87,7 @@ PROCESS_WORK_RECIPES = {
     "factory_license": [
         "register_case", "check_completeness", "lookup_property",
         "labour_compliance", "coordinate_nocs", "schedule_inspection",
+        "joint_inspection_plan", "shared_compliance_profile",
         "prepare_recommendation", "prepare_decision_brief",
     ],
     "health_regulatory": [
@@ -95,7 +97,8 @@ PROCESS_WORK_RECIPES = {
     ],
     "food_license": [
         "register_case", "classify_business", "check_completeness",
-        "validate_premises", "schedule_inspection", "prepare_recommendation",
+        "validate_premises", "schedule_inspection", "joint_inspection_plan",
+        "shared_compliance_profile", "prepare_recommendation",
         "calculate_fee", "prepare_decision_brief",
     ],
     "environment": [
