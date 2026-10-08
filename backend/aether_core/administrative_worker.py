@@ -93,6 +93,15 @@ class AdministrativeWorker:
             },
         }
 
+    @staticmethod
+    def _journey_cascade(context) -> Dict[str, Any]:
+        service_id = str((context.payload or {}).get("service_id") or "")
+        return AdministrativeWorker._result(context, "journey_cascade", {
+            "source_service_id": service_id,
+            "downstream_journey": cascade_for(service_id),
+            "mode": "prepare",
+        })
+
     def _work_atom(self, context) -> Dict[str, Any]:
         payload = context.payload
         atom = str(payload.get("work_atom") or "").strip()
