@@ -33,7 +33,7 @@ def test_human_approval_resumes_generic_service_to_outcome():
     case = engine.execute_until_pause(case.case_id)
     assert case.status == "waiting_for_human"
     case = engine.complete_human_task(case.case_id, "final_approval", "approved", "demo authority")
-    assert case.status == "completed", {"exceptions": case.exceptions, "tasks": {k: v.status.value for k, v in case.tasks.items() if v.status.value != "completed"}}
+    assert case.status == "completed"
     assert case.outcome["service_outcome"] == "company_registration"
 
 
