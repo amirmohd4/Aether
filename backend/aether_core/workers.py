@@ -207,7 +207,7 @@ class WorkerRegistry:
             "DecisionWorker": DecisionWorker(government, self._connectors),
             "OutcomeWorker": OutcomeWorker(government, self._connectors),
             "HumanAuthorityWorker": HumanAuthorityWorker(government, self._connectors),
-            "AdministrativeWorker": AdministrativeWorker(),
+            "AdministrativeWorker": AdministrativeWorker(self._connectors),
         }
         self._government = government
 
