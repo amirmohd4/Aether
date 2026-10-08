@@ -32,7 +32,7 @@ class ObjectiveUnderstandingEngine:
     """
 
     def __init__(self, registry: ServiceRegistry | None = None) -> None:
-        self.registry = registry or ServiceRegistry()
+        self.registry = registry or ServiceRegistry(include_extended=True)
 
     def understand(
         self,
