@@ -124,6 +124,7 @@ def analyze_case_friction(case) -> Dict[str, Any]:
         "mode": "automatic_recovery",
         "preserve_case_state": True,
         "reenter_user_data": False,
+        "ask_user_to_reenter_data": False,
         "retry_failed_connectors": connector_errors > 0,
         "compare_only_changed_evidence": attempts > 0,
         "escalate_sla_risk": bool(case.exceptions),
