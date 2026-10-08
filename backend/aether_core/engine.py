@@ -28,7 +28,7 @@ class AetherExecutionEngine:
         self.cases: Dict[str, Case] = {}
         self.gov = SyntheticGovernmentSystem()
         self.workers = WorkerRegistry(self.gov)
-        self.services = ServiceRegistry()
+        self.services = ServiceRegistry(include_extended=True)
         self.ontology_builder = GovernmentOntologyBuilder()
         self.work_graph_builder = WorkGraphBuilder()
         self.dependencies = DependencyEngine()
