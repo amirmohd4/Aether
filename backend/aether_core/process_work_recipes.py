@@ -1,0 +1,142 @@
+"""Reusable employee-work recipes derived from Indian government process archetypes.
+
+Recipes describe recurring administrative actions. Jurisdiction-specific legal
+rules, authority matrices, forms and timelines remain separate.
+"""
+
+PROCESS_WORK_RECIPES = {
+    "certificate": [
+        "register_case", "check_completeness", "extract_document_facts",
+        "lookup_record", "reconcile_records", "prepare_deficiency",
+        "prepare_certificate", "prepare_decision_brief",
+    ],
+    "land_mutation": [
+        "register_case", "check_completeness", "lookup_land_record",
+        "prepare_notice", "request_field_report", "track_objections",
+        "reconcile_records", "prepare_decision_brief", "start_appeal_watch",
+    ],
+    "property_record": [
+        "register_case", "check_completeness", "lookup_property_record",
+        "reconcile_records", "prepare_certificate", "prepare_decision_brief",
+    ],
+    "registration": [
+        "register_case", "scrutinize_deed", "verify_identity",
+        "calculate_duty", "lookup_encumbrance", "reconcile_records",
+        "schedule_appointment", "prepare_registration_packet",
+    ],
+    "municipal_license": [
+        "register_case", "check_completeness", "lookup_property",
+        "zoning_scrutiny", "check_dues", "coordinate_nocs",
+        "schedule_inspection", "prepare_demand", "prepare_decision_brief",
+    ],
+    "building_permit": [
+        "register_case", "check_completeness", "plan_scrutiny",
+        "lookup_property", "zoning_scrutiny", "check_dues",
+        "coordinate_nocs", "schedule_inspection", "prepare_committee_agenda",
+        "prepare_decision_brief",
+    ],
+    "fire_safety": [
+        "register_case", "check_completeness", "plan_scrutiny",
+        "schedule_inspection", "ingest_inspection_report",
+        "prepare_recommendation", "prepare_noc",
+    ],
+    "factory_license": [
+        "register_case", "check_completeness", "lookup_property",
+        "labour_compliance", "coordinate_nocs", "schedule_inspection",
+        "prepare_recommendation", "prepare_decision_brief",
+    ],
+    "health_regulatory": [
+        "register_case", "check_completeness", "verify_professional",
+        "lookup_record", "coordinate_nocs", "schedule_inspection",
+        "prepare_recommendation", "prepare_decision_brief",
+    ],
+    "food_license": [
+        "register_case", "classify_business", "check_completeness",
+        "validate_premises", "schedule_inspection", "prepare_recommendation",
+        "calculate_fee", "prepare_decision_brief",
+    ],
+    "environment": [
+        "register_case", "check_completeness", "classify_project",
+        "scrutinize_technical_documents", "lookup_prior_consents",
+        "coordinate_nocs", "schedule_inspection", "prepare_conditions",
+        "prepare_decision_brief", "start_compliance_watch",
+    ],
+    "transport": [
+        "register_case", "check_completeness", "verify_identity",
+        "lookup_vehicle_or_driver_record", "calculate_fee",
+        "schedule_appointment", "prepare_licence_packet",
+    ],
+    "vehicle_registration": [
+        "register_case", "check_completeness", "verify_identity",
+        "lookup_vehicle", "verify_insurance_and_finance",
+        "calculate_fee", "schedule_inspection", "prepare_registration_packet",
+    ],
+    "tax": [
+        "register_case", "validate_return", "lookup_tax_record",
+        "detect_discrepancy", "prepare_query", "compare_response",
+        "reconcile_demand_payment", "prepare_order",
+    ],
+    "corporate": [
+        "register_case", "check_completeness", "validate_entity",
+        "prepare_form", "compare_resubmission", "reconcile_registry_records",
+        "prepare_certificate",
+    ],
+    "benefit": [
+        "register_case", "check_completeness", "verify_identity",
+        "check_eligibility", "duplicate_check", "verify_beneficiary",
+        "prepare_sanction_packet", "reconcile_payment", "renewal_watch",
+    ],
+    "police": [
+        "register_case", "verify_identity", "lookup_case_record",
+        "request_field_verification", "prepare_report",
+        "prepare_response", "start_followup_watch",
+    ],
+    "passport": [
+        "register_case", "check_completeness", "verify_identity",
+        "schedule_appointment", "coordinate_police_verification",
+        "review_adverse_report", "prepare_dispatch",
+    ],
+    "adjudication": [
+        "register_case", "check_limitation", "assemble_record",
+        "issue_notice", "prepare_hearing_packet", "prepare_brief",
+        "track_order", "start_appeal_watch",
+    ],
+    "grievance": [
+        "register_case", "classify_grievance", "route_case",
+        "assemble_evidence", "prepare_response", "sla_escalation",
+        "close_case",
+    ],
+    "information_access": [
+        "register_case", "jurisdiction_check", "route_to_cpio",
+        "assemble_records", "prepare_response", "appeal_watch",
+    ],
+    "procurement": [
+        "register_case", "prepare_tender_file", "scrutinize_bids",
+        "consolidate_clarifications", "prepare_comparative_statement",
+        "prepare_committee_agenda", "track_award", "contract_monitoring",
+    ],
+    "utility_connection": [
+        "register_case", "check_completeness", "verify_property",
+        "calculate_demand", "schedule_field_visit",
+        "prepare_connection_order", "reconcile_payment",
+    ],
+    "rural_development": [
+        "register_case", "check_completeness", "verify_household_or_land",
+        "prepare_field_verification_packet", "check_eligibility",
+        "prepare_sanction_packet", "reconcile_payment",
+    ],
+    "employment": [
+        "register_case", "check_completeness", "verify_eligibility",
+        "route_to_training_or_employer", "track_response", "prepare_outcome",
+    ],
+}
+
+def work_recipe(process_key: str) -> list[str]:
+    return list(PROCESS_WORK_RECIPES.get(process_key, (
+        "register_case",
+        "check_completeness",
+        "extract_document_facts",
+        "lookup_record",
+        "reconcile_records",
+        "prepare_decision_brief",
+    )))
