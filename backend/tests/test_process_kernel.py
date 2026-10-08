@@ -73,3 +73,18 @@ def test_process_kernel_falls_back_by_department_for_new_family():
 
     assert profile.key == "municipal_license"
     assert profile.payment_sensitive is True
+
+
+def test_external_service_catalog_loader_json(tmp_path):
+    from aether_core.service_catalog_loader import load_records
+
+    path = tmp_path / "services.json"
+    path.write_text(
+        '{"services":[{"id":"example_service","name":"Example Service","department":"Revenue","customer_types":["citizen"],"keywords":["example"]}]}',
+        encoding="utf-8",
+    )
+    rows = load_records(path)
+
+    assert rows[0][0] == "example_service"
+    assert rows[0][1] == "Example Service"
+    assert rows[0][3] == ["citizen"]
