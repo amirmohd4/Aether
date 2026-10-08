@@ -53,6 +53,11 @@ class ConnectorRegistry:
                     base_url=base_url,
                     bearer_token=str(config["bearer_token"]) if config.get("bearer_token") else None,
                     timeout_seconds=float(config.get("timeout_seconds", 10)),
+                    allowed_operations={
+                        str(op)
+                        for op in (config.get("allowed_operations") or [])
+                        if str(op).strip()
+                    },
                 ),
             )
 
@@ -84,6 +89,9 @@ class ConnectorRegistry:
                 "department": department,
                 "connector": connector.__class__.__name__,
                 "mode": "synthetic" if isinstance(connector, SyntheticConnector) else "production",
+                "allowed_operations": sorted(
+                    getattr(connector, "allowed_operations", [])
+                ),
             }
             for department, connector in sorted(self._connectors.items())
         ]
