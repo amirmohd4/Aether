@@ -15,6 +15,7 @@ from .document_store import DocumentStore, document_summary
 from .notifications import NotificationService
 from .payments import PaymentService
 from .analytics import summarize_cases
+from .employee_automation import EmployeeAutomationService
 from backend.database import SessionLocal
 from sqlalchemy import text
 
@@ -26,6 +27,7 @@ verification_engine = VerificationEngine()
 document_store = DocumentStore()
 notification_service = NotificationService(SessionLocal)
 payment_service = PaymentService(SessionLocal)
+employee_automation = EmployeeAutomationService()
 
 
 def serialize(case, include_tasks: bool = True):
@@ -50,6 +52,7 @@ def serialize(case, include_tasks: bool = True):
         }).as_dict(),
         "queue": engine.queue.for_case(case.case_id),
         "execution_events": case.execution_events[-50:],
+        "operator": employee_automation.brief(case),
     }
     if include_tasks:
         response["tasks"] = {
@@ -653,6 +656,41 @@ def current_principal(principal: Principal = Depends(require_principal)):
         "jurisdiction": principal.jurisdiction,
         "auth_mode": principal.auth_mode,
     }
+
+
+@router.get("/cases/{case_id}/operator-brief")
+def case_operator_brief(case_id: str, principal: Principal = Depends(require_scope("cases:read"))):
+    """Return employee-work automation intelligence for one case."""
+    try:
+        case = engine.get_case(case_id)
+        _authorize_case(case, principal)
+        return employee_automation.brief(case)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Case not found")
+
+
+@router.get("/operator/queue")
+def operator_queue(
+    limit: int = 25,
+    principal: Principal = Depends(require_scope("cases:read")),
+):
+    """Return highest-attention cases for an authorised operator."""
+    if principal.role.lower() not in {"officer", "department_admin", "admin"}:
+        raise HTTPException(status_code=403, detail="Operator queue requires an operator role")
+    cases = _list_visible_cases(principal, limit=max(1, min(limit, 100)))
+    briefs = []
+    for item in cases:
+        try:
+            case = engine.get_case(item["case_id"])
+            briefs.append(employee_automation.brief(case))
+        except KeyError:
+            continue
+    briefs.sort(key=lambda brief: (
+        -len(brief.get("attention_items", [])),
+        -brief.get("summary", {}).get("exceptions", 0),
+        brief.get("case_id", ""),
+    ))
+    return {"cases": briefs[:max(1, min(limit, 100))]}
 
 
 @router.post("/cases")
