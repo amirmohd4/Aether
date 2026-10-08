@@ -142,3 +142,20 @@ def test_production_connector_rejects_unauthorised_employee_operation():
         assert "not authorised" in str(exc)
     else:
         raise AssertionError("unauthorised connector operation must be rejected")
+
+
+def test_case_exposes_recovery_and_interim_response_nodes():
+    engine = AetherExecutionEngine()
+    case = engine.create_case(
+        objective="I want to register a company",
+        customer_type="business",
+        jurisdiction={"country": "India", "state": "Jammu and Kashmir"},
+        inputs={"documents": ["identity_document", "business_registration"]},
+    )
+    case = engine.execute_until_pause(case.case_id)
+
+    assert case.tasks["internal_interim_response"].status == TaskStatus.COMPLETED
+    assert case.tasks["internal_recovery_plan"].status == TaskStatus.COMPLETED
+    operator = __import__("aether_core.employee_automation", fromlist=["EmployeeAutomationService"]).EmployeeAutomationService().brief(case)
+    assert "friction" in operator
+    assert operator["friction"]["recovery_plan"]["ask_user_to_reenter_data"] is False
