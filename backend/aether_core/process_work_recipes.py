@@ -43,6 +43,13 @@ PROCESS_WORK_RECIPES = {
         "lookup_record", "reconcile_records", "prepare_deficiency",
         "prepare_certificate", "prepare_decision_brief",
     ],
+    "property_registration": [
+        "register_case", "check_completeness", "extract_document_facts",
+        "scrutinize_deed", "verify_identity", "lookup_encumbrance",
+        "lookup_property_record", "calculate_duty", "reconcile_records",
+        "schedule_appointment", "prepare_registration_packet",
+        "prepare_decision_brief",
+    ],
     "land_mutation": [
         "register_case", "check_completeness", "lookup_land_record",
         "prepare_notice", "request_field_report", "track_objections",
