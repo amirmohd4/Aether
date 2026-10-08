@@ -57,6 +57,9 @@ class AdministrativeWorker:
             "recovery_plan": self._recovery_plan,
             "interdepartment_handoff": self._interdepartment_handoff,
             "inspection_packet": self._inspection_packet,
+            "joint_inspection": self._joint_inspection,
+            "shared_compliance_profile": self._shared_compliance_profile,
+            "renewal_bundle": self._renewal_bundle,
             "fee_reconciliation": self._fee_reconciliation,
             "decision_brief": self._decision_brief,
             "post_decision": self._post_decision,
@@ -668,6 +671,67 @@ class AdministrativeWorker:
         return AdministrativeWorker._result(context, "interdepartment_handoff", {
             "handoff_packets": packets,
             "department_count": len(packets),
+        })
+
+    @staticmethod
+    def _joint_inspection(context) -> Dict[str, Any]:
+        payload = context.payload
+        physical_tasks = payload.get("physical_tasks") or []
+        departments = sorted({
+            str(task.get("department"))
+            for task in physical_tasks
+            if isinstance(task, dict) and task.get("department")
+        })
+        return AdministrativeWorker._result(context, "joint_inspection", {
+            "candidate": len(physical_tasks) > 1,
+            "physical_task_count": len(physical_tasks),
+            "departments": departments,
+            "shared_checklist": payload.get("inspection_checklist") or [],
+            "strategy": "joint_or_coordinated_inspection_when_permitted",
+            "risk_inputs": [
+                "service risk classification",
+                "prior compliance history",
+                "complaint/enforcement history",
+                "recent inspection evidence",
+            ],
+            "authority_required": True,
+            "note": "Aether proposes coordination; an authorised authority decides inspection scope and findings.",
+        })
+
+    @staticmethod
+    def _shared_compliance_profile(context) -> Dict[str, Any]:
+        payload = context.payload
+        normalized = (payload.get("task_results") or {}).get("internal_data_normalization") or {}
+        fields = normalized.get("normalized_fields") or {}
+        results = payload.get("task_results") or {}
+        references = []
+        for task_id, result in sorted(results.items()):
+            if not isinstance(result, dict):
+                continue
+            ref = result.get("reference") or result.get("record_reference") or result.get("certificate_reference")
+            if ref:
+                references.append({"task_id": task_id, "reference": ref, "source": result.get("source")})
+        return AdministrativeWorker._result(context, "shared_compliance_profile", {
+            "profile_scope": "case_and_authorised_related_workflows",
+            "consent_required_for_future_reuse": True,
+            "verified_fields": fields,
+            "evidence_references": references,
+            "reuse_strategy": "reuse_verified_facts_and_changed_fields_only",
+            "duplicate_submission_reduction": "prepare_once_share_by_authorised_connector",
+        })
+
+    @staticmethod
+    def _renewal_bundle(context) -> Dict[str, Any]:
+        payload = context.payload
+        return AdministrativeWorker._result(context, "renewal_bundle", {
+            "bundle_status": "prepared",
+            "service_id": payload.get("service_id"),
+            "renewal_strategy": "single_case_bundle_for_related_regulatory_renewals",
+            "included_records": sorted((payload.get("task_results") or {}).keys()),
+            "next_due_date_source": "authoritative_rule_profile_required",
+            "auto_renewal": False,
+            "authority_review_required": True,
+            "customer_reentry_required": False,
         })
 
     @staticmethod
