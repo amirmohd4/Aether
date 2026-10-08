@@ -7,6 +7,7 @@ from .connector_registry import ConnectorRegistry
 from .connectors import GovernmentConnector
 from .synthetic_government import SyntheticGovernmentSystem
 from .document_intelligence import DocumentIntelligence
+from .administrative_worker import AdministrativeWorker
 
 
 @dataclass
@@ -206,6 +207,7 @@ class WorkerRegistry:
             "DecisionWorker": DecisionWorker(government, self._connectors),
             "OutcomeWorker": OutcomeWorker(government, self._connectors),
             "HumanAuthorityWorker": HumanAuthorityWorker(government, self._connectors),
+            "AdministrativeWorker": AdministrativeWorker(),
         }
         self._government = government
 
