@@ -6,6 +6,7 @@ from typing import Any, Dict, List
 
 from .notifications import NotificationService
 from .payments import PaymentService
+from .process_work_recipes import work_recipe
 from backend.database import SessionLocal
 
 
@@ -104,6 +105,8 @@ class AdministrativeWorker:
             },
             "risk_flags": list(payload.get("risk_flags") or []),
             "service_id": payload.get("service_id"),
+            "process_profile": payload.get("process_profile", "generic"),
+            "employee_work_recipe": work_recipe(payload.get("process_profile", "generic")),
         })
 
     @staticmethod
