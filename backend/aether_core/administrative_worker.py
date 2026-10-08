@@ -721,6 +721,7 @@ class AdministrativeWorker:
             state.get("status") == "completed"
             for state in non_admin
         )
+        results = payload.get("task_results") or {}
         actions = [
             "prepare final outcome/certificate/order packet",
             "update authoritative record through configured connector",
