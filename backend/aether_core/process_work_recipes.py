@@ -98,7 +98,7 @@ PROCESS_WORK_RECIPES = {
     "food_license": [
         "register_case", "classify_business", "check_completeness",
         "validate_premises", "schedule_inspection", "joint_inspection_plan",
-        "shared_compliance_profile", "prepare_recommendation",
+        "shared_compliance_profile", "renewal_bundle", "prepare_recommendation",
         "calculate_fee", "prepare_decision_brief",
     ],
     "environment": [
