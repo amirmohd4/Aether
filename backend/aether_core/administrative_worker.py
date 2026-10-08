@@ -59,6 +59,7 @@ class AdministrativeWorker:
             "decision_brief": self._decision_brief,
             "post_decision": self._post_decision,
             "case_closeout": self._closeout,
+            "work_atom": self._work_atom,
         }
         handler = handlers.get(operation)
         if handler is None:
@@ -84,6 +85,43 @@ class AdministrativeWorker:
                 "source": "Aether Administrative Worker",
             },
         }
+
+    def _work_atom(self, context) -> Dict[str, Any]:
+        payload = context.payload
+        atom = str(payload.get("work_atom") or "").strip()
+        metadata = work_atom_metadata().get(atom, {
+            "label": atom.replace("_", " ").title(),
+            "automation": "prepare_only",
+            "human_boundary": False,
+        })
+        automation = str(metadata.get("automation") or "prepare_only")
+        external = {"status": "not_submitted", "reason": "prepare-only atom"}
+        if automation in {"full_with_connector", "rule_backed"} and automation == "full_with_connector":
+            external = self._execute_external(
+                str(payload.get("service_department") or ""),
+                atom,
+                {
+                    "case_id": context.case_id,
+                    "service_id": payload.get("service_id"),
+                    "objective": payload.get("objective"),
+                    "jurisdiction": payload.get("jurisdiction") or {},
+                    "task_results": payload.get("task_results") or {},
+                },
+                f"{context.case_id}:admin:atom:{atom}",
+            )
+        elif automation == "rule_backed":
+            external = {
+                "status": "prepared",
+                "reason": "Requires authoritative effective-dated rule evaluation before external execution",
+            }
+        return AdministrativeWorker._result(context, "work_atom", {
+            "work_atom": atom,
+            "label": metadata.get("label"),
+            "automation_mode": automation,
+            "prepared": True,
+            "connector_action": external,
+            "authority_boundary": bool(metadata.get("human_boundary")),
+        })
 
     @staticmethod
     def _triage(context) -> Dict[str, Any]:
