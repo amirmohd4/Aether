@@ -278,8 +278,6 @@ def build_administrative_tasks(
     # the structure a statutory decision-maker will need, without making the
     # decision itself.
     decision_deps = ["internal_case_notes", "internal_form_prep", "internal_deficiency"]
-    if processing:
-        decision_deps.append(processing[-1])
     tasks.append(
         _task(
             "internal_decision_brief",
