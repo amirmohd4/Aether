@@ -349,6 +349,28 @@ def build_administrative_tasks(
     recipe = work_recipe(profile.key)
     atom_mapping = atom_task_mapping()
     atom_meta = work_atom_metadata()
+
+    # Materialize mapped high-level atoms with stable internal task IDs.
+    # This keeps the graph/API vocabulary deterministic and lets operators
+    # trace a conceptual work atom to one executable Aether task.
+    for atom in recipe:
+        mapped_task_id = atom_mapping.get(atom)
+        if not mapped_task_id or mapped_task_id in existing_task_ids:
+            continue
+        if atom not in {"journey_cascade", "joint_inspection_plan", "shared_compliance_profile", "renewal_bundle"}:
+            continue
+        meta = atom_meta.get(atom) or {}
+        tasks.append(
+            _task(
+                mapped_task_id,
+                meta.get("label", atom.replace("_", " ").title()),
+                atom,
+                ["internal_data_normalization"],
+                f"Execute or prepare the {atom} work atom.",
+            )
+        )
+        existing_task_ids.add(mapped_task_id)
+
     for atom in recipe:
         mapped_task_id = atom_mapping.get(atom)
         if atom == "register_case" or (mapped_task_id and mapped_task_id in existing_task_ids):
