@@ -6,6 +6,7 @@ rules, authority matrices, forms and timelines remain separate.
 
 EMPLOYEE_WORK_ATOMS = {
     "register_case": {"label": "Register / diarize case", "automation": "full_with_connector", "human_boundary": False},
+    "journey_cascade": {"label": "Prepare downstream government journey", "automation": "full", "human_boundary": False},
     "check_completeness": {"label": "Check application completeness", "automation": "full", "human_boundary": False},
     "extract_document_facts": {"label": "Extract facts from documents", "automation": "full", "human_boundary": False},
     "lookup_record": {"label": "Lookup departmental record", "automation": "full_with_connector", "human_boundary": False},
@@ -47,7 +48,7 @@ PROCESS_WORK_RECIPES = {
         "prepare_certificate", "prepare_decision_brief",
     ],
     "property_registration": [
-        "register_case", "check_completeness", "extract_document_facts",
+        "register_case", "journey_cascade", "check_completeness", "extract_document_facts",
         "scrutinize_deed", "verify_identity", "lookup_encumbrance",
         "lookup_property_record", "calculate_duty", "reconcile_records",
         "schedule_appointment", "prepare_registration_packet",
@@ -68,12 +69,12 @@ PROCESS_WORK_RECIPES = {
         "schedule_appointment", "prepare_registration_packet",
     ],
     "municipal_license": [
-        "register_case", "check_completeness", "lookup_property",
+        "register_case", "journey_cascade", "check_completeness", "lookup_property",
         "zoning_scrutiny", "check_dues", "coordinate_nocs",
         "schedule_inspection", "prepare_demand", "prepare_decision_brief",
     ],
     "building_permit": [
-        "register_case", "check_completeness", "plan_scrutiny",
+        "register_case", "journey_cascade", "check_completeness", "plan_scrutiny",
         "lookup_property", "zoning_scrutiny", "check_dues",
         "coordinate_nocs", "schedule_inspection", "joint_inspection_plan",
         "shared_compliance_profile", "prepare_committee_agenda",
@@ -96,7 +97,7 @@ PROCESS_WORK_RECIPES = {
         "prepare_recommendation", "prepare_decision_brief",
     ],
     "food_license": [
-        "register_case", "classify_business", "check_completeness",
+        "register_case", "journey_cascade", "classify_business", "check_completeness",
         "validate_premises", "schedule_inspection", "joint_inspection_plan",
         "shared_compliance_profile", "renewal_bundle", "prepare_recommendation",
         "calculate_fee", "prepare_decision_brief",
@@ -179,6 +180,7 @@ PROCESS_WORK_RECIPES = {
 
 ATOM_TASK_MAPPING = {
     "register_case": "engine_case_creation",
+    "journey_cascade": "internal_journey_cascade",
     "check_completeness": "internal_case_file",
     "extract_document_facts": "document_intake",
     "lookup_record": "service_lookup",
