@@ -3,6 +3,8 @@ from __future__ import annotations
 from typing import Any, Dict, List
 
 from .domain import Case, TaskState, TaskStatus
+from .process_work_recipes import work_recipe, work_atom_metadata
+from .government_process_kernel import infer_process_profile
 
 
 class EmployeeAutomationService:
@@ -58,6 +60,13 @@ class EmployeeAutomationService:
         attention = self._attention_items(case, human_tasks, exception_tasks, blocked_tasks)
         next_actions = self._next_actions(case, ready_automations, human_tasks, exception_tasks, blocked_tasks)
         revenue_signals = self._revenue_signals(case)
+        profile = infer_process_profile(
+            None if not case.service_id else type("_ServiceRef", (), {
+                "id": case.service_id,
+                "department": case.service_department or "",
+            })()
+        )
+        recipe = work_recipe(profile.key)
 
         return {
             "mode": "operator_intelligence",
@@ -81,6 +90,16 @@ class EmployeeAutomationService:
             "next_best_actions": next_actions[:12],
             "customer_actions": self._customer_actions(case),
             "revenue_signals": revenue_signals,
+            "process": {
+                "profile": profile.key,
+                "label": profile.label,
+                "employee_work_recipe": recipe,
+                "work_atoms": {
+                    atom: work_atom_metadata().get(atom)
+                    for atom in recipe
+                    if atom in work_atom_metadata()
+                },
+            },
         }
 
     def _is_automatable(self, task: TaskState) -> bool:
