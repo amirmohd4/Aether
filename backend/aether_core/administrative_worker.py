@@ -243,8 +243,7 @@ class AdministrativeWorker:
             "workload_lookup": "requires department staffing connector",
         })
 
-    @staticmethod
-    def _form_prep(context) -> Dict[str, Any]:
+    def _form_prep(self, context) -> Dict[str, Any]:
         payload = context.payload
         results = payload.get("task_results") or {}
         normalized_result = results.get("internal_data_normalization") or {}
