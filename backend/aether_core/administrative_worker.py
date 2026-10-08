@@ -245,7 +245,7 @@ class AdministrativeWorker:
             "field_count": len(normalized),
         })
 
-    def _assignment(context) -> Dict[str, Any]:
+    def _assignment(self, context) -> Dict[str, Any]:
         payload = context.payload
         triage = (payload.get("task_results") or {}).get("internal_case_triage") or {}
         routing = triage.get("routing") or {}
@@ -565,7 +565,7 @@ class AdministrativeWorker:
             "escalation_status": "prepared_only",
         })
 
-    def _interdepartment_handoff(context) -> Dict[str, Any]:
+    def _interdepartment_handoff(self, context) -> Dict[str, Any]:
         payload = context.payload
         original_tasks = payload.get("original_tasks") or []
         departments: Dict[str, List[str]] = {}
@@ -710,7 +710,7 @@ class AdministrativeWorker:
             "authority_required": True,
         })
 
-    def _post_decision(context) -> Dict[str, Any]:
+    def _post_decision(self, context) -> Dict[str, Any]:
         payload = context.payload
         states = payload.get("task_states") or {}
         non_admin = [
