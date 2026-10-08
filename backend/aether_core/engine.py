@@ -16,7 +16,8 @@ from .reliability import RetryPolicy
 from .synthetic_government import SyntheticGovernmentSystem
 from .templates import TEMPLATES, generic_tasks, infer_template
 from .service_registry import ServiceRegistry
-from .government_process_kernel import build_administrative_tasks
+from .government_process_kernel import build_administrative_tasks, infer_process_profile
+from .process_work_recipes import work_recipe
 from .workers import WorkerContext, WorkerRegistry
 
 
@@ -376,6 +377,24 @@ class AetherExecutionEngine:
                         "service_id": case.service_id,
                         "service_outcome": case.service_outcome,
                         "service_department": case.service_department,
+                        "process_profile": infer_process_profile(
+                            self.services.get(case.service_id) if case.service_id else None,
+                            [
+                                state.definition
+                                for state in case.tasks.values()
+                                if not state.definition.id.startswith("internal_")
+                            ],
+                        ).key if case.service_id else "generic",
+                        "work_recipe": work_recipe(
+                            infer_process_profile(
+                                self.services.get(case.service_id) if case.service_id else None,
+                                [
+                                    state.definition
+                                    for state in case.tasks.values()
+                                    if not state.definition.id.startswith("internal_")
+                                ],
+                            ).key
+                        ) if case.service_id else work_recipe("generic"),
                         "task_states": {
                             task_id: {
                                 "status": state.status.value,
