@@ -78,6 +78,20 @@ type OperatorBrief = {
   next_best_actions: Array<{ priority: number; type: string; task_id?: string | null; owner: string; action: string }>;
   customer_actions: Array<{ type: string; document: string; action: string }>;
   revenue_signals: Array<{ type: string; status: string; action: string }>;
+  friction?: {
+    citizen_effort_score: number;
+    employee_effort_score: number;
+    friction_sources: Array<{ type: string; impact: string; count: number; aether_action: string }>;
+    recovery_plan: {
+      recovery_required: boolean;
+      retry_tasks: string[];
+      replan_tasks: string[];
+      preserve_case_state: boolean;
+      preserve_verified_evidence: boolean;
+      ask_user_to_reenter_data: boolean;
+      compare_only_changed_inputs: boolean;
+    };
+  };
   process?: {
     profile: string;
     label: string;
@@ -1018,6 +1032,44 @@ export const AetherCommandCenter: React.FC = () => {
                         <p className="mt-1 text-lg font-bold text-cyan-200">{caseData.operator.summary.employee_attention_required}</p>
                       </div>
                     </div>
+
+                    {caseData.operator.friction && (
+                      <div className="mt-5 rounded-xl border border-fuchsia-300/10 bg-fuchsia-300/5 p-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div>
+                            <p className="text-[11px] font-semibold text-fuchsia-100">Friction eliminated</p>
+                            <p className="mt-1 text-[10px] text-fuchsia-100/70">
+                              Aether targets repeat visits, rework, cross-department waiting and portal failures.
+                            </p>
+                          </div>
+                          <span className="text-[9px] uppercase tracking-wide text-fuchsia-100/60">
+                            {caseData.operator.friction.friction_sources.length} active signal(s)
+                          </span>
+                        </div>
+                        <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                          <div className="rounded-lg bg-black/10 p-2.5">
+                            <p className="text-[9px] uppercase tracking-wide text-slate-500">Citizen effort</p>
+                            <p className="mt-1 text-base font-bold text-fuchsia-200">{caseData.operator.friction.citizen_effort_score}/100</p>
+                          </div>
+                          <div className="rounded-lg bg-black/10 p-2.5">
+                            <p className="text-[9px] uppercase tracking-wide text-slate-500">Employee effort</p>
+                            <p className="mt-1 text-base font-bold text-cyan-200">{caseData.operator.friction.employee_effort_score}/100</p>
+                          </div>
+                          <div className="rounded-lg bg-black/10 p-2.5">
+                            <p className="text-[9px] uppercase tracking-wide text-slate-500">Restart user data</p>
+                            <p className="mt-1 text-base font-bold text-emerald-200">
+                              {caseData.operator.friction.recovery_plan.ask_user_to_reenter_data ? 'No' : 'Never'}
+                            </p>
+                          </div>
+                        </div>
+                        {caseData.operator.friction.friction_sources.slice(0, 3).map((signal, index) => (
+                          <div key={signal.type + index} className="mt-2 rounded-lg border border-white/5 bg-black/10 px-2.5 py-2">
+                            <p className="text-[10px] font-medium text-slate-200">{signal.type.replaceAll('_', ' ')}</p>
+                            <p className="mt-0.5 text-[9px] text-slate-400">{signal.aether_action}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
                     {caseData.operator.process && (
                       <div className="mt-5 rounded-xl border border-cyan-300/10 bg-cyan-300/5 p-3">
