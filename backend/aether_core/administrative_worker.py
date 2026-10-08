@@ -56,6 +56,7 @@ class AdministrativeWorker:
             "sla_snapshot": self._sla_snapshot,
             "interim_response": self._interim_response,
             "recovery_plan": self._recovery_plan,
+            "journey_cascade": self._journey_cascade,
             "interdepartment_handoff": self._interdepartment_handoff,
             "inspection_packet": self._inspection_packet,
             "joint_inspection": self._joint_inspection,
