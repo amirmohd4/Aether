@@ -615,6 +615,7 @@ class AdministrativeWorker:
             "compare_only_changed_inputs": True,
         })
 
+    @staticmethod
     def _sla_snapshot(context) -> Dict[str, Any]:
         payload = context.payload
         states = payload.get("task_states") or {}
