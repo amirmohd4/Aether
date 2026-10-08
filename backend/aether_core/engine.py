@@ -424,6 +424,9 @@ class AetherExecutionEngine:
                     operation=operation,
                     payload={
                         **case.inputs,
+                        "objective": case.objective,
+                        "owner_user_id": case.owner_user_id,
+                        "tenant_id": case.tenant_id,
                         "task_results": {
                             task_id: state.result
                             for task_id, state in case.tasks.items()
