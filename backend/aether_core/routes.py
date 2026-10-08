@@ -16,6 +16,8 @@ from .notifications import NotificationService
 from .payments import PaymentService
 from .analytics import summarize_cases
 from .employee_automation import EmployeeAutomationService
+from .process_work_recipes import work_recipe, work_atom_metadata
+from .government_process_kernel import infer_process_profile
 from backend.database import SessionLocal
 from sqlalchemy import text
 
@@ -73,6 +75,33 @@ def serialize(case, include_tasks: bool = True):
             for task_id, state in case.tasks.items()
         }
     return response
+
+
+@router.get("/process/catalog")
+def process_catalog(principal: Principal = Depends(require_scope("cases:read"))):
+    """Expose the process kernel for operator/developer surfaces.
+
+    This endpoint describes reusable work patterns; it is not a legal rulebook.
+    """
+    items = []
+    for service in engine.services.all():
+        profile = infer_process_profile(service)
+        items.append({
+            "service_id": service.id,
+            "service_name": service.name,
+            "department": service.department,
+            "process_profile": profile.key,
+            "process_label": profile.label,
+            "employee_work_recipe": work_recipe(profile.key),
+            "physical_action_possible": service.physical_action_possible,
+            "customer_types": service.customer_types,
+        })
+    return {
+        "service_count": len(items),
+        "services": items,
+        "employee_work_atoms": work_atom_metadata(),
+        "note": "Process profiles are reusable operating patterns. Production execution requires jurisdiction-specific authoritative rules, authority mappings and authorised connectors.",
+    }
 
 
 @router.get("/release/readiness")
