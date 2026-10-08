@@ -53,6 +53,8 @@ class AdministrativeWorker:
             "correspondence": self._correspondence,
             "followup_plan": self._followup,
             "sla_snapshot": self._sla_snapshot,
+            "interim_response": self._interim_response,
+            "recovery_plan": self._recovery_plan,
             "interdepartment_handoff": self._interdepartment_handoff,
             "inspection_packet": self._inspection_packet,
             "fee_reconciliation": self._fee_reconciliation,
@@ -534,6 +536,71 @@ class AdministrativeWorker:
         })
 
     @staticmethod
+    @staticmethod
+    def _interim_response(context) -> Dict[str, Any]:
+        payload = context.payload
+        states = payload.get("task_states") or {}
+        results = payload.get("task_results") or {}
+        missing = []
+        for result in results.values():
+            if isinstance(result, dict):
+                missing.extend(result.get("deficiencies") or [])
+        action_items = [
+            {
+                "type": item.get("code", "deficiency"),
+                "document_type": item.get("document_type"),
+                "message": item.get("fix") or item.get("message"),
+            }
+            for item in missing
+            if item.get("applicant_fixable")
+        ]
+        pending = [
+            str(task_id) for task_id, state in states.items()
+            if isinstance(state, dict) and state.get("status") not in {"completed", "human_review"}
+        ]
+        return AdministrativeWorker._result(context, "interim_response", {
+            "type": "action_required" if action_items else "interim_progress" if pending else "no_action",
+            "customer_action_required": bool(action_items),
+            "customer_actions": action_items[:20],
+            "pending_task_ids": pending[:50],
+            "message": (
+                "Only the listed missing items need to be supplied."
+                if action_items
+                else "Aether is progressing the case and will resume the affected branch when its prerequisite is available."
+                if pending
+                else "No interim action is required."
+            ),
+            "no_restart_required": True,
+        })
+
+    @staticmethod
+    def _recovery_plan(context) -> Dict[str, Any]:
+        payload = context.payload
+        states = payload.get("task_states") or {}
+        exceptions = payload.get("case_exceptions") or []
+        retry = []
+        replan = []
+        for task_id, state in states.items():
+            if not isinstance(state, dict):
+                continue
+            status = state.get("status")
+            error = str(state.get("error") or "").lower()
+            if status == "exception":
+                retry.append(task_id)
+                if any(word in error for word in ("connector", "portal", "timeout", "http")):
+                    replan.append(task_id)
+            elif status == "blocked":
+                replan.append(task_id)
+        return AdministrativeWorker._result(context, "recovery_plan", {
+            "recovery_required": bool(retry or replan or exceptions),
+            "retry_tasks": sorted(set(retry)),
+            "replan_tasks": sorted(set(replan)),
+            "preserve_case_state": True,
+            "preserve_verified_evidence": True,
+            "ask_user_to_reenter_data": False,
+            "compare_only_changed_inputs": True,
+        })
+
     def _sla_snapshot(context) -> Dict[str, Any]:
         payload = context.payload
         states = payload.get("task_states") or {}
