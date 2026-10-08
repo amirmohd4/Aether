@@ -143,6 +143,11 @@ def infer_process_profile(
                 department,
                 GovernmentProcessProfile("generic", "Government service")
             )
+        if service:
+            return _DEPARTMENT_PROCESS_DEFAULTS.get(
+                service.department.strip().lower(),
+                GovernmentProcessProfile("generic", "Government service")
+            )
         return GovernmentProcessProfile("generic", "Government service")
 
     if not profile.interdepartmental:
