@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import os
 from typing import Any, Dict, List
 
 from .notifications import NotificationService
@@ -17,6 +18,25 @@ class AdministrativeWorker:
     """
 
     name = "AdministrativeWorker"
+
+    def __init__(self, connectors=None):
+        self.connectors = connectors
+
+    def _external_action_enabled(self) -> bool:
+        return os.getenv("AETHER_ENABLE_ADMIN_CONNECTOR_ACTIONS", "").strip().lower() == "true"
+
+    def _execute_external(self, department: str, operation: str, payload: Dict[str, Any], idempotency_key: str | None) -> Dict[str, Any]:
+        if not self._external_action_enabled() or not self.connectors:
+            return {"status": "not_submitted", "reason": "admin connector execution is disabled"}
+        if not self.connectors.is_production(department):
+            return {"status": "not_submitted", "reason": "no authorised production connector configured"}
+        result = self.connectors.get(department).execute(operation, payload, idempotency_key)
+        return {
+            "status": result.get("status", "unknown"),
+            "request_id": result.get("request_id"),
+            "result": result.get("result") or {},
+            "source": result.get("source"),
+        }
 
     def execute(self, context) -> Dict[str, Any]:
         operation = context.operation
@@ -206,6 +226,12 @@ class AdministrativeWorker:
         fields = normalized_result.get("normalized_fields") or {}
         provenance = normalized_result.get("field_provenance") or {}
         target = payload.get("service_id") or payload.get("service_outcome") or "government_service"
+        external = self._execute_external(
+            str(payload.get("service_department") or ""),
+            "prepare_form",
+            {"case_id": context.case_id, "service_id": target, "fields": fields, "field_provenance": provenance},
+            f"{context.case_id}:admin:prepare_form",
+        )
         return AdministrativeWorker._result(context, "form_prep", {
             "target_service": target,
             "target_department": payload.get("service_department"),
@@ -219,7 +245,7 @@ class AdministrativeWorker:
                 for key, value in sorted(fields.items())
             ],
             "unmapped_required_fields": [],
-            "connector_submission_status": "not_submitted",
+            "connector_submission": external,
         })
 
     @staticmethod
@@ -491,12 +517,24 @@ class AdministrativeWorker:
             departments.setdefault(department, []).append(str(task.get("id")))
         packets = []
         for department, task_ids in sorted(departments.items()):
+            request_payload = {
+                "case_id": context.case_id,
+                "task_ids": task_ids,
+                "request": "Provide the departmental evidence/report required by the case graph.",
+            }
+            external = self._execute_external(
+                department,
+                "interdepartment_request",
+                request_payload,
+                f"{context.case_id}:admin:interdepartment:{department}",
+            )
             packets.append({
                 "department": department,
                 "task_ids": task_ids,
-                "request": "Provide the departmental evidence/report required by the case graph.",
+                "request": request_payload["request"],
                 "due_date": None,
-                "submission_status": "not_submitted",
+                "submission_status": external.get("status", "not_submitted"),
+                "connector_response": external,
                 "connector_required": True,
             })
         return AdministrativeWorker._result(context, "interdepartment_handoff", {
@@ -630,10 +668,22 @@ class AdministrativeWorker:
             "start renewal/compliance watch where applicable",
             "prepare audit/retention packet",
         ]
+        external = self._execute_external(
+            str(payload.get("service_department") or ""),
+            "post_decision_update",
+            {
+                "case_id": context.case_id,
+                "service_id": payload.get("service_id"),
+                "service_outcome": payload.get("service_outcome"),
+                "task_results": results,
+            },
+            f"{context.case_id}:admin:post_decision_update",
+        )
         return AdministrativeWorker._result(context, "post_decision", {
             "ready_for_post_decision": service_complete,
             "actions": actions,
-            "record_update_status": "not_submitted",
+            "connector_action": external,
+            "record_update_status": external.get("status", "not_submitted"),
             "notification_status": "not_dispatched",
             "renewal_status": "to_schedule_from_authoritative_rules",
         })
