@@ -88,3 +88,40 @@ def test_external_service_catalog_loader_json(tmp_path):
     assert rows[0][0] == "example_service"
     assert rows[0][1] == "Example Service"
     assert rows[0][3] == ["citizen"]
+
+
+def test_jurisdiction_process_profile_registry_selects_most_specific_profile(tmp_path, monkeypatch):
+    from aether_core.jurisdiction_process_profiles import JurisdictionProcessRegistry
+
+    path = tmp_path / "profiles.json"
+    path.write_text(
+        '{"profiles":['
+        '{"service_id":"fire_noc","country":"India","source_url":"https://example.gov","effective_date":"2026-01-01","verified_at":"2026-10-01","steps":[{"id":"scrutiny"}]},'
+        '{"service_id":"fire_noc","country":"India","state":"Jammu and Kashmir","source_url":"https://jk.example.gov","effective_date":"2026-01-01","verified_at":"2026-10-01","steps":[{"id":"inspection"}]}'
+        ']}',
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("AETHER_PROCESS_PROFILE_PATH", str(path))
+    registry = JurisdictionProcessRegistry()
+
+    profile = registry.resolve(
+        "fire_noc",
+        {"country": "India", "state": "Jammu and Kashmir", "district": "Jammu"},
+    )
+    assert profile is not None
+    assert profile.state == "Jammu and Kashmir"
+    assert registry.readiness(
+        "fire_noc",
+        {"country": "India", "state": "Jammu and Kashmir"},
+    )["status"] == "ready"
+
+
+def test_dynamic_employee_work_atom_is_materialized_for_recipe_gap():
+    engine = AetherExecutionEngine()
+    case = engine.create_case(
+        objective="I want to register a property",
+        customer_type="citizen",
+        jurisdiction={"country": "India", "state": "Jammu and Kashmir"},
+        inputs={"documents": ["identity_document", "property_record"]},
+    )
+    assert "internal_work_atom_scrutinize_deed" in case.tasks or "internal_work_atom_prepare_registration_packet" in case.tasks
