@@ -164,6 +164,44 @@ PROCESS_WORK_RECIPES = {
     ],
 }
 
+ATOM_TASK_MAPPING = {
+    "register_case": "engine_case_creation",
+    "check_completeness": "internal_case_file",
+    "extract_document_facts": "document_intake",
+    "lookup_record": "service_lookup",
+    "lookup_land_record": "land_record",
+    "lookup_property_record": "registration_record",
+    "reconcile_records": "cross_record_reconciliation",
+    "prepare_deficiency": "internal_deficiency",
+    "prepare_query": "internal_query_response",
+    "prepare_certificate": "internal_post_decision",
+    "prepare_order": "internal_decision_brief",
+    "prepare_decision_brief": "internal_decision_brief",
+    "prepare_recommendation": "internal_decision_brief",
+    "prepare_committee_agenda": "internal_decision_brief",
+    "prepare_inspection_packet": "internal_inspection_packet",
+    "schedule_inspection": "internal_inspection_packet",
+    "schedule_field_visit": "internal_inspection_packet",
+    "coordinate_nocs": "internal_interdepartment_handoff",
+    "request_field_report": "internal_interdepartment_handoff",
+    "calculate_duty": "internal_fee_reconciliation",
+    "calculate_fee": "internal_fee_reconciliation",
+    "check_dues": "internal_fee_reconciliation",
+    "reconcile_demand_payment": "internal_fee_reconciliation",
+    "prepare_form": "internal_form_prep",
+    "compare_resubmission": "internal_data_normalization",
+    "start_followup_watch": "internal_followup_plan",
+    "sla_escalation": "internal_sla_snapshot",
+    "prepare_dispatch": "internal_post_decision",
+    "renewal_watch": "internal_post_decision",
+    "start_appeal_watch": "internal_followup_plan",
+}
+ 
+
+def atom_task_mapping() -> dict[str, str]:
+    return dict(ATOM_TASK_MAPPING)
+
+
 def work_atom_metadata() -> dict[str, dict[str, object]]:
     return dict(EMPLOYEE_WORK_ATOMS)
 
