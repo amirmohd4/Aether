@@ -1003,6 +1003,18 @@ export const AetherCommandCenter: React.FC = () => {
                   </div>
                 </div>
 
+                {caseData.operator?.friction?.bottleneck && (
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                    <p className="text-[10px] uppercase tracking-[0.18em] text-slate-500">What happens next</p>
+                    <p className="mt-2 text-sm font-medium text-slate-200">
+                      {caseData.operator.friction.bottleneck.user_message}
+                    </p>
+                    <p className="mt-1 text-[10px] text-slate-500">
+                      Aether keeps the case state and verified work intact; you do not restart the process.
+                    </p>
+                  </div>
+                )}
+
                 {caseData.operator && (
                   <div className="rounded-2xl border border-emerald-300/20 bg-emerald-300/5 p-5">
                     <div className="flex flex-wrap items-center justify-between gap-3">
