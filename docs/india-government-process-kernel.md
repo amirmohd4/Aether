@@ -4,12 +4,14 @@
 
 Aether should sit above existing government departments and systems, not replace them. This document defines the operating model Aether should use to turn a citizen/business objective into the actual government work that occurs after submission.
 
-The April 2026 DARPG NeSDA Way Forward report records 25,484 e-services across States/UTs, including 9,140 in Local Governance & Utility Services. It also reports 59 mandatory e-services per State/UT and 1,743 of 2,124 mandatory e-services available (>81%). This scale means Aether should not hard-code one workflow for every service; it needs a reusable process kernel plus jurisdiction-specific service profiles.
+The National Portal of India currently presents 13,994 online services, including 1,100+ central-government services and 12,894+ state-government services, across 18 information categories. Its current service taxonomy includes Agriculture/Rural/Environment, Benefits/Social Development, Business/Self-employed, Citizenship/Visa/Passports, Driving/Transport, Education/Learning, Governance/Planning, Health/Wellness, Housing/Local Services, Infrastructure/Industries, Jobs, Justice/Law/Grievances, Money/Taxes, Science/IT/Communication, Travel/Tourism, Welfare of Families and Youth/Sports/Culture. The older National Government Services Portal reported 13,698 services before its May 2026 migration notice. This scale means Aether should not hard-code one workflow for every service; it needs a reusable process kernel plus jurisdiction-specific service profiles.
 
-UMANG similarly aggregates major services from central, state, local, autonomous and statutory bodies. Aether's differentiation must therefore be execution of the underlying government work, not another service directory.
+UMANG already provides a one-stop interface for major services. Aether's differentiation must therefore be execution of the underlying government work, not another service directory.
 
 Sources:
-- https://darpg.gov.in/sites/default/files/NeSDA_WF_Apr2026_Report.pdf
+- https://www.india.gov.in/
+- https://www.india.gov.in/services
+- https://services.india.gov.in/service/detail/
 - https://negd.gov.in/our_projects/umang/
 
 ## Universal post-submission lifecycle
