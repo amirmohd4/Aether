@@ -7,7 +7,7 @@ from uuid import uuid4
 
 from .audit import AuditTrail
 from .case_store import DatabaseCaseStore
-from .domain import Case, TaskState, TaskStatus, now_iso
+from .domain import Case, TaskDefinition, TaskState, TaskStatus, now_iso
 from .dependency_engine import DependencyEngine
 from .task_queue import DurableTaskQueue, TaskClaim
 from .verification import VerificationEngine
