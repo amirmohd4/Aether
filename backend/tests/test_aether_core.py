@@ -12,7 +12,7 @@ def test_restaurant_case_runs_parallel_work_until_human_boundary():
     )
     case = engine.execute_until_pause(case.case_id)
 
-    assert case.status == "waiting_for_human", case.exceptions
+    assert case.status == "waiting_for_human"
     assert case.tasks["identity_check"].status == TaskStatus.COMPLETED
     assert case.tasks["food_review"].status == TaskStatus.COMPLETED
     assert case.tasks["fire_review"].status == TaskStatus.COMPLETED
