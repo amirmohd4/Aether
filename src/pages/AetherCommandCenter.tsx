@@ -78,6 +78,12 @@ type OperatorBrief = {
   next_best_actions: Array<{ priority: number; type: string; task_id?: string | null; owner: string; action: string }>;
   customer_actions: Array<{ type: string; document: string; action: string }>;
   revenue_signals: Array<{ type: string; status: string; action: string }>;
+  process?: {
+    profile: string;
+    label: string;
+    employee_work_recipe: string[];
+    work_atoms: Record<string, { label: string; automation: string; human_boundary: boolean }>;
+  };
 };
 
 type CaseResponse = {
@@ -1012,6 +1018,29 @@ export const AetherCommandCenter: React.FC = () => {
                         <p className="mt-1 text-lg font-bold text-cyan-200">{caseData.operator.summary.employee_attention_required}</p>
                       </div>
                     </div>
+
+                    {caseData.operator.process && (
+                      <div className="mt-5 rounded-xl border border-cyan-300/10 bg-cyan-300/5 p-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div>
+                            <p className="text-[11px] font-semibold text-cyan-100">Government process recipe</p>
+                            <p className="mt-1 text-[10px] text-cyan-100/70">
+                              {caseData.operator.process.label} · {caseData.operator.process.profile}
+                            </p>
+                          </div>
+                          <span className="text-[9px] uppercase tracking-wide text-cyan-100/60">
+                            {caseData.operator.process.employee_work_recipe.length} work atoms
+                          </span>
+                        </div>
+                        <div className="mt-3 flex flex-wrap gap-1.5">
+                          {caseData.operator.process.employee_work_recipe.slice(0, 8).map((atom) => (
+                            <span key={atom} className="rounded-full border border-white/10 bg-black/10 px-2 py-1 text-[9px] text-slate-300">
+                              {caseData.operator.process.work_atoms[atom]?.label || atom}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     {caseData.operator.next_best_actions.length > 0 && (
                       <div className="mt-5">
