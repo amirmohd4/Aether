@@ -88,6 +88,41 @@ SERVICE_PROCESS_PROFILES = {
 }
 
 
+_DEPARTMENT_PROCESS_DEFAULTS = {
+    "revenue": GovernmentProcessProfile("record_or_revenue", "Revenue/land record case"),
+    "registration": GovernmentProcessProfile("registration", "Registration/record case"),
+    "municipal": GovernmentProcessProfile("municipal_license", "Municipal service", payment_sensitive=True),
+    "health": GovernmentProcessProfile("health_regulatory", "Health/medical service", interdepartmental=True),
+    "education": GovernmentProcessProfile("education", "Education service"),
+    "transport": GovernmentProcessProfile("transport", "Transport service", payment_sensitive=True),
+    "labour": GovernmentProcessProfile("labour", "Labour/employment service", interdepartmental=True),
+    "tax": GovernmentProcessProfile("tax", "Tax service", payment_sensitive=True),
+    "corporate registry": GovernmentProcessProfile("corporate", "Corporate registry service"),
+    "food & civil supplies": GovernmentProcessProfile("benefit", "Food entitlement/benefit", payment_sensitive=True),
+    "police": GovernmentProcessProfile("police", "Police service", interdepartmental=True),
+    "agriculture": GovernmentProcessProfile("agriculture", "Agriculture service", interdepartmental=True),
+    "housing": GovernmentProcessProfile("housing", "Housing/project service", payment_sensitive=True, interdepartmental=True),
+    "rera": GovernmentProcessProfile("regulated_project", "Regulated project service", payment_sensitive=True, interdepartmental=True),
+    "courts": GovernmentProcessProfile("adjudication", "Judicial/adjudicatory service"),
+    "passport": GovernmentProcessProfile("passport", "Passport service", interdepartmental=True),
+    "fire": GovernmentProcessProfile("fire_safety", "Fire-safety service", interdepartmental=True),
+    "environment": GovernmentProcessProfile("environment", "Environment/regulatory service", interdepartmental=True),
+    "forest": GovernmentProcessProfile("environment", "Forest/environment permission", interdepartmental=True),
+    "mines": GovernmentProcessProfile("regulated_resource", "Mining/resource service", payment_sensitive=True, interdepartmental=True),
+    "grievance": GovernmentProcessProfile("grievance", "Public grievance"),
+    "information commission": GovernmentProcessProfile("information_access", "Information-access service"),
+    "procurement": GovernmentProcessProfile("procurement", "Public procurement", payment_sensitive=True, interdepartmental=True),
+    "pension": GovernmentProcessProfile("benefit", "Pension service", payment_sensitive=True),
+    "social welfare": GovernmentProcessProfile("benefit", "Social welfare service", payment_sensitive=True),
+    "electricity": GovernmentProcessProfile("utility_connection", "Electricity utility service", payment_sensitive=True),
+    "utilities": GovernmentProcessProfile("utility_connection", "Utility service", payment_sensitive=True),
+    "consumer affairs": GovernmentProcessProfile("consumer", "Consumer/regulatory service"),
+    "rural development": GovernmentProcessProfile("rural_development", "Rural development service", interdepartmental=True),
+    "skill/employment": GovernmentProcessProfile("employment", "Skill/employment service"),
+    "employment": GovernmentProcessProfile("employment", "Employment service"),
+}
+
+
 def infer_process_profile(
     service: ServiceDefinition | None,
     task_definitions: Iterable[TaskDefinition] = (),
@@ -102,6 +137,12 @@ def infer_process_profile(
         }
         if len(departments) > 1:
             return GovernmentProcessProfile("multi_department", "Multi-department case", interdepartmental=True)
+        if departments:
+            department = next(iter(departments))
+            return _DEPARTMENT_PROCESS_DEFAULTS.get(
+                department,
+                GovernmentProcessProfile("generic", "Government service")
+            )
         return GovernmentProcessProfile("generic", "Government service")
 
     if not profile.interdepartmental:
