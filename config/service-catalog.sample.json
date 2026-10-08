@@ -1,0 +1,13 @@
+{
+  "services": [
+    {
+      "id": "state_example_trade_license",
+      "name": "Trade License - Example State",
+      "department": "Municipal",
+      "customer_types": ["business", "citizen"],
+      "keywords": ["trade license", "shop license"],
+      "template": null,
+      "outcome": "trade_license"
+    }
+  ]
+}
