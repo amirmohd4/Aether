@@ -16,6 +16,7 @@ from .reliability import RetryPolicy
 from .synthetic_government import SyntheticGovernmentSystem
 from .templates import TEMPLATES, generic_tasks, infer_template
 from .service_registry import ServiceRegistry
+from .government_process_kernel import build_administrative_tasks
 from .workers import WorkerContext, WorkerRegistry
 
 
@@ -66,71 +67,10 @@ class AetherExecutionEngine:
             requirements = []
             task_definitions = []
 
-        # Add an internal administrative lane to every resolvable case. These
-        # tasks automate repetitive employee work without changing statutory
-        # authority boundaries or requiring a live government connector.
+        # Generate the internal employee-work graph from the applicable government-process archetype.
+        # These actions automate administration while preserving statutory and physical authority boundaries.
         original_task_ids = [definition.id for definition in task_definitions]
-        document_task_ids = [
-            definition.id for definition in task_definitions
-            if definition.worker == "DocumentWorker"
-        ]
-        admin_tasks = [
-            TaskDefinition(
-                id="internal_case_triage",
-                name="Automatic case triage and routing",
-                department="Aether",
-                worker="AdministrativeWorker",
-                description="Classify priority, route ownership and prepare the initial operating brief.",
-                operation="case_triage",
-            ),
-            TaskDefinition(
-                id="internal_case_file",
-                name="Automatic case-file assembly",
-                department="Aether",
-                worker="AdministrativeWorker",
-                dependencies=["internal_case_triage"],
-                description="Assemble the evidence checklist and working case file.",
-                operation="case_file_assembly",
-            ),
-            TaskDefinition(
-                id="internal_data_normalization",
-                name="Automatic data normalization",
-                department="Aether",
-                worker="AdministrativeWorker",
-                dependencies=["internal_case_file"] + document_task_ids[:1],
-                description="Normalize identity, property, company and reference fields for downstream work.",
-                operation="data_normalization",
-            ),
-            TaskDefinition(
-                id="internal_correspondence",
-                name="Automatic correspondence preparation",
-                department="Aether",
-                worker="AdministrativeWorker",
-                dependencies=["internal_data_normalization"],
-                description="Prepare missing-document, query and progress communications and place them in the notification outbox.",
-                operation="correspondence",
-            ),
-            TaskDefinition(
-                id="internal_followup_plan",
-                name="Automatic follow-up planning",
-                department="Aether",
-                worker="AdministrativeWorker",
-                dependencies=["internal_data_normalization"],
-                description="Create the next follow-up actions from the current case state.",
-                operation="followup_plan",
-            ),
-            TaskDefinition(
-                id="internal_case_closeout",
-                name="Automatic case-file closeout",
-                department="Aether",
-                worker="AdministrativeWorker",
-                dependencies=original_task_ids + ["internal_correspondence", "internal_followup_plan"],
-                description="Assemble final administrative references after the service work completes.",
-                operation="case_closeout",
-            ),
-        ]
-        task_definitions = task_definitions + admin_tasks
-
+        task_definitions = task_definitions + build_administrative_tasks(service, task_definitions)
         tasks = {definition.id: TaskState(definition=definition) for definition in task_definitions}
         ontology = self.ontology_builder.build(enriched_inputs, objective, service)
         work_graph = self.work_graph_builder.build(
