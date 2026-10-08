@@ -4,6 +4,39 @@ Recipes describe recurring administrative actions. Jurisdiction-specific legal
 rules, authority matrices, forms and timelines remain separate.
 """
 
+EMPLOYEE_WORK_ATOMS = {
+    "register_case": {"label": "Register / diarize case", "automation": "full_with_connector", "human_boundary": False},
+    "check_completeness": {"label": "Check application completeness", "automation": "full", "human_boundary": False},
+    "extract_document_facts": {"label": "Extract facts from documents", "automation": "full", "human_boundary": False},
+    "lookup_record": {"label": "Lookup departmental record", "automation": "full_with_connector", "human_boundary": False},
+    "lookup_land_record": {"label": "Lookup land record", "automation": "full_with_connector", "human_boundary": False},
+    "lookup_property_record": {"label": "Lookup property/registration record", "automation": "full_with_connector", "human_boundary": False},
+    "reconcile_records": {"label": "Reconcile records", "automation": "full", "human_boundary": False},
+    "prepare_deficiency": {"label": "Prepare deficiency notice", "automation": "draft_then_authorize", "human_boundary": True},
+    "prepare_query": {"label": "Prepare response to official query", "automation": "draft_then_authorize", "human_boundary": True},
+    "prepare_certificate": {"label": "Prepare certificate data/packet", "automation": "draft_then_authorize", "human_boundary": True},
+    "prepare_order": {"label": "Prepare order/processing packet", "automation": "draft_then_authorize", "human_boundary": True},
+    "prepare_decision_brief": {"label": "Prepare statutory decision brief", "automation": "draft_then_authorize", "human_boundary": True},
+    "prepare_recommendation": {"label": "Prepare recommendation", "automation": "draft_then_authorize", "human_boundary": True},
+    "prepare_committee_agenda": {"label": "Prepare committee agenda packet", "automation": "draft_then_authorize", "human_boundary": True},
+    "prepare_inspection_packet": {"label": "Prepare inspection packet", "automation": "full", "human_boundary": False},
+    "schedule_inspection": {"label": "Schedule inspection", "automation": "full_with_connector", "human_boundary": False},
+    "schedule_field_visit": {"label": "Schedule field visit", "automation": "full_with_connector", "human_boundary": False},
+    "coordinate_nocs": {"label": "Coordinate inter-department NOCs/reports", "automation": "full_with_connector", "human_boundary": False},
+    "request_field_report": {"label": "Request field/verification report", "automation": "full_with_connector", "human_boundary": False},
+    "calculate_duty": {"label": "Calculate stamp/registration duty", "automation": "rule_backed", "human_boundary": False},
+    "calculate_fee": {"label": "Calculate applicable fee", "automation": "rule_backed", "human_boundary": False},
+    "check_dues": {"label": "Check outstanding dues", "automation": "full_with_connector", "human_boundary": False},
+    "reconcile_demand_payment": {"label": "Reconcile demand and payment", "automation": "full_with_connector", "human_boundary": False},
+    "prepare_form": {"label": "Prepare downstream departmental form", "automation": "full_then_authorize", "human_boundary": True},
+    "compare_resubmission": {"label": "Compare resubmitted evidence", "automation": "full", "human_boundary": False},
+    "start_followup_watch": {"label": "Watch pending response/follow-up", "automation": "full", "human_boundary": False},
+    "sla_escalation": {"label": "Escalate SLA risk", "automation": "policy_backed", "human_boundary": True},
+    "prepare_dispatch": {"label": "Prepare dispatch/notification", "automation": "full_with_connector", "human_boundary": False},
+    "renewal_watch": {"label": "Start renewal/compliance watch", "automation": "full", "human_boundary": False},
+    "start_appeal_watch": {"label": "Track appeal/limitation window", "automation": "full", "human_boundary": False},
+}
+ 
 PROCESS_WORK_RECIPES = {
     "certificate": [
         "register_case", "check_completeness", "extract_document_facts",
@@ -130,6 +163,10 @@ PROCESS_WORK_RECIPES = {
         "route_to_training_or_employer", "track_response", "prepare_outcome",
     ],
 }
+
+def work_atom_metadata() -> dict[str, dict[str, object]]:
+    return dict(EMPLOYEE_WORK_ATOMS)
+
 
 def work_recipe(process_key: str) -> list[str]:
     return list(PROCESS_WORK_RECIPES.get(process_key, (
