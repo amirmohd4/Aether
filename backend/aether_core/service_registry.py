@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
+from .india_service_catalog import INDIA_SERVICE_FAMILY_DEFINITIONS
+
 
 @dataclass(frozen=True)
 class ServiceDefinition:
@@ -108,6 +110,8 @@ SERVICE_DEFINITIONS = [
     ("visa", "Visa Service", "Passport", ["citizen", "business"], ["visa service", "visa application"], None, "visa_service"),
     ("food_business_license", "Food Business License/Registration", "Food Safety", ["citizen", "business", "developer"], ["restaurant", "cafe", "food business", "food license", "fssai"], "restaurant", "food_business_license"),
 ]
+
+SERVICE_DEFINITIONS.extend(INDIA_SERVICE_FAMILY_DEFINITIONS)
 
 DEFAULT_DOCUMENTS = {
     "property": ["identity_document", "property_record"],
