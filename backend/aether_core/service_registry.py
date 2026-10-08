@@ -32,6 +32,9 @@ CUSTOMER_TYPE_ALIASES = {
 }
 
 SERVICE_ALIASES = {
+    "property_tax_payment": ["property tax receipt", "pay property tax", "house tax receipt"],
+    "property_tax_assessment": ["assess property tax", "property tax assessment"],
+    "fire_noc": ["fire noc", "fire clearance", "fire safety noc"],
     "property_registration": ["register a property", "property registry", "sale deed registration"],
     "mutation": ["mutation of property", "change land owner", "land record transfer", "record mutation"],
     "encumbrance_certificate": ["encumbrance", "property ec", "non encumbrance certificate"],
