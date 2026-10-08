@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Dict, List
 
 from .domain import Case, TaskState, TaskStatus
-from .process_work_recipes import work_recipe, work_atom_metadata
+from .process_work_recipes import work_recipe, work_atom_metadata, atom_task_mapping
 from .government_process_kernel import infer_process_profile
 
 
@@ -67,6 +67,16 @@ class EmployeeAutomationService:
             })()
         )
         recipe = work_recipe(profile.key)
+        atom_mapping = atom_task_mapping()
+        execution_coverage = {}
+        for atom in recipe:
+            task_id = atom_mapping.get(atom)
+            task = case.tasks.get(task_id) if task_id else None
+            execution_coverage[atom] = {
+                "task_id": task_id,
+                "status": task.status.value if task else ("completed" if task_id == "engine_case_creation" else "not_materialized"),
+                "executed": bool(task and task.status == TaskStatus.COMPLETED) or task_id == "engine_case_creation",
+            }
 
         return {
             "mode": "operator_intelligence",
@@ -99,6 +109,7 @@ class EmployeeAutomationService:
                     for atom in recipe
                     if atom in work_atom_metadata()
                 },
+                "execution_coverage": execution_coverage,
             },
         }
 
