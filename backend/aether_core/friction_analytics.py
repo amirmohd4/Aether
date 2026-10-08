@@ -93,6 +93,33 @@ def analyze_case_friction(case) -> Dict[str, Any]:
             "aether_action": "prepare the officer packet and return the result to the graph automatically",
         })
 
+    bottleneck_counts = {
+        "applicant": missing_docs,
+        "official": 0,
+        "statutory_or_field": 0,
+        "automation": 0,
+        "exception": len(case.exceptions),
+    }
+    bottleneck_tasks = []
+    for task in tasks:
+        status = task.status.value
+        if status == "human_review":
+            bottleneck_counts["statutory_or_field"] += 1
+            bottleneck_tasks.append({"task_id": task.definition.id, "owner": task.definition.department, "reason": "human decision or field action"})
+        elif status == "blocked":
+            bottleneck_counts["official"] += 1
+            bottleneck_tasks.append({"task_id": task.definition.id, "owner": task.definition.department, "reason": "upstream prerequisite"})
+        elif status in {"pending", "ready", "running"} and task.definition.department.lower() != "aether":
+            bottleneck_counts["official"] += 1
+            bottleneck_tasks.append({"task_id": task.definition.id, "owner": task.definition.department, "reason": "departmental work pending"})
+
+    top_bottleneck = "applicant" if missing_docs else (
+        "statutory_or_field" if bottleneck_counts["statutory_or_field"] else
+        "official" if bottleneck_counts["official"] else
+        "exception" if case.exceptions else
+        "none"
+    )
+
     recovery = {
         "mode": "automatic_recovery",
         "preserve_case_state": True,
@@ -116,5 +143,21 @@ def analyze_case_friction(case) -> Dict[str, Any]:
             "administrative_tasks_completed": completed_admin,
         },
         "recovery_plan": recovery,
+        "bottleneck": {
+            "top_bucket": top_bottleneck,
+            "counts": bottleneck_counts,
+            "tasks": bottleneck_tasks[:20],
+            "user_message": (
+                "Action needed from you: provide the missing evidence."
+                if top_bottleneck == "applicant"
+                else "Waiting on an authorised government decision or field action."
+                if top_bottleneck == "statutory_or_field"
+                else "Waiting on the responsible government department; Aether will track the dependency."
+                if top_bottleneck == "official"
+                else "Aether is handling the remaining automated work."
+                if top_bottleneck == "none"
+                else "Aether has identified an exception and is preparing recovery."
+            ),
+        },
         "note": "Friction scores are internal operational heuristics for prioritisation, not measured government service times.",
     }
