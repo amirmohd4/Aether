@@ -82,6 +82,8 @@ SERVICE_PROCESS_PROFILES = {
     "passport": GovernmentProcessProfile("passport", "Passport/consular workflow", interdepartmental=True),
     "visa": GovernmentProcessProfile("passport", "Visa workflow", interdepartmental=True),
     "udyam_registration": GovernmentProcessProfile("msme_registration", "MSME/Udyam registration"),
+    "health_scheme_claim": GovernmentProcessProfile("health_claim", "Government health scheme claim", payment_sensitive=True, interdepartmental=True),
+    "hospital_empanelment": GovernmentProcessProfile("health_empanelment", "Health scheme hospital empanelment", interdepartmental=True),
     "startup_india_recognition": GovernmentProcessProfile("msme_registration", "Startup recognition"),
     "company_master_data_change": GovernmentProcessProfile("corporate", "Corporate registry change"),
     "gst_registration_update": GovernmentProcessProfile("tax_registration", "GST registration amendment"),
