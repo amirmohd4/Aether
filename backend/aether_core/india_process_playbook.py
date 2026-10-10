@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import Any, Dict
+
 """India government process playbook.
 
 This is an operational archetype layer. It intentionally does not assert that
