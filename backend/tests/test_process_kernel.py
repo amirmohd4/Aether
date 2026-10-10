@@ -283,3 +283,14 @@ def test_grievance_case_has_whole_government_routing_step():
         inputs={},
     )
     assert "internal_whole_government_route" in case.tasks
+
+
+def test_udyam_recipe_uses_authoritative_prefill():
+    engine = AetherExecutionEngine()
+    service = engine.services.get("udyam_registration")
+    profile = infer_process_profile(service)
+    assert profile.key == "msme_registration"
+    assert "authoritative_prefill" in __import__(
+        "aether_core.process_work_recipes",
+        fromlist=["work_recipe"],
+    ).work_recipe(profile.key)
