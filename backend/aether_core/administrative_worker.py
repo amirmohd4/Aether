@@ -694,8 +694,25 @@ class AdministrativeWorker:
             str(task_id) for task_id, state in states.items()
             if isinstance(state, dict) and state.get("status") not in {"completed", "human_review"}
         ]
+        message_type = "action_required" if action_items else "interim_progress" if pending else "no_action"
+        notification_status = "not_queued"
+        if message_type != "no_action" and payload.get("tenant_id") and payload.get("owner_user_id"):
+            NotificationService(SessionLocal).enqueue(
+                tenant_id=payload.get("tenant_id"),
+                user_id=payload.get("owner_user_id"),
+                case_id=context.case_id,
+                event_type="case.interim_update",
+                channel="in_app",
+                payload={
+                    "type": message_type,
+                    "customer_actions": action_items[:20],
+                    "pending_task_ids": pending[:50],
+                },
+                idempotency_key=f"{context.case_id}:interim:{message_type}",
+            )
+            notification_status = "queued"
         return AdministrativeWorker._result(context, "interim_response", {
-            "type": "action_required" if action_items else "interim_progress" if pending else "no_action",
+            "type": message_type,
             "customer_action_required": bool(action_items),
             "customer_actions": action_items[:20],
             "pending_task_ids": pending[:50],
@@ -707,6 +724,7 @@ class AdministrativeWorker:
                 else "No interim action is required."
             ),
             "no_restart_required": True,
+            "notification_status": notification_status,
         })
 
     @staticmethod
