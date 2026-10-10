@@ -64,6 +64,7 @@ class AdministrativeWorker:
             "retirement_preflight": self._retirement_preflight,
             "case_passport": self._case_passport,
             "whole_government_route": self._whole_government_route,
+            "authoritative_prefill": self._authoritative_prefill,
             "interdepartment_handoff": self._interdepartment_handoff,
             "inspection_packet": self._inspection_packet,
             "joint_inspection": self._joint_inspection,
@@ -99,6 +100,35 @@ class AdministrativeWorker:
                 "source": "Aether Administrative Worker",
             },
         }
+
+    def _authoritative_prefill(self, context) -> Dict[str, Any]:
+        payload = context.payload
+        department = str(payload.get("service_department") or "").strip()
+        candidate_sources = [
+            {"source": "PAN", "field_group": "identity/tax", "available_without_upload": True},
+            {"source": "GST", "field_group": "business/tax", "available_without_upload": True},
+            {"source": "land_record", "field_group": "property", "available_without_upload": True},
+            {"source": "registration_record", "field_group": "property", "available_without_upload": True},
+            {"source": "prior_verified_case", "field_group": "continuity", "available_without_upload": True},
+        ]
+        external = self._execute_external(
+            department,
+            "authoritative_prefill",
+            {
+                "case_id": context.case_id,
+                "service_id": payload.get("service_id"),
+                "requested_fields": sorted(payload.keys()),
+            },
+            f"{context.case_id}:admin:authoritative-prefill",
+        )
+        return AdministrativeWorker._result(context, "authoritative_prefill", {
+            "candidate_sources": candidate_sources,
+            "prefill_status": external.get("status", "prepared"),
+            "connector_response": external,
+            "ask_user_only_for_unavailable_fields": True,
+            "overwrite_case_input_automatically": False,
+            "consent_or_authorisation_required_for_external_lookup": True,
+        })
 
     def _whole_government_route(self, context) -> Dict[str, Any]:
         payload = context.payload
