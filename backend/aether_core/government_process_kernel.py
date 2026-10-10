@@ -287,6 +287,13 @@ def build_administrative_tasks(
             "Identify ageing work, dependency waits and cases needing escalation.",
         ),
         _task(
+            "internal_deadline_guard",
+            "Authoritative service deadline guard",
+            "deadline_guard",
+            ["internal_case_triage", "internal_sla_snapshot"],
+            "Track an effective-dated service deadline when the jurisdiction rule profile supplies one.",
+        ),
+        _task(
             "internal_interim_response",
             "Automatic interim progress / deficiency response",
             "interim_response",
