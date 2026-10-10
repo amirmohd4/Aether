@@ -495,3 +495,42 @@ def test_form_mapper_eliminates_manual_copy_paste_and_tracks_provenance():
     assert result["mapping_status"] == "ready"
     assert result["copy_paste_eliminated"] is True
     assert {item["target_field"] for item in result["mapped_fields"]} == {"companyName", "pan"}
+
+
+def test_duplicate_case_screen_flags_existing_case_without_auto_merge():
+    from aether_core.duplicate_case_detection import find_duplicate_cases
+    from aether_core.domain import Case
+
+    class Store:
+        def list(self, **kwargs):
+            return [{"case_id": "A-OLD", "service_id": "property_registration"}]
+        def get(self, case_id):
+            return Case(
+                case_id=case_id,
+                objective="I want to register a property",
+                customer_type="citizen",
+                jurisdiction={"country": "India"},
+                inputs={"property_id": "PROP-1"},
+                requirements=[],
+                tasks={},
+                owner_user_id="U-1",
+                tenant_id="T-1",
+                service_id="property_registration",
+            )
+
+    case = Case(
+        case_id="A-NEW",
+        objective="I want to register a property",
+        customer_type="citizen",
+        jurisdiction={"country": "India"},
+        inputs={"property_id": "PROP-1"},
+        requirements=[],
+        tasks={},
+        owner_user_id="U-1",
+        tenant_id="T-1",
+        service_id="property_registration",
+    )
+    result = find_duplicate_cases(Store(), case)
+    assert result["duplicate_candidate_count"] == 1
+    assert result["auto_merge"] is False
+    assert result["duplicate_candidates"][0]["confidence"] == "medium"
