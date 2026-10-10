@@ -234,6 +234,33 @@ class DatabaseCaseStore:
             db.add(row)
             db.commit()
 
+    def documents_by_hash(
+        self,
+        sha256: str,
+        tenant_id: str | None = None,
+        owner_user_id: str | None = None,
+    ) -> List[Dict[str, Any]]:
+        self._ensure_schema()
+        with SessionLocal() as db:
+            query = db.query(AetherDocumentRecord).filter(
+                AetherDocumentRecord.sha256 == sha256
+            )
+            if tenant_id is not None:
+                query = query.filter(AetherDocumentRecord.tenant_id == tenant_id)
+            if owner_user_id is not None:
+                query = query.filter(AetherDocumentRecord.owner_user_id == owner_user_id)
+            rows = query.order_by(AetherDocumentRecord.created_at.desc()).limit(20).all()
+            return [{
+                "document_id": row.document_id,
+                "case_id": row.case_id,
+                "tenant_id": row.tenant_id,
+                "owner_user_id": row.owner_user_id,
+                "document_type": row.document_type,
+                "filename": row.filename,
+                "sha256": row.sha256,
+                "created_at": row.created_at.isoformat() if row.created_at else None,
+            } for row in rows]
+
     def documents_for(self, case_id: str, tenant_id: str | None = None) -> List[Dict[str, Any]]:
         self._ensure_schema()
         with SessionLocal() as db:
