@@ -375,7 +375,7 @@ def build_administrative_tasks(
         mapped_task_id = atom_mapping.get(atom)
         if atom == "register_case" or (mapped_task_id and mapped_task_id in existing_task_ids):
             continue
-        task_id = "internal_work_atom_" + atom
+        task_id = mapped_task_id or ("internal_work_atom_" + atom)
         if task_id in existing_task_ids:
             continue
         meta = atom_meta.get(atom) or {
@@ -383,11 +383,12 @@ def build_administrative_tasks(
             "automation": "prepare_only",
             "human_boundary": False,
         }
+        operation = atom if mapped_task_id else "work_atom"
         tasks.append(
             _task(
                 task_id,
                 meta["label"],
-                "work_atom",
+                operation,
                 ["internal_data_normalization"],
                 f"Execute or prepare the {atom} employee work atom according to its authority mode.",
             )
