@@ -297,6 +297,13 @@ def build_administrative_tasks(
             "Track an effective-dated service deadline when the jurisdiction rule profile supplies one.",
         ),
         _task(
+            "internal_inspection_quality_guard",
+            "Inspection packet quality guard",
+            "inspection_quality_guard",
+            ["internal_inspection_packet"],
+            "Ensure the inspection packet contains the required evidence and checklist before an authorised field visit.",
+        ),
+        _task(
             "internal_interim_response",
             "Automatic interim progress / deficiency response",
             "interim_response",
