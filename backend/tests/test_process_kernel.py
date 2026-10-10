@@ -350,3 +350,41 @@ def test_health_claim_process_recipe_is_deep():
     assert "claim_query_tracking" in recipe
     assert "nodal_route" in recipe
     assert "claim_anomaly_screen" in recipe
+
+
+def test_replan_resets_only_changed_branch_and_preserves_unrelated_completed_work():
+    engine = AetherExecutionEngine()
+    case = engine.create_case(
+        objective="I want to open a restaurant",
+        customer_type="business",
+        jurisdiction={"country": "India", "state": "Jammu and Kashmir"},
+        inputs={
+            "documents": [
+                "identity_document",
+                "lease_or_ownership",
+                "floor_plan",
+                "business_registration",
+            ]
+        },
+    )
+    case = engine.execute_until_pause(case.case_id)
+
+    unrelated = case.tasks.get("internal_case_triage")
+    assert unrelated is not None
+    assert unrelated.status == TaskStatus.COMPLETED
+
+    replanned = engine.replan_case(
+        case.case_id,
+        ["document_intake"],
+        reason="Applicant corrected a document.",
+    )
+    assert replanned.tasks["document_intake"].status in {
+        TaskStatus.HUMAN_REVIEW,
+        TaskStatus.COMPLETED,
+        TaskStatus.EXCEPTION,
+    }
+    assert replanned.tasks["internal_case_triage"].status == TaskStatus.COMPLETED
+    assert any(
+        event.get("action") == "case.replanned"
+        for event in replanned.execution_events
+    )
