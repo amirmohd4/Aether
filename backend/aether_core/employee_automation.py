@@ -7,6 +7,7 @@ from .process_work_recipes import work_recipe, work_atom_metadata, atom_task_map
 from .government_process_kernel import infer_process_profile
 from .friction_analytics import analyze_case_friction
 from .india_process_playbook import playbook_for
+from .effort_impact import estimate_effort_impact
 
 
 class EmployeeAutomationService:
@@ -70,6 +71,11 @@ class EmployeeAutomationService:
             })()
         )
         recipe = work_recipe(profile.key)
+        process_data = {
+            "employee_work_recipe": recipe,
+            "human_boundary": playbook_for(profile.key).get("human_boundary") if profile.key else [],
+        }
+        effort_impact = estimate_effort_impact(process_data)
         atom_mapping = atom_task_mapping()
         execution_coverage = {}
         for atom in recipe:
@@ -115,6 +121,7 @@ class EmployeeAutomationService:
                     if atom in work_atom_metadata()
                 },
                 "execution_coverage": execution_coverage,
+                "effort_impact": effort_impact,
             },
         }
 
