@@ -31,6 +31,32 @@ JOURNEY_CASCADES = {
         {"service_id": "food_business_license", "reason": "food-sector registration may apply to food businesses"},
         {"service_id": "fire_noc", "reason": "fire-safety clearance may apply based on premises/risk"},
     ],
+
+    "factory_license": [
+        {"service_id": "factory_plan_approval", "reason": "factory layout/plan approval may be required"},
+        {"service_id": "pollution_consent", "reason": "environment consent may apply based on industry"},
+        {"service_id": "fire_noc", "reason": "fire-safety clearance may apply based on premises/risk"},
+    ],
+    "hospital_empanelment": [
+        {"service_id": "clinical_establishment_registration", "reason": "clinical establishment registration may be linked"},
+        {"service_id": "drug_sale_license", "reason": "drug licence may apply where medicines are dispensed"},
+    ],
+    "vehicle_registration": [
+        {"service_id": "vehicle_fitness_certificate", "reason": "fitness certification may apply to applicable vehicle classes"},
+        {"service_id": "vehicle_permit", "reason": "transport permit may apply to commercial use"},
+        {"service_id": "road_tax", "reason": "motor vehicle tax may be due"},
+    ],
+    "education_scholarship": [
+        {"service_id": "education_scholarship", "reason": "scholarship verification/renewal continues through institute and nodal levels"},
+    ],
+    "passport": [
+        {"service_id": "police_verification", "reason": "police verification may form part of the passport journey"},
+        {"service_id": "character_certificate", "reason": "police certificate may be independently required for some purposes"},
+    ],
+    "land_mutation": [
+        {"service_id": "property_tax_assessment", "reason": "updated ownership may affect local property records"},
+        {"service_id": "property_tax_payment", "reason": "current tax dues may need reconciliation"},
+    ],
 }
 
 
