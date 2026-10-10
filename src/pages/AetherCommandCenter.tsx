@@ -103,6 +103,13 @@ type OperatorBrief = {
     label: string;
     employee_work_recipe: string[];
     work_atoms: Record<string, { label: string; automation: string; human_boundary: boolean }>;
+    journey_playbook?: {
+      stages: string[];
+      employee_work: string[];
+      parallelizable: string[];
+      citizen_wait_points: string[];
+      human_boundary: string[];
+    };
   };
 };
 
@@ -1196,6 +1203,24 @@ export const AetherCommandCenter: React.FC = () => {
                             {caseData.operator.process.employee_work_recipe.length} work atoms
                           </span>
                         </div>
+                        {caseData.operator.process.journey_playbook && (
+                          <div className="mt-3">
+                            <p className="text-[9px] uppercase tracking-wide text-slate-500">Journey stages</p>
+                            <div className="mt-2 flex flex-wrap items-center gap-1">
+                              {caseData.operator.process.journey_playbook.stages.map((stage, index) => (
+                                <React.Fragment key={stage + index}>
+                                  <span className="rounded-full border border-white/10 bg-black/10 px-2 py-1 text-[8px] text-slate-300">
+                                    {stage}
+                                  </span>
+                                  {index < caseData.operator.process.journey_playbook!.stages.length - 1 && (
+                                    <ArrowRight className="h-3 w-3 text-slate-600" />
+                                  )}
+                                </React.Fragment>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
                         <div className="mt-3 flex flex-wrap gap-1.5">
                           {caseData.operator.process.employee_work_recipe.slice(0, 8).map((atom) => (
                             <span key={atom} className="rounded-full border border-white/10 bg-black/10 px-2 py-1 text-[9px] text-slate-300">
