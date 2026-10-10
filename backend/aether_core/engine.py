@@ -19,6 +19,7 @@ from .service_registry import ServiceRegistry
 from .government_process_kernel import build_administrative_tasks, infer_process_profile
 from .process_work_recipes import work_recipe
 from .jurisdiction_process_profiles import JurisdictionProcessRegistry
+from .rule_change_impact import diff_process_profiles
 from .workers import WorkerContext, WorkerRegistry
 
 
@@ -115,6 +116,29 @@ class AetherExecutionEngine:
                 metadata={"service_id": case.service_id, "service_outcome": case.service_outcome},
             )
         return case
+
+    def process_profile_status(self, case: Case) -> Dict[str, Any]:
+        current = self.process_profiles.readiness(
+            case.service_id or "",
+            case.jurisdiction,
+        )
+        previous_fingerprint = case.process_profile_fingerprint
+        current_fingerprint = current.get("fingerprint")
+        changed = bool(
+            previous_fingerprint
+            and current_fingerprint
+            and previous_fingerprint != current_fingerprint
+        )
+        impact = None
+        if changed:
+            impact = diff_process_profiles(case.process_profile_snapshot or {}, current)
+        return {
+            "status": "changed" if changed else "unchanged" if current_fingerprint else "unknown",
+            "previous_fingerprint": previous_fingerprint,
+            "current_fingerprint": current_fingerprint,
+            "impact": impact,
+            "current_profile": current,
+        }
 
     def get_case(self, case_id: str) -> Case:
         if case_id in self.cases:
