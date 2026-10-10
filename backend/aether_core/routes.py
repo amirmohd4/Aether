@@ -21,6 +21,7 @@ from .government_process_kernel import infer_process_profile
 from .jurisdiction_process_profiles import JurisdictionProcessRegistry
 from .work_batching import build_operator_batches
 from .case_passport import build_case_passport
+from .preflight_simulator import simulate_submission
 from .workload_intelligence import build_workload_snapshot
 from .rule_change_impact import diff_process_profiles
 from backend.database import SessionLocal
@@ -824,6 +825,40 @@ def operator_batches(
             continue
     batches = build_operator_batches(briefs)[:max(1, min(limit, 100))]
     return {"batches": batches}
+
+
+@router.post("/process/simulate")
+def simulate_process(request: StartCaseRequest, principal: Principal = Depends(require_scope("cases:read"))):
+    understanding = understanding_engine.understand(
+        request.objective,
+        request.customer_type,
+        request.jurisdiction,
+    )
+    if understanding.service_id is None or understanding.ambiguous:
+        return {
+            "status": "needs_clarification",
+            "understanding": understanding.as_dict(),
+            "candidates": understanding.candidates,
+        }
+    service = engine.services.get(understanding.service_id)
+    requirements = requirements_engine.discover(
+        request.objective,
+        request.customer_type,
+        request.jurisdiction,
+        request.inputs,
+    )
+    profile = jurisdiction_process_registry.readiness(
+        service.id,
+        request.jurisdiction,
+    )
+    from .india_process_playbook import playbook_for
+    return simulate_submission(
+        service=service,
+        requirements=[item.__dict__ for item in requirements],
+        inputs=request.inputs,
+        process_profile=profile,
+        journey_playbook=playbook_for(infer_process_profile(service).key),
+    )
 
 
 @router.post("/cases")
