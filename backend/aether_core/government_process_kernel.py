@@ -289,6 +289,13 @@ def build_administrative_tasks(
             "Explain what is waiting or missing without requiring the applicant to restart the case.",
         ),
         _task(
+            "internal_preflight_check",
+            "Automatic pre-submission scrutiny",
+            "preflight_check",
+            ["internal_case_file", "internal_data_normalization", "internal_continuity_review"],
+            "Catch missing evidence, conflicting identifiers and known recurring issues before downstream government submission.",
+        ),
+        _task(
             "internal_recovery_plan",
             "Automatic exception recovery and replan",
             "recovery_plan",
