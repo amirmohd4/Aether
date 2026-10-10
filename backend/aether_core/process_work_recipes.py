@@ -12,6 +12,7 @@ EMPLOYEE_WORK_ATOMS = {
     "retirement_preflight": {"label": "Prepare pension case before retirement", "automation": "full", "human_boundary": False},
     "case_passport": {"label": "Create portable case handoff packet", "automation": "full", "human_boundary": False},
     "whole_government_route": {"label": "Route case to correct authority", "automation": "full_with_connector", "human_boundary": False},
+    "authoritative_prefill": {"label": "Prefill from authoritative government records", "automation": "full_with_connector", "human_boundary": False},
     "check_completeness": {"label": "Check application completeness", "automation": "full", "human_boundary": False},
     "extract_document_facts": {"label": "Extract facts from documents", "automation": "full", "human_boundary": False},
     "lookup_record": {"label": "Lookup departmental record", "automation": "full_with_connector", "human_boundary": False},
@@ -53,7 +54,7 @@ PROCESS_WORK_RECIPES = {
         "prepare_certificate", "prepare_decision_brief",
     ],
     "property_registration": [
-        "register_case", "case_passport", "journey_cascade", "check_completeness", "continuity_review", "preflight_check", "extract_document_facts",
+        "register_case", "case_passport", "journey_cascade", "check_completeness", "authoritative_prefill", "continuity_review", "preflight_check", "extract_document_facts",
         "scrutinize_deed", "verify_identity", "lookup_encumbrance",
         "lookup_property_record", "calculate_duty", "reconcile_records",
         "schedule_appointment", "prepare_registration_packet",
@@ -129,7 +130,7 @@ PROCESS_WORK_RECIPES = {
         "reconcile_demand_payment", "prepare_order",
     ],
     "corporate_incorporation": [
-        "register_case", "case_passport", "journey_cascade", "check_completeness", "continuity_review", "preflight_check",
+        "register_case", "case_passport", "journey_cascade", "check_completeness", "authoritative_prefill", "continuity_review", "preflight_check",
         "validate_entity", "prepare_form", "compare_resubmission",
         "reconcile_registry_records", "shared_compliance_profile",
         "prepare_certificate", "prepare_decision_brief",
@@ -139,8 +140,12 @@ PROCESS_WORK_RECIPES = {
         "prepare_form", "compare_resubmission", "reconcile_registry_records",
         "prepare_certificate",
     ],
+    "msme_registration": [
+        "register_case", "authoritative_prefill", "check_completeness",
+        "preflight_check", "prepare_certificate", "case_passport",
+    ],
     "pension": [
-        "register_case", "case_passport", "check_completeness", "continuity_review",
+        "register_case", "case_passport", "check_completeness", "authoritative_prefill", "continuity_review",
         "retirement_preflight", "extract_document_facts", "lookup_record",
         "reconcile_records", "prepare_sanction_packet", "reconcile_payment",
         "prepare_decision_brief", "start_followup_watch",
@@ -203,6 +208,7 @@ ATOM_TASK_MAPPING = {
     "retirement_preflight": "internal_retirement_preflight",
     "case_passport": "internal_case_passport",
     "whole_government_route": "internal_whole_government_route",
+    "authoritative_prefill": "internal_authoritative_prefill",
     "check_completeness": "internal_case_file",
     "extract_document_facts": "document_intake",
     "lookup_record": "service_lookup",
