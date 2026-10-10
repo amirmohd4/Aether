@@ -555,3 +555,34 @@ def test_remediation_planner_produces_one_clear_next_action():
     assert result["status"] == "action_required"
     assert result["actions"][0]["owner"] == "applicant"
     assert result["actions"][0]["blocks_case"] is True
+
+
+def test_escalation_engine_surfaces_safety_and_human_boundaries():
+    from aether_core.escalation_engine import classify_escalation
+    from aether_core.domain import Case, TaskDefinition, TaskState, TaskStatus
+
+    case = Case(
+        case_id="A-ESC",
+        objective="I need urgent fire safety approval",
+        customer_type="business",
+        jurisdiction={"country": "India"},
+        inputs={},
+        requirements=[],
+        tasks={
+            "inspection": TaskState(
+                TaskDefinition(
+                    "inspection",
+                    "Physical inspection",
+                    "Fire",
+                    "InspectionCoordinator",
+                    physical_action=True,
+                ),
+                status=TaskStatus.HUMAN_REVIEW,
+            )
+        },
+        exceptions=[{"type": "safety", "severity": "high"}],
+    )
+    result = classify_escalation(case)
+    assert result["level"] in {"high", "critical"}
+    assert result["supervisor_attention"] is True
+    assert result["statutory_decision_automation"] is False
