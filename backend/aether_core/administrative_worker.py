@@ -70,6 +70,7 @@ class AdministrativeWorker:
             "whole_government_route": self._whole_government_route,
             "authoritative_prefill": self._authoritative_prefill,
             "deadline_guard": self._deadline_guard,
+            "inspection_quality_guard": self._inspection_quality_guard,
             "resubmission_diff": self._resubmission_diff,
             "intermediate_handoffs": self._intermediate_handoffs,
             "verification_chain": self._verification_chain,
@@ -291,6 +292,28 @@ class AdministrativeWorker:
             "printable_checklist": True,
             "reentry_avoided": True,
             "target": "authorised service centre / customs operator",
+        })
+
+    @staticmethod
+    def _inspection_quality_guard(context) -> Dict[str, Any]:
+        payload = context.payload
+        checklist = list(payload.get("inspection_checklist") or [])
+        documents = payload.get("documents") or []
+        physical_tasks = payload.get("physical_tasks") or []
+        blockers = []
+        if not physical_tasks:
+            blockers.append({"code": "NO_PHYSICAL_TASK", "message": "No authorised physical inspection task is present."})
+        if not checklist:
+            blockers.append({"code": "NO_INSPECTION_CHECKLIST", "message": "Inspection checklist is missing; do not create an unstructured field visit."})
+        if not documents:
+            blockers.append({"code": "NO_SUPPORTING_EVIDENCE", "message": "No supporting applicant evidence is attached to the inspection packet."})
+        return AdministrativeWorker._result(context, "inspection_quality_guard", {
+            "ready_for_authorised_inspection": not blockers,
+            "blockers": blockers,
+            "checklist_item_count": len(checklist),
+            "supporting_document_count": len(documents),
+            "result_source": "authorised_inspector_only",
+            "safety_rule": "Aether may accelerate preparation and routing, but never infer or fabricate an inspection finding.",
         })
 
     @staticmethod
