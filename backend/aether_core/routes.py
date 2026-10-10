@@ -21,6 +21,7 @@ from .government_process_kernel import infer_process_profile
 from .jurisdiction_process_profiles import JurisdictionProcessRegistry
 from .work_batching import build_operator_batches
 from .case_passport import build_case_passport
+from .workload_intelligence import build_workload_snapshot
 from backend.database import SessionLocal
 from sqlalchemy import text
 
@@ -762,6 +763,28 @@ def operator_queue(
         brief.get("case_id", ""),
     ))
     return {"cases": briefs[:max(1, min(limit, 100))]}
+
+
+@router.get("/operator/workload")
+def operator_workload(
+    limit: int = 100,
+    principal: Principal = Depends(require_scope("cases:read")),
+):
+    if principal.role.lower() not in {"officer", "department_admin", "admin"}:
+        raise HTTPException(status_code=403, detail="Operator workload requires an operator role")
+    visible = _list_visible_cases(principal, limit=max(1, min(limit, 100)))
+    cases = []
+    for item in visible:
+        try:
+            cases.append(engine.get_case(item["case_id"]))
+        except KeyError:
+            continue
+    snapshot = build_workload_snapshot(cases)
+    return {
+        "case_count": len(cases),
+        "workload": snapshot,
+        "message": "Use this snapshot to clear bottlenecks and batch repeatable work; staffing reassignment remains policy-controlled.",
+    }
 
 
 @router.get("/operator/batches")
