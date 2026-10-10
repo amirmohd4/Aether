@@ -121,7 +121,7 @@ PROCESS_WORK_RECIPES = {
     ],
     "customs": [
         "register_case", "authoritative_prefill", "check_completeness",
-        "service_center_packet", "query_response_packet",
+        "service_center_packet", "prepare_query",
         "intermediate_handoff_tracking", "reconcile_records",
         "prepare_decision_brief", "deadline_guard",
     ],
