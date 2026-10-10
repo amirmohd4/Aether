@@ -297,3 +297,64 @@ https://jansugam.jk.gov.in/databoard
 https://fieo.org/en/view_section.php?id=0%2C2993%2C3011%2C3086&lang=0
 https://fieo.org/en/view_section.php?id=0%2C2993%2C3011%2C3136&lang=0
 
+
+## 15. New concrete signals: inspections, mutation, tax mismatch and regulatory queries
+
+### J&K — make the inspection clock visible
+A September 2026 report on a J&K Housing & Urban Development order says eight
+urban services received a maximum seven-working-day window for field inspections.
+The product lesson is not to invent a seven-day SLA globally; it is to ingest
+jurisdiction-specific inspection clocks and show the responsible owner, elapsed
+time and escalation threshold.
+
+**Aether change:** deadline_guard should support effective-dated, jurisdiction-specific
+inspection SLAs and send a risk notification before the statutory/service threshold.
+
+Source:
+https://jammubeat.com/post/seven-days-for-an-inspection-jk-puts-a-clock-on-eight-permissions-a-new-business-needs
+
+### Delhi MCD — speed without inspection quality is dangerous
+Reporting after the Hauz Rani fire described a 78-day gap between assignment of a
+health-trade-licence inspection and submission of the inspection report, alongside
+an inquiry into the adequacy of the inspection.
+
+**Aether change:** high-risk inspection workflows require a structured packet,
+checklist, evidence lineage and authorised finding; Aether can accelerate preparation
+and routing but cannot auto-clear the inspection.
+
+Sources:
+https://timesofindia.indiatimes.com/city/delhi/mcd-terminates-contractual-inspector-transfers-dho-after-hauz-rani-fire-tragedy/articleshow/131664836.cms
+https://www.tribuneindia.com/news/delhi/hauz-rani-fire-mcd-terminates-inspector-transfers-deputy-health-officer-over-licence-clearance-lapses-628726
+
+### Haryana — digital mutation can still become a large manual backlog
+An August 2026 report citing Haryana revenue data said more than 3,260 land-mutation
+cases were pending in Fatehabad district across several tehsil areas.
+
+**Aether change:** completed registration should create a downstream mutation candidate,
+while open mutation cases get bottleneck classification, record reconciliation,
+field-verification tracking and escalation instead of remaining an opaque queue.
+
+Source:
+https://www.tribuneindia.com/news/haryana/inld-leader-slams-haryana-government-over-pending-land-mutation-cases-in-fatehabad
+
+### GST audit — mismatches are an employee-work opportunity
+A 2026 CAG audit of Haryana GST found high-value data inconsistencies, mismatches
+between returns and tax liability and delayed/non-issued notices in multiple cases.
+
+**Aether change:** detect cross-return mismatches early, assemble evidence for the
+tax officer, generate the query packet, compare the taxpayer response, and preserve
+the audit trail.
+
+Source:
+https://saiindia.gov.in/en/audit-report/details/126255
+
+### CDSCO SUGAM — "awaiting query response" must become a managed sub-workflow
+CDSCO's 2026 public notices include a dedicated notice for disposal/rejection of
+long-pending applications awaiting query response.
+
+**Aether change:** query_reason normalization + response drafting + applicant/employee
+deadline tracking + branch-level replan should be standard for regulatory applications.
+
+Source:
+https://cdsco.gov.in/opencms/opencms/en/Notifications/Public-Notices/
+
