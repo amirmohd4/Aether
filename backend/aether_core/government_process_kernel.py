@@ -5,7 +5,7 @@ from typing import Iterable, List
 
 from .domain import TaskDefinition
 from .service_registry import ServiceDefinition
-from .process_work_recipes import work_recipe, atom_task_mapping, work_atom_metadata
+from .process_work_recipes import work_recipe, atom_task_mapping, work_atom_metadata, atom_dependencies
 
 
 @dataclass(frozen=True)
@@ -408,7 +408,7 @@ def build_administrative_tasks(
                 task_id,
                 meta["label"],
                 operation,
-                ["internal_data_normalization"],
+                atom_dependencies(atom),
                 f"Execute or prepare the {atom} employee work atom according to its authority mode.",
             )
         )
