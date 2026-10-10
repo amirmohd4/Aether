@@ -14,6 +14,7 @@ from .case_passport import build_case_passport
 from .deadline_guard import build_deadline_guard
 from .query_normalizer import normalize_queries
 from .field_mapper import prepare_form_mapping
+from .financial_reconciliation import reconcile_financial_position
 from backend.database import SessionLocal
 
 
@@ -1216,17 +1217,13 @@ class AdministrativeWorker:
             for item in payments
             if item.get("status") == "succeeded"
         )
-        balance = None if known_due is None else max(0, known_due - paid)
+        financial = reconcile_financial_position(
+            task_results=results,
+            payment_records=payments,
+        )
         return AdministrativeWorker._result(context, "fee_reconciliation", {
-            "known_demand_minor": known_due,
-            "paid_minor": paid,
-            "balance_minor": balance,
+            **financial,
             "payment_records": payments,
-            "reconciliation_status": (
-                "balanced" if known_due is not None and balance == 0
-                else "payment_due" if known_due is not None and balance > 0
-                else "awaiting_authoritative_demand"
-            ),
             "demand_source": "case_input_or_connector_result",
         })
 
