@@ -431,3 +431,23 @@ def test_process_profile_change_status_detects_changed_authoritative_profile():
     status = engine.process_profile_status(case)
     assert status["status"] == "changed"
     assert status["impact"]["impact"]["reprepare_forms"] is True
+
+
+def test_inspection_quality_guard_requires_structured_packet():
+    from aether_core.administrative_worker import AdministrativeWorker
+    from aether_core.workers import WorkerContext
+
+    result = AdministrativeWorker().execute(WorkerContext(
+        case_id="A-TEST",
+        department="Aether",
+        operation="inspection_quality_guard",
+        payload={
+            "physical_tasks": [{"id": "inspection"}],
+            "documents": [],
+            "inspection_checklist": [],
+        },
+    ))
+    assert result["status"] == "completed"
+    assert result["result"]["ready_for_authorised_inspection"] is False
+    codes = {item["code"] for item in result["result"]["blockers"]}
+    assert {"NO_INSPECTION_CHECKLIST", "NO_SUPPORTING_EVIDENCE"}.issubset(codes)
