@@ -8,6 +8,7 @@ from .notifications import NotificationService
 from .payments import PaymentService
 from .process_work_recipes import work_recipe, work_atom_metadata
 from .journey_cascades import cascade_for
+from .journey_bundle import build_journey_bundle
 from .case_continuity import build_continuity_review
 from .case_passport import build_case_passport
 from .deadline_guard import build_deadline_guard
@@ -61,6 +62,7 @@ class AdministrativeWorker:
             "interim_response": self._interim_response,
             "recovery_plan": self._recovery_plan,
             "journey_cascade": self._journey_cascade,
+            "journey_bundle": self._journey_bundle,
             "continuity_review": self._continuity_review,
             "preflight_check": self._preflight_check,
             "retirement_preflight": self._retirement_preflight,
@@ -444,6 +446,15 @@ class AdministrativeWorker:
             current_inputs=payload,
         )
         return AdministrativeWorker._result(context, "continuity_review", review)
+
+    @staticmethod
+    def _journey_bundle(context) -> Dict[str, Any]:
+        payload = context.payload
+        return AdministrativeWorker._result(context, "journey_bundle", build_journey_bundle(
+            str(payload.get("service_id") or ""),
+            objective=str(payload.get("objective") or ""),
+            inputs=payload,
+        ))
 
     @staticmethod
     def _journey_cascade(context) -> Dict[str, Any]:
