@@ -237,3 +237,18 @@ def test_continuity_review_is_scoped_and_never_auto_reuses():
     assert review["status"] == "unavailable"
     assert review["policy"]["auto_copy"] is False
     assert review["policy"]["explicit_user_confirmation_required"] is True
+
+
+def test_pension_case_preflight_is_materialized_and_completed():
+    engine = AetherExecutionEngine()
+    case = engine.create_case(
+        objective="I want to process a government pension claim",
+        customer_type="citizen",
+        jurisdiction={"country": "India", "state": "Jammu and Kashmir"},
+        inputs={"employee_id": "EMP-1", "date_of_retirement": "2027-03-31"},
+    )
+    case = engine.execute_until_pause(case.case_id)
+
+    assert case.tasks["internal_retirement_preflight"].status == TaskStatus.COMPLETED
+    result = case.tasks["internal_retirement_preflight"].result or {}
+    assert result.get("status") in {"prepared", "completed"}
