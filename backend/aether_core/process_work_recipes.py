@@ -211,6 +211,24 @@ PROCESS_WORK_RECIPES = {
     ],
 }
 
+ATOM_DEPENDENCIES = {
+    "journey_cascade": ["internal_case_triage"],
+    "continuity_review": ["internal_case_file"],
+    "authoritative_prefill": ["internal_case_file"],
+    "case_passport": ["internal_data_normalization"],
+    "resubmission_diff_packet": ["internal_data_normalization"],
+    "intermediate_handoff_tracking": ["internal_case_file"],
+    "verification_chain_tracking": ["internal_case_file"],
+    "service_center_packet": ["internal_case_file", "internal_form_prep"],
+    "shared_compliance_profile": ["internal_data_normalization"],
+    "renewal_bundle": ["internal_shared_compliance_profile"],
+    "joint_inspection_plan": ["internal_inspection_packet"],
+    "preflight_check": ["internal_case_file", "internal_data_normalization"],
+    "retirement_preflight": ["internal_case_file"],
+    "whole_government_route": ["internal_case_notes", "internal_case_file"],
+}
+
+
 ATOM_TASK_MAPPING = {
     "register_case": "engine_case_creation",
     "journey_cascade": "internal_journey_cascade",
@@ -262,6 +280,11 @@ ATOM_TASK_MAPPING = {
 
 def atom_task_mapping() -> dict[str, str]:
     return dict(ATOM_TASK_MAPPING)
+
+
+def atom_dependencies(atom: str) -> list[str]:
+    return list(ATOM_DEPENDENCIES.get(atom, ("internal_data_normalization",)))
+
 
 
 def work_atom_metadata() -> dict[str, dict[str, object]]:
