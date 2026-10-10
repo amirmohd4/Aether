@@ -224,3 +224,16 @@ def test_operator_batching_groups_repeated_automated_work():
     assert batches[0]["case_count"] == 2
     assert batches[0]["task_id"] == "internal_form_prep"
     assert batches[0]["execution_mode"] == "prepare_and_review"
+
+
+def test_continuity_review_is_scoped_and_never_auto_reuses():
+    from aether_core.case_continuity import build_continuity_review
+
+    review = build_continuity_review(
+        tenant_id=None,
+        owner_user_id=None,
+        service_id="company_registration",
+    )
+    assert review["status"] == "unavailable"
+    assert review["policy"]["auto_copy"] is False
+    assert review["policy"]["explicit_user_confirmation_required"] is True
