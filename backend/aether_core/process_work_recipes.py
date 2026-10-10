@@ -16,6 +16,7 @@ EMPLOYEE_WORK_ATOMS = {
     "authoritative_prefill": {"label": "Prefill from authoritative government records", "automation": "full_with_connector", "human_boundary": False},
     "deadline_guard": {"label": "Track authoritative service deadline", "automation": "policy_backed", "human_boundary": False},
     "inspection_quality_guard": {"label": "Check inspection packet quality before field visit", "automation": "full", "human_boundary": False},
+    "duplicate_case_screen": {"label": "Screen for duplicate government cases", "automation": "full", "human_boundary": False},
     "claim_query_tracking": {"label": "Track claim queries and rejection reasons", "automation": "full", "human_boundary": False},
     "nodal_route": {"label": "Route inter-state or exception case to nodal authority", "automation": "full_with_connector", "human_boundary": False},
     "claim_anomaly_screen": {"label": "Screen claim for data and duplicate anomalies", "automation": "full", "human_boundary": False},
@@ -66,7 +67,7 @@ PROCESS_WORK_RECIPES = {
         "prepare_certificate", "prepare_decision_brief",
     ],
     "property_registration": [
-        "register_case", "case_passport", "journey_cascade", "journey_bundle", "check_completeness", "authoritative_prefill", "continuity_review", "preflight_check", "extract_document_facts",
+        "register_case", "case_passport", "journey_cascade", "journey_bundle", "check_completeness", "authoritative_prefill", "continuity_review", "preflight_check", "duplicate_case_screen", "extract_document_facts",
         "scrutinize_deed", "verify_identity", "lookup_encumbrance",
         "lookup_property_record", "calculate_duty", "reconcile_records",
         "schedule_appointment", "prepare_registration_packet",
@@ -87,7 +88,7 @@ PROCESS_WORK_RECIPES = {
         "schedule_appointment", "prepare_registration_packet",
     ],
     "municipal_license": [
-        "register_case", "case_passport", "journey_cascade", "check_completeness", "continuity_review", "preflight_check", "lookup_property",
+        "register_case", "case_passport", "journey_cascade", "check_completeness", "continuity_review", "preflight_check", "duplicate_case_screen", "lookup_property",
         "zoning_scrutiny", "check_dues", "coordinate_nocs",
         "schedule_inspection", "inspection_quality_guard", "prepare_demand", "prepare_decision_brief",
     ],
@@ -115,7 +116,7 @@ PROCESS_WORK_RECIPES = {
         "prepare_recommendation", "prepare_decision_brief",
     ],
     "food_license": [
-        "register_case", "case_passport", "journey_cascade", "classify_business", "check_completeness", "continuity_review", "preflight_check",
+        "register_case", "case_passport", "journey_cascade", "classify_business", "check_completeness", "continuity_review", "preflight_check", "duplicate_case_screen",
         "validate_premises", "schedule_inspection", "inspection_quality_guard", "joint_inspection_plan",
         "shared_compliance_profile", "renewal_bundle", "prepare_recommendation",
         "calculate_fee", "prepare_decision_brief",
@@ -148,7 +149,7 @@ PROCESS_WORK_RECIPES = {
         "reconcile_demand_payment", "prepare_order",
     ],
     "corporate_incorporation": [
-        "register_case", "resubmission_diff_packet",  "case_passport", "journey_cascade", "check_completeness", "authoritative_prefill", "continuity_review", "preflight_check",
+        "register_case", "resubmission_diff_packet",  "case_passport", "journey_cascade", "check_completeness", "authoritative_prefill", "continuity_review", "preflight_check", "duplicate_case_screen",
         "validate_entity", "prepare_form", "compare_resubmission",
         "reconcile_registry_records", "shared_compliance_profile",
         "prepare_certificate", "prepare_decision_brief",
@@ -265,6 +266,7 @@ ATOM_TASK_MAPPING = {
     "authoritative_prefill": "internal_authoritative_prefill",
     "deadline_guard": "internal_deadline_guard",
     "inspection_quality_guard": "internal_inspection_quality_guard",
+    "duplicate_case_screen": "internal_duplicate_case_screen",
     "claim_query_tracking": "internal_claim_query_tracking",
     "nodal_route": "internal_nodal_route",
     "claim_anomaly_screen": "internal_claim_anomaly_screen",
