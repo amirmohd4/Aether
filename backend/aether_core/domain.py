@@ -70,6 +70,7 @@ class Case:
     service_department: Optional[str] = None
     service_outcome: Optional[str] = None
     process_profile_fingerprint: Optional[str] = None
+    process_profile_snapshot: Optional[Dict[str, Any]] = None
     ontology: Dict[str, Any] = field(default_factory=dict)
     work_graph: Dict[str, Any] = field(default_factory=dict)
     execution_events: List[Dict[str, Any]] = field(default_factory=list)
