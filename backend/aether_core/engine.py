@@ -99,6 +99,7 @@ class AetherExecutionEngine:
             service_department=service.department if service else None,
             service_outcome=service.outcome if service else None,
             process_profile_fingerprint=process_profile.get("fingerprint"),
+            process_profile_snapshot=process_profile if process_profile.get("status") != "missing" else None,
             ontology=ontology.as_dict(),
             work_graph=work_graph.as_dict(),
         )
