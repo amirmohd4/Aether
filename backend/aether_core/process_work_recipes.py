@@ -7,6 +7,7 @@ rules, authority matrices, forms and timelines remain separate.
 EMPLOYEE_WORK_ATOMS = {
     "register_case": {"label": "Register / diarize case", "automation": "full_with_connector", "human_boundary": False},
     "journey_cascade": {"label": "Prepare downstream government journey", "automation": "full", "human_boundary": False},
+    "journey_bundle": {"label": "Bundle related government services into one journey", "automation": "full", "human_boundary": False},
     "continuity_review": {"label": "Reuse verified case facts safely", "automation": "full", "human_boundary": False},
     "preflight_check": {"label": "Run pre-submission scrutiny", "automation": "full", "human_boundary": False},
     "retirement_preflight": {"label": "Prepare pension case before retirement", "automation": "full", "human_boundary": False},
@@ -64,7 +65,7 @@ PROCESS_WORK_RECIPES = {
         "prepare_certificate", "prepare_decision_brief",
     ],
     "property_registration": [
-        "register_case", "case_passport", "journey_cascade", "check_completeness", "authoritative_prefill", "continuity_review", "preflight_check", "extract_document_facts",
+        "register_case", "case_passport", "journey_cascade", "journey_bundle", "check_completeness", "authoritative_prefill", "continuity_review", "preflight_check", "extract_document_facts",
         "scrutinize_deed", "verify_identity", "lookup_encumbrance",
         "lookup_property_record", "calculate_duty", "reconcile_records",
         "schedule_appointment", "prepare_registration_packet",
@@ -254,6 +255,7 @@ ATOM_DEPENDENCIES = {
 ATOM_TASK_MAPPING = {
     "register_case": "engine_case_creation",
     "journey_cascade": "internal_journey_cascade",
+    "journey_bundle": "internal_journey_bundle",
     "continuity_review": "internal_continuity_review",
     "preflight_check": "internal_preflight_check",
     "retirement_preflight": "internal_retirement_preflight",
