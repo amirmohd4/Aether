@@ -534,3 +534,24 @@ def test_duplicate_case_screen_flags_existing_case_without_auto_merge():
     assert result["duplicate_candidate_count"] == 1
     assert result["auto_merge"] is False
     assert result["duplicate_candidates"][0]["confidence"] == "medium"
+
+
+def test_remediation_planner_produces_one_clear_next_action():
+    from aether_core.remediation_planner import build_remediation_plan
+
+    result = build_remediation_plan(
+        deficiencies=[{
+            "code": "MISSING_DOCUMENT",
+            "document_type": "site_plan",
+            "fix": "Provide site plan",
+            "applicant_fixable": True,
+        }],
+        queries=[{
+            "code": "IDENTITY_MISMATCH",
+            "recommended_action": "Correct the identity field",
+            "applicant_fixable": True,
+        }],
+    )
+    assert result["status"] == "action_required"
+    assert result["actions"][0]["owner"] == "applicant"
+    assert result["actions"][0]["blocks_case"] is True
