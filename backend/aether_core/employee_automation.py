@@ -6,6 +6,7 @@ from .domain import Case, TaskState, TaskStatus
 from .process_work_recipes import work_recipe, work_atom_metadata, atom_task_mapping
 from .government_process_kernel import infer_process_profile
 from .friction_analytics import analyze_case_friction
+from .india_process_playbook import playbook_for
 
 
 class EmployeeAutomationService:
@@ -105,6 +106,7 @@ class EmployeeAutomationService:
             "friction": friction,
             "process": {
                 "profile": profile.key,
+                "journey_playbook": playbook_for(profile.key),
                 "label": profile.label,
                 "employee_work_recipe": recipe,
                 "work_atoms": {
