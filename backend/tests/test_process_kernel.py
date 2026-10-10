@@ -451,3 +451,47 @@ def test_inspection_quality_guard_requires_structured_packet():
     assert result["result"]["ready_for_authorised_inspection"] is False
     codes = {item["code"] for item in result["result"]["blockers"]}
     assert {"NO_INSPECTION_CHECKLIST", "NO_SUPPORTING_EVIDENCE"}.issubset(codes)
+
+
+def test_query_normalizer_turns_vague_query_into_action():
+    from aether_core.query_normalizer import normalize_query
+
+    result = normalize_query(
+        "Please upload missing supporting document for GST registration",
+        reference="Q-1",
+        task_id="gst",
+    )
+    assert result["code"] == "MISSING_DOCUMENT"
+    assert result["applicant_fixable"] is True
+    assert result["task_id"] == "gst"
+
+
+def test_submission_dry_run_stops_before_external_submission():
+    from aether_core.preflight_simulator import simulate_submission
+
+    result = simulate_submission(
+        service=type("Service", (), {"id": "company_registration"})(),
+        requirements=[{"documents": ["identity_document", "company_certificate"]}],
+        inputs={"documents": ["identity_document"]},
+        process_profile={"status": "ready"},
+        journey_playbook={"stages": ["submission", "review"], "human_boundary": ["approval"]},
+    )
+    assert result["status"] == "fix_before_submit"
+    assert result["policy"]["no_external_submission_performed"] is True
+    assert result["blockers"][0]["code"] == "MISSING_DOCUMENT"
+
+
+def test_form_mapper_eliminates_manual_copy_paste_and_tracks_provenance():
+    from aether_core.field_mapper import prepare_form_mapping
+
+    result = prepare_form_mapping(
+        {"company_name": "Example Pvt Ltd", "pan": "ABCDE1234F"},
+        {
+            "company_name": {"source": "document:incorporation", "field": "company_name"},
+            "pan": {"source": "connector:PAN", "field": "pan"},
+        },
+        required_fields=["company_name", "pan"],
+    )
+    assert result["mapping_status"] == "ready"
+    assert result["copy_paste_eliminated"] is True
+    assert {item["target_field"] for item in result["mapped_fields"]} == {"companyName", "pan"}
