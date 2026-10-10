@@ -9,6 +9,7 @@ from .payments import PaymentService
 from .process_work_recipes import work_recipe, work_atom_metadata
 from .journey_cascades import cascade_for
 from .case_continuity import build_continuity_review
+from .case_passport import build_case_passport
 from backend.database import SessionLocal
 
 
@@ -61,6 +62,7 @@ class AdministrativeWorker:
             "continuity_review": self._continuity_review,
             "preflight_check": self._preflight_check,
             "retirement_preflight": self._retirement_preflight,
+            "case_passport": self._case_passport,
             "interdepartment_handoff": self._interdepartment_handoff,
             "inspection_packet": self._inspection_packet,
             "joint_inspection": self._joint_inspection,
@@ -96,6 +98,23 @@ class AdministrativeWorker:
                 "source": "Aether Administrative Worker",
             },
         }
+
+    @staticmethod
+    def _case_passport(context) -> Dict[str, Any]:
+        payload = context.payload
+        results = payload.get("task_results") or {}
+        normalized = results.get("internal_data_normalization") or {}
+        fields = normalized.get("normalized_fields") if isinstance(normalized, dict) else {}
+        return AdministrativeWorker._result(context, "case_passport", {
+            "passport": build_case_passport(
+                case_id=context.case_id,
+                service_id=payload.get("service_id"),
+                jurisdiction=payload.get("jurisdiction") or {},
+                task_results=results,
+                verified_fields=fields or {},
+            ),
+            "share_mode": "consent_and_authorised_handoff",
+        })
 
     @staticmethod
     def _retirement_preflight(context) -> Dict[str, Any]:
