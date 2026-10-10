@@ -8,6 +8,7 @@ from .notifications import NotificationService
 from .payments import PaymentService
 from .process_work_recipes import work_recipe, work_atom_metadata
 from .journey_cascades import cascade_for
+from .case_continuity import build_continuity_review
 from backend.database import SessionLocal
 
 
@@ -57,6 +58,7 @@ class AdministrativeWorker:
             "interim_response": self._interim_response,
             "recovery_plan": self._recovery_plan,
             "journey_cascade": self._journey_cascade,
+            "continuity_review": self._continuity_review,
             "interdepartment_handoff": self._interdepartment_handoff,
             "inspection_packet": self._inspection_packet,
             "joint_inspection": self._joint_inspection,
@@ -92,6 +94,17 @@ class AdministrativeWorker:
                 "source": "Aether Administrative Worker",
             },
         }
+
+    @staticmethod
+    def _continuity_review(context) -> Dict[str, Any]:
+        payload = context.payload
+        review = build_continuity_review(
+            tenant_id=payload.get("tenant_id"),
+            owner_user_id=payload.get("owner_user_id"),
+            service_id=payload.get("service_id"),
+            current_inputs=payload,
+        )
+        return AdministrativeWorker._result(context, "continuity_review", review)
 
     @staticmethod
     def _journey_cascade(context) -> Dict[str, Any]:
