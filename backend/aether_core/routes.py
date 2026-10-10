@@ -20,6 +20,7 @@ from .process_work_recipes import work_recipe, work_atom_metadata
 from .government_process_kernel import infer_process_profile
 from .jurisdiction_process_profiles import JurisdictionProcessRegistry
 from .work_batching import build_operator_batches
+from .case_passport import build_case_passport
 from backend.database import SessionLocal
 from sqlalchemy import text
 
@@ -704,6 +705,28 @@ def current_principal(principal: Principal = Depends(require_principal)):
         "jurisdiction": principal.jurisdiction,
         "auth_mode": principal.auth_mode,
     }
+
+
+@router.get("/cases/{case_id}/passport")
+def case_passport(case_id: str, principal: Principal = Depends(require_scope("cases:read"))):
+    try:
+        case = engine.get_case(case_id)
+        _authorize_case(case, principal)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Case not found")
+    results = {
+        task_id: task.result
+        for task_id, task in case.tasks.items()
+        if task.result is not None
+    }
+    normalized = results.get("internal_data_normalization") or {}
+    return build_case_passport(
+        case_id=case.case_id,
+        service_id=case.service_id,
+        jurisdiction=case.jurisdiction,
+        task_results=results,
+        verified_fields=normalized.get("normalized_fields") if isinstance(normalized, dict) else {},
+    )
 
 
 @router.get("/cases/{case_id}/operator-brief")
