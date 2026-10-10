@@ -67,6 +67,10 @@ class AdministrativeWorker:
             "whole_government_route": self._whole_government_route,
             "authoritative_prefill": self._authoritative_prefill,
             "deadline_guard": self._deadline_guard,
+            "resubmission_diff": self._resubmission_diff,
+            "intermediate_handoffs": self._intermediate_handoffs,
+            "verification_chain": self._verification_chain,
+            "service_center_packet": self._service_center_packet,
             "interdepartment_handoff": self._interdepartment_handoff,
             "inspection_packet": self._inspection_packet,
             "joint_inspection": self._joint_inspection,
@@ -102,6 +106,73 @@ class AdministrativeWorker:
                 "source": "Aether Administrative Worker",
             },
         }
+
+    @staticmethod
+    def _resubmission_diff(context) -> Dict[str, Any]:
+        payload = context.payload
+        current = payload.get("resubmission_fields") or {}
+        previous = payload.get("previous_submission_fields") or {}
+        changed = {
+            key: {"previous": previous.get(key), "current": value}
+            for key, value in current.items()
+            if previous.get(key) != value
+        }
+        linked_forms = payload.get("linked_forms") or []
+        return AdministrativeWorker._result(context, "resubmission_diff", {
+            "changed_field_count": len(changed),
+            "changed_fields": changed,
+            "forms_to_regenerate": sorted(set(linked_forms)),
+            "preserve_unchanged_evidence": True,
+            "reason": "Prevent avoidable resubmission rejection caused by stale linked-form versions.",
+        })
+
+    @staticmethod
+    def _intermediate_handoffs(context) -> Dict[str, Any]:
+        states = context.payload.get("task_states") or {}
+        chain = [
+            {
+                "task_id": task_id,
+                "department": state.get("department"),
+                "status": state.get("status"),
+                "started_at": state.get("started_at"),
+                "completed_at": state.get("completed_at"),
+            }
+            for task_id, state in states.items()
+            if isinstance(state, dict) and state.get("department")
+        ]
+        return AdministrativeWorker._result(context, "intermediate_handoffs", {
+            "chain": chain,
+            "untracked_intermediate_work_becomes_case_activity": True,
+            "next_action": "Route the packet to the next responsible office without requiring the applicant to resubmit.",
+        })
+
+    @staticmethod
+    def _verification_chain(context) -> Dict[str, Any]:
+        payload = context.payload
+        states = payload.get("task_states") or {}
+        stages = [
+            task_id for task_id, state in states.items()
+            if isinstance(state, dict)
+            and (state.get("physical_action") or state.get("department", "").lower() in {"police", "authorised authority"})
+        ]
+        return AdministrativeWorker._result(context, "verification_chain", {
+            "verification_stages": stages,
+            "tracking_mode": "case_level_substeps",
+            "physical_result_source": "authorised_field_or_police_actor",
+            "aether_action": "prepare packet, track handoff and return the authoritative result to the case graph",
+        })
+
+    @staticmethod
+    def _service_center_packet(context) -> Dict[str, Any]:
+        payload = context.payload
+        return AdministrativeWorker._result(context, "service_center_packet", {
+            "data_entry_fields": sorted(payload.keys()),
+            "documents_ready": bool(payload.get("documents")),
+            "query_response_ready": bool(payload.get("task_results")),
+            "printable_checklist": True,
+            "reentry_avoided": True,
+            "target": "authorised service centre / customs operator",
+        })
 
     @staticmethod
     def _deadline_guard(context) -> Dict[str, Any]:
