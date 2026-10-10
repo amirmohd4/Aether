@@ -226,6 +226,24 @@ trader/broker, service centre and Customs system.
 Source:
 https://www.icegate.gov.in/services/custom-service-centres
 
+## 14. Healthcare claims show another class of hidden administrative work
+
+A 2026 Parliamentary Standing Committee report on Health & Family Welfare
+recommended larger attachment capacity for complex AB-PMJAY claims, robust query
+management with real-time tracking and detailed reasons for claim rejection,
+nodal officers for inter-State/out-of-State cases, and time-bound claim
+processing/reimbursement. The Committee also called for stronger interoperability
+and automated, time-bound digital processing in health administration.
+
+**Aether response:** make claim evidence a structured case packet, track each query
+and reason, route inter-State exceptions to the right nodal authority, run anomaly
+checks before submission, preserve the full claim history, reconcile payments, and
+show hospitals/beneficiaries exactly what is pending. The same architecture can
+serve reimbursement, empanelment and other regulated health workflows.
+
+Source:
+https://www.pib.gov.in/PressReleasePage.aspx?PRID=2296281
+
 ## Product requirements derived from the evidence
 
 1. One case identity across all departments.
