@@ -10,6 +10,7 @@ from .process_work_recipes import work_recipe, work_atom_metadata
 from .journey_cascades import cascade_for
 from .case_continuity import build_continuity_review
 from .case_passport import build_case_passport
+from .deadline_guard import build_deadline_guard
 from backend.database import SessionLocal
 
 
@@ -65,6 +66,7 @@ class AdministrativeWorker:
             "case_passport": self._case_passport,
             "whole_government_route": self._whole_government_route,
             "authoritative_prefill": self._authoritative_prefill,
+            "deadline_guard": self._deadline_guard,
             "interdepartment_handoff": self._interdepartment_handoff,
             "inspection_packet": self._inspection_packet,
             "joint_inspection": self._joint_inspection,
@@ -100,6 +102,16 @@ class AdministrativeWorker:
                 "source": "Aether Administrative Worker",
             },
         }
+
+    @staticmethod
+    def _deadline_guard(context) -> Dict[str, Any]:
+        payload = context.payload
+        result = build_deadline_guard(
+            case_created_at=payload.get("created_at"),
+            process_profile=payload.get("jurisdiction_process_profile"),
+            task_states=payload.get("task_states") or {},
+        )
+        return AdministrativeWorker._result(context, "deadline_guard", result)
 
     def _authoritative_prefill(self, context) -> Dict[str, Any]:
         payload = context.payload
