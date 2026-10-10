@@ -11,6 +11,7 @@ from .journey_cascades import cascade_for
 from .case_continuity import build_continuity_review
 from .case_passport import build_case_passport
 from .deadline_guard import build_deadline_guard
+from .query_normalizer import normalize_queries
 from backend.database import SessionLocal
 
 
@@ -798,9 +799,10 @@ class AdministrativeWorker:
                 ),
                 "source": result.get("source"),
             })
+        normalized_queries = normalize_queries(query_sources)
         return AdministrativeWorker._result(context, "query_response", {
             "query_present": bool(query_sources),
-            "queries": query_sources,
+            "queries": normalized_queries,
             "response_packet": (
                 {
                     "case_id": context.case_id,
