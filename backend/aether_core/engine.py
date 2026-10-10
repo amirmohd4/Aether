@@ -663,6 +663,61 @@ class AetherExecutionEngine:
             "certificate": "certificate",
         }.get(task_id, "generic")
 
+    def replan_case(
+        self,
+        case_id: str,
+        changed_task_ids: list[str],
+        reason: str = "Case inputs changed; replan affected work only.",
+    ) -> Case:
+        case = self.get_case(case_id)
+        with self._lock_for(case_id):
+            seeds = {task_id for task_id in changed_task_ids if task_id in case.tasks}
+            if not seeds:
+                raise ValueError("At least one valid changed task is required")
+
+            impacted = set(seeds)
+            changed = True
+            while changed:
+                changed = False
+                for task_id, state in case.tasks.items():
+                    if task_id in impacted:
+                        continue
+                    if any(dep in impacted for dep in state.definition.dependencies):
+                        impacted.add(task_id)
+                        changed = True
+
+            reset = []
+            for task_id in sorted(impacted):
+                task = case.tasks[task_id]
+                task.status = TaskStatus.PENDING
+                task.result = None
+                task.evidence = []
+                task.error = None
+                task.started_at = None
+                task.completed_at = None
+                reset.append(task_id)
+
+            case.human_actions = [
+                action for action in case.human_actions
+                if action.get("task_id") not in impacted
+            ]
+            case.exceptions = [
+                exception for exception in case.exceptions
+                if exception.get("task_id") not in impacted
+            ]
+            case.status = "executing"
+            case.updated_at = now_iso()
+            self._emit(case, "case.replanned", "aether.execution_engine", {
+                "reason": reason,
+                "changed_task_ids": sorted(seeds),
+                "impacted_task_ids": reset,
+            })
+            for task_id in reset:
+                self._checkpoint_task(case, case.tasks[task_id])
+            self.store.put(case)
+
+        return self.execute_until_pause(case_id)
+
     def complete_human_task(
         self, case_id: str, task_id: str, decision: str, note: str = "",
         actor_id: str = "authorised_human", actor_role: str = "authorised_officer",
