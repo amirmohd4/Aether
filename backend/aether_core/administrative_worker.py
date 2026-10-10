@@ -59,6 +59,7 @@ class AdministrativeWorker:
             "recovery_plan": self._recovery_plan,
             "journey_cascade": self._journey_cascade,
             "continuity_review": self._continuity_review,
+            "preflight_check": self._preflight_check,
             "interdepartment_handoff": self._interdepartment_handoff,
             "inspection_packet": self._inspection_packet,
             "joint_inspection": self._joint_inspection,
@@ -94,6 +95,35 @@ class AdministrativeWorker:
                 "source": "Aether Administrative Worker",
             },
         }
+
+    @staticmethod
+    def _preflight_check(context) -> Dict[str, Any]:
+        payload = context.payload
+        required = [str(x) for x in (payload.get("required_documents") or [])]
+        submitted = {
+            str(item.get("type")) if isinstance(item, dict) else str(item)
+            for item in (payload.get("documents") or [])
+        }
+        missing = sorted(set(required) - submitted)
+        normalized = ((payload.get("task_results") or {}).get("internal_data_normalization") or {}).get("normalized_fields") or {}
+        continuity = ((payload.get("task_results") or {}).get("internal_continuity_review") or {})
+        warnings = continuity.get("preflight_warnings") or []
+        blocking = [
+            {"type": "missing_document", "document_type": item}
+            for item in missing
+        ]
+        blocking.extend(
+            {"type": "recurring_issue", "code": item.get("code"), "occurrences": item.get("occurrences", 0)}
+            for item in warnings
+            if item.get("occurrences", 0) >= 2
+        )
+        return AdministrativeWorker._result(context, "preflight_check", {
+            "ready_for_submission": not blocking,
+            "blocking_items": blocking[:20],
+            "warnings": warnings[:20],
+            "normalized_field_count": len(normalized),
+            "preventive_strategy": "resolve predictable issues before external submission instead of generating downstream rework",
+        })
 
     @staticmethod
     def _continuity_review(context) -> Dict[str, Any]:
