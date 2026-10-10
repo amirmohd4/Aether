@@ -303,3 +303,26 @@ def test_process_specific_work_patterns_are_bound():
     assert "verification_chain_tracking" in work_recipe("passport")
     assert "service_center_packet" in work_recipe("customs")
     assert "intermediate_handoff_tracking" in work_recipe("police")
+
+
+def test_workload_snapshot_groups_department_bottlenecks():
+    from aether_core.workload_intelligence import build_workload_snapshot
+    from aether_core.domain import Case, TaskDefinition, TaskState, TaskStatus
+
+    case = Case(
+        case_id="A-1",
+        objective="test",
+        customer_type="business",
+        jurisdiction={"country": "India"},
+        inputs={},
+        requirements=[],
+        tasks={
+            "t1": TaskState(TaskDefinition("t1", "Review", "Municipal", "AdministrativeWorker"), status=TaskStatus.PENDING),
+            "t2": TaskState(TaskDefinition("t2", "Review", "Municipal", "AdministrativeWorker"), status=TaskStatus.EXCEPTION),
+        },
+    )
+    snapshot = build_workload_snapshot([case])
+    municipal = next(item for item in snapshot["departments"] if item["department"] == "Municipal")
+    assert municipal["pending"] == 1
+    assert municipal["exceptions"] == 1
+    assert municipal["management_attention"] == "high"
