@@ -326,3 +326,18 @@ def test_workload_snapshot_groups_department_bottlenecks():
     assert municipal["pending"] == 1
     assert municipal["exceptions"] == 1
     assert municipal["management_attention"] == "high"
+
+
+def test_employee_work_atoms_are_not_serialized_unnecessarily():
+    engine = AetherExecutionEngine()
+    case = engine.create_case(
+        objective="I want to open a restaurant",
+        customer_type="business",
+        jurisdiction={"country": "India", "state": "Jammu and Kashmir"},
+        inputs={},
+    )
+    file_deps = set(case.tasks["internal_case_file"].definition.dependencies)
+    assert set(case.tasks["internal_authoritative_prefill"].definition.dependencies) == {"internal_case_file"}
+    assert set(case.tasks["internal_continuity_review"].definition.dependencies) == {"internal_case_file"}
+    assert case.tasks["internal_authoritative_prefill"].definition.dependencies != case.tasks["internal_data_normalization"].definition.dependencies
+    assert "internal_case_triage" in file_deps
