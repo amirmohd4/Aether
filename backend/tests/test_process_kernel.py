@@ -341,3 +341,12 @@ def test_employee_work_atoms_are_not_serialized_unnecessarily():
     assert set(case.tasks["internal_continuity_review"].definition.dependencies) == {"internal_case_file"}
     assert case.tasks["internal_authoritative_prefill"].definition.dependencies != case.tasks["internal_data_normalization"].definition.dependencies
     assert "internal_case_triage" in file_deps
+
+
+def test_health_claim_process_recipe_is_deep():
+    from aether_core.process_work_recipes import work_recipe
+
+    recipe = work_recipe("health_claim")
+    assert "claim_query_tracking" in recipe
+    assert "nodal_route" in recipe
+    assert "claim_anomaly_screen" in recipe
