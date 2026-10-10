@@ -74,6 +74,8 @@ class AdministrativeWorker:
             "claim_query_tracking": self._claim_query_tracking,
             "nodal_route": self._nodal_route,
             "claim_anomaly_screen": self._claim_anomaly_screen,
+            "multi_level_verification": self._multi_level_verification,
+            "dbt_readiness": self._dbt_readiness,
             "interdepartment_handoff": self._interdepartment_handoff,
             "inspection_packet": self._inspection_packet,
             "joint_inspection": self._joint_inspection,
@@ -163,6 +165,43 @@ class AdministrativeWorker:
             "tracking_mode": "case_level_substeps",
             "physical_result_source": "authorised_field_or_police_actor",
             "aether_action": "prepare packet, track handoff and return the authoritative result to the case graph",
+        })
+
+    @staticmethod
+    def _multi_level_verification(context) -> Dict[str, Any]:
+        payload = context.payload
+        states = payload.get("task_states") or {}
+        levels = [
+            {"level": 1, "role": "institution_or_first_verifier", "status": "tracked"},
+            {"level": 2, "role": "district_or_second_verifier", "status": "tracked"},
+        ]
+        outstanding = [
+            task_id for task_id, state in states.items()
+            if isinstance(state, dict)
+            and state.get("status") not in {"completed"}
+            and str(state.get("department") or "").lower() in {"education", "district", "state"}
+        ]
+        return AdministrativeWorker._result(context, "multi_level_verification", {
+            "levels": levels,
+            "outstanding_task_ids": outstanding[:50],
+            "automatic_followup": True,
+            "verification_history_preserved": True,
+        })
+
+    @staticmethod
+    def _dbt_readiness(context) -> Dict[str, Any]:
+        payload = context.payload
+        fields = {
+            key: payload.get(key)
+            for key in ("bank_account_reference", "ifsc", "aadhaar_seeded", "beneficiary_id")
+            if payload.get(key) is not None
+        }
+        return AdministrativeWorker._result(context, "dbt_readiness", {
+            "known_payment_fields": fields,
+            "payment_readiness": "ready" if fields else "needs_verification",
+            "duplicate_payment_check": True,
+            "reconciliation_required": True,
+            "user_reentry_required": False,
         })
 
     @staticmethod
