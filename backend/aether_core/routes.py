@@ -980,6 +980,12 @@ def submit_case_documents(
             })
             return response
 
+        if "document_intake" in case.tasks:
+            return serialize(engine.replan_case(
+                case_id,
+                ["document_intake"],
+                reason="New or corrected applicant evidence was supplied.",
+            ))
         return serialize(engine.execute_until_pause(case_id))
     except KeyError:
         raise HTTPException(status_code=404, detail="Case not found")
