@@ -175,6 +175,57 @@ user to chase a department is not the target experience.
 Source:
 https://www.pib.gov.in/PressReleasePage.aspx?PRID=2296568
 
+## 13. Specific service processes reveal where employee effort is still hidden
+
+### Passport / police verification
+Passport Seva states that, in some police-verification models, intermediate activities are
+not recorded or tracked because physical documents move between district police
+headquarters, police stations, CID/local intelligence units and field-verification teams.
+The portal identifies these intermediate exchanges as a contributor to delay.
+
+**Aether design:** create sub-steps for each handoff, preserve the packet, show exactly
+which office currently owns it, and automatically return the final police result to the
+passport case.
+
+Source:
+https://www.passportindia.gov.in/psp/passportApp
+
+### MCA incorporation / resubmission
+MCA's SPICe+ FAQ says successful resubmission can require linked forms to be regenerated
+and freshly downloaded even where no change was made to those web forms.
+
+**Aether design:** version the original submission, calculate the resubmission diff,
+regenerate all affected linked forms automatically, and give the employee a single
+review packet rather than manually recreating the filing.
+
+Source:
+https://www.mca.gov.in/Ministry/pdf/SpicePlusFAQS_20112020.pdf
+
+### Udyam/MSME
+The official Udyam portal says no documents/proofs are required for MSME registration
+and that PAN and GST-linked details can be pulled automatically from government
+databases. It also limits enterprises to one Udyam Registration while allowing multiple
+business activities under it.
+
+**Aether design:** use authoritative prefill first; ask the applicant only for fields
+that cannot be verified; detect whether an existing registration already exists before
+starting a duplicate filing.
+
+Source:
+https://www.udyamregistration.gov.in/
+
+### Customs
+ICEGATE describes Customs Service Centres that perform data entry, checklist printing,
+document submission, query printing/reply feeding, status communication and other
+manual support for users who cannot file directly.
+
+**Aether design:** produce machine-readable filing packets, automate repetitive data
+mapping and query-response preparation, and preserve one case identity between the
+trader/broker, service centre and Customs system.
+
+Source:
+https://www.icegate.gov.in/services/custom-service-centres
+
 ## Product requirements derived from the evidence
 
 1. One case identity across all departments.
