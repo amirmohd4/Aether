@@ -8,6 +8,7 @@ from .government_process_kernel import infer_process_profile
 from .friction_analytics import analyze_case_friction
 from .india_process_playbook import playbook_for
 from .effort_impact import estimate_effort_impact
+from .escalation_engine import classify_escalation
 
 
 class EmployeeAutomationService:
@@ -64,6 +65,7 @@ class EmployeeAutomationService:
         next_actions = self._next_actions(case, ready_automations, human_tasks, exception_tasks, blocked_tasks)
         revenue_signals = self._revenue_signals(case)
         friction = analyze_case_friction(case)
+        escalation = classify_escalation(case)
         profile = infer_process_profile(
             None if not case.service_id else type("_ServiceRef", (), {
                 "id": case.service_id,
@@ -110,6 +112,7 @@ class EmployeeAutomationService:
             "customer_actions": self._customer_actions(case),
             "revenue_signals": revenue_signals,
             "friction": friction,
+            "escalation": escalation,
             "process": {
                 "profile": profile.key,
                 "journey_playbook": playbook_for(profile.key),
