@@ -79,6 +79,10 @@ class AetherExecutionEngine:
         work_graph = self.work_graph_builder.build(
             service, [state.definition for state in tasks.values()]
         )
+        process_profile = self.process_profiles.readiness(
+            service.id if service else "",
+            jurisdiction,
+        )
         case = Case(
             case_id=f"A-{uuid4().hex[:10].upper()}",
             objective=objective,
@@ -93,6 +97,7 @@ class AetherExecutionEngine:
             service_name=service.name if service else None,
             service_department=service.department if service else None,
             service_outcome=service.outcome if service else None,
+            process_profile_fingerprint=process_profile.get("fingerprint"),
             ontology=ontology.as_dict(),
             work_graph=work_graph.as_dict(),
         )
