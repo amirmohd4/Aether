@@ -56,6 +56,7 @@ SERVICE_PROCESS_PROFILES = {
     "pf_esi_registration": GovernmentProcessProfile("labour_registration", "Labour/social-security registration"),
     "gst_registration": GovernmentProcessProfile("tax_registration", "Tax registration"),
     "company_registration": GovernmentProcessProfile("corporate_incorporation", "Corporate incorporation"),
+    "llp_incorporation": GovernmentProcessProfile("corporate_incorporation", "LLP incorporation"),
     "ration_card": GovernmentProcessProfile("benefit", "Entitlement/benefit"),
     "pds_subsidy": GovernmentProcessProfile("benefit", "Entitlement/benefit", payment_sensitive=True),
     "police_clearance": GovernmentProcessProfile("certificate", "Police certificate"),
@@ -80,6 +81,10 @@ SERVICE_PROCESS_PROFILES = {
     "e_court": GovernmentProcessProfile("adjudication", "Judicial/adjudicatory service"),
     "passport": GovernmentProcessProfile("passport", "Passport/consular workflow", interdepartmental=True),
     "visa": GovernmentProcessProfile("passport", "Visa workflow", interdepartmental=True),
+    "udyam_registration": GovernmentProcessProfile("msme_registration", "MSME/Udyam registration"),
+    "startup_india_recognition": GovernmentProcessProfile("msme_registration", "Startup recognition"),
+    "company_master_data_change": GovernmentProcessProfile("corporate", "Corporate registry change"),
+    "gst_registration_update": GovernmentProcessProfile("tax_registration", "GST registration amendment"),
     "food_business_license": GovernmentProcessProfile(
         "food_license",
         "Food-business licence/registration",
