@@ -60,6 +60,7 @@ class AdministrativeWorker:
             "journey_cascade": self._journey_cascade,
             "continuity_review": self._continuity_review,
             "preflight_check": self._preflight_check,
+            "retirement_preflight": self._retirement_preflight,
             "interdepartment_handoff": self._interdepartment_handoff,
             "inspection_packet": self._inspection_packet,
             "joint_inspection": self._joint_inspection,
@@ -95,6 +96,40 @@ class AdministrativeWorker:
                 "source": "Aether Administrative Worker",
             },
         }
+
+    @staticmethod
+    def _retirement_preflight(context) -> Dict[str, Any]:
+        payload = context.payload
+        fields = {
+            key: payload.get(key)
+            for key in (
+                "employee_id",
+                "service_book_reference",
+                "date_of_birth",
+                "date_of_retirement",
+                "nomination_status",
+                "family_details",
+                "bank_account_reference",
+            )
+            if payload.get(key) is not None
+        }
+        required_check = [
+            "employee identity/service record",
+            "qualifying service verification",
+            "nomination/family details",
+            "bank/payment details",
+            "leave/dues reconciliation",
+            "retirement date and applicable rules",
+        ]
+        return AdministrativeWorker._result(context, "retirement_preflight", {
+            "status": "prepared",
+            "known_fields": fields,
+            "pre_retirement_checklist": required_check,
+            "recommended_start": "well before retirement date",
+            "objective": "identify missing records early so sanction and PPO preparation does not wait until retirement",
+            "human_authority_required": True,
+            "user_reentry_required": False,
+        })
 
     @staticmethod
     def _preflight_check(context) -> Dict[str, Any]:
