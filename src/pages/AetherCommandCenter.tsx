@@ -201,6 +201,12 @@ export const AetherCommandCenter: React.FC = () => {
   const [state, setState] = useState('Jammu and Kashmir');
   const [district, setDistrict] = useState('Jammu');
   const [caseData, setCaseData] = useState<CaseResponse | null>(null);
+  const [preflightSimulation, setPreflightSimulation] = useState<{
+    status: string;
+    blockers: Array<{ code: string; document_type?: string; fields?: string[]; message: string }>;
+    warnings: Array<{ code: string; message: string }>;
+    next_steps: string[];
+  } | null>(null);
   const [understanding, setUnderstanding] = useState<Understanding | null>(null);
   const [recentCases, setRecentCases] = useState<CaseListItem[]>([]);
   const [officerQueue, setOfficerQueue] = useState<CaseListItem[]>([]);
@@ -269,6 +275,25 @@ export const AetherCommandCenter: React.FC = () => {
       loadWorkspace();
     }
   }, [authRequired, session?.access_token, selectedTenantId]);
+
+  async function simulateProcess() {
+    try {
+      const response = await fetch(API_BASE + '/api/aether/v2/process/simulate', {
+        method: 'POST',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          objective,
+          customer_type: customerType,
+          jurisdiction: { country, state, district },
+          inputs: { documents: selectedDocuments },
+        }),
+      });
+      if (!response.ok) return;
+      setPreflightSimulation(await response.json());
+    } catch {
+      // Dry-run is optional; case creation remains available.
+    }
+  }
 
   async function loadWorkspace() {
     try {
@@ -718,7 +743,15 @@ export const AetherCommandCenter: React.FC = () => {
             className="w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm"
           />
           {authMessage && <p className="mt-3 text-xs text-cyan-200">{authMessage}</p>}
-          <button
+                    <button
+            type="button"
+            onClick={simulateProcess}
+            disabled={!objective.trim() || loading}
+            className="mr-2 rounded-xl border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-[10px] font-semibold text-cyan-100 hover:bg-cyan-300/15 disabled:opacity-50"
+          >
+            Pre-check journey
+          </button>
+<button
             onClick={submitAuth}
             disabled={authLoading || !authEmail || !authPassword}
             className="mt-5 w-full rounded-xl bg-cyan-400 px-4 py-3 text-sm font-bold text-slate-950 disabled:opacity-50"
