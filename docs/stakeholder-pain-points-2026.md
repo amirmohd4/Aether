@@ -159,6 +159,22 @@ Sources:
 https://www.pib.gov.in/PressReleasePage.aspx?PRID=2296240
 https://www.pib.gov.in/PressReleasePage.aspx?PRID=2239834
 
+## 12. "Online" must mean predictable, not merely digital
+
+At the August 2026 launch of E-Samudra, the Ministry of Ports, Shipping and
+Waterways described the objective as making processes predictable, transparent
+and time-bound, with end-to-end workflows, online payment, real-time tracking
+and digitally issued certificates.
+
+**Aether response:** the citizen interface should show one understandable next
+step and who currently owns the dependency. Internally, Aether should expose
+SLA risk, blocked-by category, evidence completeness, connector reliability,
+rework and time-to-next-action. An "online" submission that still requires the
+user to chase a department is not the target experience.
+
+Source:
+https://www.pib.gov.in/PressReleasePage.aspx?PRID=2296568
+
 ## Product requirements derived from the evidence
 
 1. One case identity across all departments.
