@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Any, Dict, Iterable
+from typing import Any, Dict, Iterable, List
 
 
 def build_operator_batches(briefs: Iterable[Dict[str, Any]]) -> List[Dict[str, Any]]:
