@@ -252,3 +252,23 @@ def test_pension_case_preflight_is_materialized_and_completed():
     assert case.tasks["internal_retirement_preflight"].status == TaskStatus.COMPLETED
     result = case.tasks["internal_retirement_preflight"].result or {}
     assert result.get("status") in {"prepared", "completed"}
+
+
+def test_case_passport_has_integrity_without_moving_documents():
+    from aether_core.case_passport import build_case_passport
+
+    passport = build_case_passport(
+        case_id="A-TEST",
+        service_id="company_registration",
+        jurisdiction={"country": "India", "state": "Jammu and Kashmir"},
+        task_results={
+            "registration": {
+                "registration_id": "REG-1",
+                "source": "Authorised Registry",
+            }
+        },
+        verified_fields={"company_name": "Example Pvt Ltd"},
+    )
+    assert passport["documents_included"] is False
+    assert passport["integrity"]["sha256"]
+    assert passport["evidence_references"][0]["reference"] == "REG-1"
