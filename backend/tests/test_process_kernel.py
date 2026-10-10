@@ -272,3 +272,14 @@ def test_case_passport_has_integrity_without_moving_documents():
     assert passport["documents_included"] is False
     assert passport["integrity"]["sha256"]
     assert passport["evidence_references"][0]["reference"] == "REG-1"
+
+
+def test_grievance_case_has_whole_government_routing_step():
+    engine = AetherExecutionEngine()
+    case = engine.create_case(
+        objective="I want to file a government grievance",
+        customer_type="citizen",
+        jurisdiction={"country": "India", "state": "Jammu and Kashmir"},
+        inputs={},
+    )
+    assert "internal_whole_government_route" in case.tasks
