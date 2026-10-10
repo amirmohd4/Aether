@@ -63,6 +63,7 @@ class AdministrativeWorker:
             "preflight_check": self._preflight_check,
             "retirement_preflight": self._retirement_preflight,
             "case_passport": self._case_passport,
+            "whole_government_route": self._whole_government_route,
             "interdepartment_handoff": self._interdepartment_handoff,
             "inspection_packet": self._inspection_packet,
             "joint_inspection": self._joint_inspection,
@@ -98,6 +99,30 @@ class AdministrativeWorker:
                 "source": "Aether Administrative Worker",
             },
         }
+
+    def _whole_government_route(self, context) -> Dict[str, Any]:
+        payload = context.payload
+        department = str(payload.get("service_department") or "").strip()
+        external = self._execute_external(
+            department,
+            "route_grievance",
+            {
+                "case_id": context.case_id,
+                "service_id": payload.get("service_id"),
+                "objective": payload.get("objective"),
+                "jurisdiction": payload.get("jurisdiction") or {},
+            },
+            f"{context.case_id}:admin:grievance-route",
+        )
+        return AdministrativeWorker._result(context, "whole_government_route", {
+            "route_status": external.get("status", "not_submitted"),
+            "current_department": department,
+            "transfer_if_misrouted": True,
+            "preserve_case_history": True,
+            "preserve_evidence": True,
+            "close_only_after_responsible_authority_accepts": True,
+            "connector_response": external,
+        })
 
     @staticmethod
     def _case_passport(context) -> Dict[str, Any]:
