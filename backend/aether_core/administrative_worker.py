@@ -71,6 +71,9 @@ class AdministrativeWorker:
             "intermediate_handoffs": self._intermediate_handoffs,
             "verification_chain": self._verification_chain,
             "service_center_packet": self._service_center_packet,
+            "claim_query_tracking": self._claim_query_tracking,
+            "nodal_route": self._nodal_route,
+            "claim_anomaly_screen": self._claim_anomaly_screen,
             "interdepartment_handoff": self._interdepartment_handoff,
             "inspection_packet": self._inspection_packet,
             "joint_inspection": self._joint_inspection,
@@ -160,6 +163,80 @@ class AdministrativeWorker:
             "tracking_mode": "case_level_substeps",
             "physical_result_source": "authorised_field_or_police_actor",
             "aether_action": "prepare packet, track handoff and return the authoritative result to the case graph",
+        })
+
+    @staticmethod
+    def _claim_query_tracking(context) -> Dict[str, Any]:
+        payload = context.payload
+        results = payload.get("task_results") or {}
+        queries = []
+        for task_id, result in results.items():
+            if not isinstance(result, dict):
+                continue
+            if result.get("status") == "query" or result.get("query_reason"):
+                queries.append({
+                    "task_id": task_id,
+                    "reason": result.get("query_reason") or result.get("reason"),
+                    "missing": result.get("missing") or result.get("missing_documents") or [],
+                })
+        return AdministrativeWorker._result(context, "claim_query_tracking", {
+            "queries": queries,
+            "real_time_reason_required": True,
+            "query_history_preserved": True,
+            "next_step": "prepare targeted response using current evidence",
+        })
+
+    def _nodal_route(self, context) -> Dict[str, Any]:
+        payload = context.payload
+        department = str(payload.get("service_department") or "Health").strip()
+        external = self._execute_external(
+            department,
+            "nodal_route",
+            {
+                "case_id": context.case_id,
+                "service_id": payload.get("service_id"),
+                "jurisdiction": payload.get("jurisdiction") or {},
+                "reason": "inter-state or out-of-state beneficiary/authority coordination",
+            },
+            f"{context.case_id}:admin:nodal-route",
+        )
+        return AdministrativeWorker._result(context, "nodal_route", {
+            "route_status": external.get("status", "not_submitted"),
+            "preserve_case_history": True,
+            "nodal_officer_required": True,
+            "connector_response": external,
+        })
+
+    @staticmethod
+    def _claim_anomaly_screen(context) -> Dict[str, Any]:
+        payload = context.payload
+        results = payload.get("task_results") or {}
+        flags = []
+        seen = set()
+        for task_id, result in results.items():
+            if not isinstance(result, dict):
+                continue
+            for key in ("beneficiary_id", "claim_id", "patient_id", "registration_id"):
+                value = result.get(key)
+                if value is not None:
+                    marker = (key, str(value))
+                    if marker in seen:
+                        flags.append({
+                            "type": "duplicate_identifier",
+                            "field": key,
+                            "value": value,
+                            "task_id": task_id,
+                        })
+                    seen.add(marker)
+            if result.get("verified") is False or result.get("validated") is False:
+                flags.append({
+                    "type": "unverified_data",
+                    "task_id": task_id,
+                })
+        return AdministrativeWorker._result(context, "claim_anomaly_screen", {
+            "flags": flags,
+            "screened_task_count": len(results),
+            "human_review_if_flagged": True,
         })
 
     @staticmethod
