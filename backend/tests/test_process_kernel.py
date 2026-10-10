@@ -388,3 +388,46 @@ def test_replan_resets_only_changed_branch_and_preserves_unrelated_completed_wor
         event.get("action") == "case.replanned"
         for event in replanned.execution_events
     )
+
+
+def test_process_profile_change_status_detects_changed_authoritative_profile():
+    from aether_core.jurisdiction_process_profiles import JurisdictionProcessProfile
+    from aether_core.engine import AetherExecutionEngine
+
+    engine = AetherExecutionEngine()
+    profile = JurisdictionProcessProfile(
+        service_id="fire_noc",
+        country="India",
+        state="Jammu and Kashmir",
+        source_url="https://example.gov",
+        effective_date="2026-01-01",
+        verified_at="2026-10-01",
+        steps=[{"id": "scrutiny"}],
+        required_documents=["identity_document"],
+        service_level={"days": 7},
+    )
+    engine.process_profiles.add(profile)
+
+    case = engine.create_case(
+        objective="I want a fire NOC for my building",
+        customer_type="business",
+        jurisdiction={"country": "India", "state": "Jammu and Kashmir"},
+        inputs={"documents": ["identity_document"]},
+    )
+
+    changed = JurisdictionProcessProfile(
+        service_id="fire_noc",
+        country="India",
+        state="Jammu and Kashmir",
+        source_url="https://example.gov",
+        effective_date="2026-02-01",
+        verified_at="2026-10-10",
+        steps=[{"id": "scrutiny"}, {"id": "inspection"}],
+        required_documents=["identity_document", "site_plan"],
+        service_level={"days": 5},
+    )
+
+    engine.process_profiles.add(changed)
+    status = engine.process_profile_status(case)
+    assert status["status"] == "changed"
+    assert status["impact"]["impact"]["reprepare_forms"] is True
