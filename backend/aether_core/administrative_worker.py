@@ -13,6 +13,7 @@ from .case_continuity import build_continuity_review
 from .case_passport import build_case_passport
 from .deadline_guard import build_deadline_guard
 from .query_normalizer import normalize_queries
+from .field_mapper import prepare_form_mapping
 from backend.database import SessionLocal
 
 
@@ -690,25 +691,27 @@ class AdministrativeWorker:
         fields = normalized_result.get("normalized_fields") or {}
         provenance = normalized_result.get("field_provenance") or {}
         target = payload.get("service_id") or payload.get("service_outcome") or "government_service"
+        mapping = prepare_form_mapping(
+            fields,
+            provenance,
+            target_field_map=payload.get("target_field_map") or {},
+            required_fields=payload.get("target_required_fields") or [],
+        )
         external = self._execute_external(
             str(payload.get("service_department") or ""),
             "prepare_form",
-            {"case_id": context.case_id, "service_id": target, "fields": fields, "field_provenance": provenance},
+            {
+                "case_id": context.case_id,
+                "service_id": target,
+                "mapped_fields": mapping["mapped_fields"],
+            },
             f"{context.case_id}:admin:prepare_form",
         )
         return AdministrativeWorker._result(context, "form_prep", {
             "target_service": target,
             "target_department": payload.get("service_department"),
             "form_status": "prepared_from_verified_case_facts",
-            "fields": [
-                {
-                    "name": key,
-                    "value": value,
-                    "provenance": provenance.get(key),
-                }
-                for key, value in sorted(fields.items())
-            ],
-            "unmapped_required_fields": [],
+            **mapping,
             "connector_submission": external,
         })
 
