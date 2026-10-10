@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List
+import hashlib
 import json
 import os
 
@@ -23,6 +24,24 @@ class JurisdictionProcessProfile:
     required_documents: List[str] = field(default_factory=list)
     service_level: Dict[str, Any] = field(default_factory=dict)
     authority_matrix: List[Dict[str, Any]] = field(default_factory=list)
+
+    def fingerprint(self) -> str:
+        canonical = json.dumps({
+            "service_id": self.service_id,
+            "country": self.country,
+            "state": self.state,
+            "district": self.district,
+            "authority": self.authority,
+            "receiving_portal": self.receiving_portal,
+            "official_form_reference": self.official_form_reference,
+            "source_url": self.source_url,
+            "effective_date": self.effective_date,
+            "steps": self.steps,
+            "required_documents": self.required_documents,
+            "service_level": self.service_level,
+            "authority_matrix": self.authority_matrix,
+        }, sort_keys=True, separators=(",", ":"), default=str).encode("utf-8")
+        return hashlib.sha256(canonical).hexdigest()
 
     def matches(self, jurisdiction: Dict[str, str]) -> bool:
         if self.country and self.country.lower() != str(jurisdiction.get("country", "")).lower():
@@ -113,6 +132,7 @@ class JurisdictionProcessRegistry:
             "source_url": profile.source_url,
             "effective_date": profile.effective_date,
             "verified_at": profile.verified_at,
+            "fingerprint": profile.fingerprint(),
             "steps": profile.steps,
             "required_documents": profile.required_documents,
             "authority_matrix": profile.authority_matrix,
