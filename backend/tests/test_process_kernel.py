@@ -294,3 +294,12 @@ def test_udyam_recipe_uses_authoritative_prefill():
         "aether_core.process_work_recipes",
         fromlist=["work_recipe"],
     ).work_recipe(profile.key)
+
+
+def test_process_specific_work_patterns_are_bound():
+    from aether_core.process_work_recipes import work_recipe
+
+    assert "resubmission_diff_packet" in work_recipe("corporate_incorporation")
+    assert "verification_chain_tracking" in work_recipe("passport")
+    assert "service_center_packet" in work_recipe("customs")
+    assert "intermediate_handoff_tracking" in work_recipe("police")
