@@ -22,6 +22,7 @@ from .jurisdiction_process_profiles import JurisdictionProcessRegistry
 from .work_batching import build_operator_batches
 from .case_passport import build_case_passport
 from .preflight_simulator import simulate_submission
+from .document_reuse import build_document_reuse_candidates
 from .workload_intelligence import build_workload_snapshot
 from .rule_change_impact import diff_process_profiles
 from backend.database import SessionLocal
@@ -825,6 +826,26 @@ def operator_batches(
             continue
     batches = build_operator_batches(briefs)[:max(1, min(limit, 100))]
     return {"batches": batches}
+
+
+@router.get("/cases/{case_id}/documents/reuse-candidates")
+def document_reuse_candidates(
+    case_id: str,
+    sha256: str,
+    principal: Principal = Depends(require_scope("documents:read")),
+):
+    try:
+        case = engine.get_case(case_id)
+        _authorize_case(case, principal)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Case not found")
+    return build_document_reuse_candidates(
+        engine.store,
+        sha256=sha256,
+        tenant_id=case.tenant_id,
+        owner_user_id=case.owner_user_id,
+        current_case_id=case.case_id,
+    )
 
 
 @router.post("/process/simulate")
