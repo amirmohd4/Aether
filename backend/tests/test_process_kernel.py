@@ -194,3 +194,33 @@ def test_property_registration_prepares_downstream_journey():
     downstream = result.get("downstream_journey") or []
     ids = {item["service_id"] for item in downstream}
     assert "mutation" in ids
+
+
+def test_operator_batching_groups_repeated_automated_work():
+    from aether_core.work_batching import build_operator_batches
+
+    batches = build_operator_batches([
+        {
+            "case_id": "A-1",
+            "next_best_actions": [
+                {"type": "automated", "task_id": "internal_form_prep", "owner": "Aether"}
+            ],
+        },
+        {
+            "case_id": "A-2",
+            "next_best_actions": [
+                {"type": "automated", "task_id": "internal_form_prep", "owner": "Aether"}
+            ],
+        },
+        {
+            "case_id": "A-3",
+            "next_best_actions": [
+                {"type": "human", "task_id": "inspection", "owner": "Municipal"}
+            ],
+        },
+    ])
+
+    assert len(batches) == 1
+    assert batches[0]["case_count"] == 2
+    assert batches[0]["task_id"] == "internal_form_prep"
+    assert batches[0]["execution_mode"] == "prepare_and_review"
