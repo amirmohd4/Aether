@@ -453,6 +453,7 @@ class AetherExecutionEngine:
                             else {}
                         ),
                         "case_id": case.case_id,
+                        "created_at": case.created_at,
                         "work_atom": (
                             definition.id.removeprefix("internal_work_atom_")
                             if definition.operation == "work_atom"
