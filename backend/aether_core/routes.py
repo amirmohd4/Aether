@@ -738,6 +738,19 @@ def case_passport(case_id: str, principal: Principal = Depends(require_scope("ca
     )
 
 
+@router.get("/cases/{case_id}/process-profile")
+def case_process_profile_status(
+    case_id: str,
+    principal: Principal = Depends(require_scope("cases:read")),
+):
+    try:
+        case = engine.get_case(case_id)
+        _authorize_case(case, principal)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Case not found")
+    return engine.process_profile_status(case)
+
+
 @router.get("/cases/{case_id}/operator-brief")
 def case_operator_brief(case_id: str, principal: Principal = Depends(require_scope("cases:read"))):
     """Return employee-work automation intelligence for one case."""
