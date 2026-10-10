@@ -22,6 +22,7 @@ from .jurisdiction_process_profiles import JurisdictionProcessRegistry
 from .work_batching import build_operator_batches
 from .case_passport import build_case_passport
 from .workload_intelligence import build_workload_snapshot
+from .rule_change_impact import diff_process_profiles
 from backend.database import SessionLocal
 from sqlalchemy import text
 
@@ -80,6 +81,13 @@ def serialize(case, include_tasks: bool = True):
             for task_id, state in case.tasks.items()
         }
     return response
+
+
+@router.post("/process/rule-impact")
+def process_rule_impact(payload: dict, principal: Principal = Depends(require_scope("cases:read"))):
+    old_profile = payload.get("old_profile") or {}
+    new_profile = payload.get("new_profile") or {}
+    return diff_process_profiles(old_profile, new_profile)
 
 
 @router.get("/process/profile-readiness/{service_id}")
