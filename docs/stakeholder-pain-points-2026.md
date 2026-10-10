@@ -177,3 +177,38 @@ https://www.pib.gov.in/PressReleasePage.aspx?PRID=2239834
 13. Portal-failure recovery so citizens never repeat already completed work.
 14. Full audit/evidence lineage for every automated action.
 15. Explicit production connector permissions per department and operation.
+
+## 11. Government is already building the primitives Aether should orchestrate
+
+DPIIT's September 2026 NSWS release describes one-time submission, a document
+repository, e-communication, approval discovery and tracking across 32 Central
+Departments and 34 State Governments.
+
+DoLR's current NGDRS guidance describes eKYC/PAN verification, presence-less
+registration, payment integration, auto-mutation, EC generation and property-tax
+integration. DILRMP 3.0 shifts the national land-record program toward a
+GIS-enabled "Land Stack", with Registration Seva Kendras and Bhu-Aadhaar.
+
+CPGRAMS data show that central public grievances averaged 13 days to dispose
+through 15 July 2026, while the July 2026 State/UT pendency was 233,714. J&K's
+own ServicePlus dashboard explicitly distinguishes pending-with-applicant,
+pending-with-official and cases beyond the Public Service Guarantee Act timeline.
+
+FIEO's 2026 exporter feedback reports long-pending customs alerts and
+visibility gaps for Shipping Bills/Cargo Identification Numbers. The key
+product lesson is that "integration exists" does not mean "the cross-system
+case journey is reliable".
+
+**Aether response:** become the orchestration and recovery layer over these
+systems. Do not duplicate every government portal; collect the objective once,
+reuse authorised evidence, watch each dependency, reconcile cross-system
+identifiers, and recover from failures without restart.
+
+Sources:
+https://www.pib.gov.in/PressReleasePage.aspx?PRID=2313670
+https://dolr.gov.in/en/national-generic-document-registration-system/
+https://www.pib.gov.in/PressReleasePage.aspx?PRID=2294778
+https://jansugam.jk.gov.in/databoard
+https://fieo.org/en/view_section.php?id=0%2C2993%2C3011%2C3086&lang=0
+https://fieo.org/en/view_section.php?id=0%2C2993%2C3011%2C3136&lang=0
+
