@@ -13,6 +13,7 @@ from .case_continuity import build_continuity_review
 from .case_passport import build_case_passport
 from .deadline_guard import build_deadline_guard
 from .query_normalizer import normalize_queries
+from .remediation_planner import build_remediation_plan
 from .field_mapper import prepare_form_mapping
 from .financial_reconciliation import reconcile_financial_position
 from .duplicate_case_detection import find_duplicate_cases
@@ -982,13 +983,26 @@ class AdministrativeWorker:
                 "document_type": item.get("document_type"),
             })
 
+        queries = normalize_queries([
+            {
+                "query": result.get("query") or result.get("reason"),
+                "reference": result.get("reference") or result.get("request_id"),
+                "task_id": task_id,
+            }
+            for task_id, result in results.items()
+            if isinstance(result, dict) and (result.get("status") == "query" or result.get("query"))
+        ])
+        remediation = build_remediation_plan(
+            deficiencies=deficiency.get("deficiencies") or [],
+            queries=queries,
+        )
         return AdministrativeWorker._result(context, "followup_plan", {
             "pending_followups": pending,
             "automatic_followup_enabled": True,
             "requires_replan_after_external_response": bool(pending),
+            "remediation_plan": remediation,
         })
 
-    @staticmethod
     @staticmethod
     def _interim_response(context) -> Dict[str, Any]:
         payload = context.payload
