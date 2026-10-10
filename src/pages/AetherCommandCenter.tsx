@@ -197,6 +197,33 @@ export const AetherCommandCenter: React.FC = () => {
   const [understanding, setUnderstanding] = useState<Understanding | null>(null);
   const [recentCases, setRecentCases] = useState<CaseListItem[]>([]);
   const [officerQueue, setOfficerQueue] = useState<CaseListItem[]>([]);
+  const [operatorWorkload, setOperatorWorkload] = useState<{
+    case_count: number;
+    workload: {
+      departments: Array<{
+        department: string;
+        active_work: number;
+        pending: number;
+        running: number;
+        human_review: number;
+        exceptions: number;
+        management_attention: string;
+      }>;
+      critical_cases: Array<{
+        case_id: string;
+        status: string;
+        exceptions: number;
+        human_actions: number;
+      }>;
+    };
+  } | null>(null);
+  const [operatorBatches, setOperatorBatches] = useState<Array<{
+    batch_key: string;
+    task_id: string;
+    owner: string;
+    case_count: number;
+    suggested_action: string;
+  }>>([]);
   const [apiKeys, setApiKeys] = useState<Array<{ key_prefix: string; role: string; scopes: string[]; status: string; created_at?: string | null }>>([]);
   const [newApiKey, setNewApiKey] = useState('');
   const [notifications, setNotifications] = useState<Array<{ id: number; event_type: string; case_id?: string | null; status: string; created_at?: string | null }>>([]);
@@ -309,6 +336,23 @@ export const AetherCommandCenter: React.FC = () => {
       if (queueResponse.ok) {
         const queueBody = await queueResponse.json();
         setOfficerQueue(queueBody.cases || []);
+      }
+
+      const workloadResponse = await fetch(
+        API_BASE + '/api/aether/v2/operator/workload?limit=100',
+        { headers: authHeaders() }
+      );
+      if (workloadResponse.ok) {
+        setOperatorWorkload(await workloadResponse.json());
+      }
+
+      const batchesResponse = await fetch(
+        API_BASE + '/api/aether/v2/operator/batches?limit=12',
+        { headers: authHeaders() }
+      );
+      if (batchesResponse.ok) {
+        const batchesBody = await batchesResponse.json();
+        setOperatorBatches(batchesBody.batches || []);
       }
     } catch {
       // The command center remains usable even when workspace metadata is unavailable.
@@ -935,6 +979,44 @@ export const AetherCommandCenter: React.FC = () => {
                         <div className="truncate text-[11px] font-medium text-violet-50">{item.service_name || item.objective}</div>
                         <div className="mt-1 text-[9px] text-violet-200/70">{item.human_actions || 0} action(s) · {item.case_id}</div>
                       </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {operatorWorkload && (
+                <div className="mt-4 rounded-xl border border-emerald-300/15 bg-emerald-300/5 p-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-[11px] font-semibold text-emerald-100">Workload control tower</h3>
+                    <span className="text-[9px] text-emerald-200">{operatorWorkload.case_count} cases</span>
+                  </div>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    {operatorWorkload.workload.departments.slice(0, 4).map((item) => (
+                      <div key={item.department} className="rounded-lg bg-black/10 p-2">
+                        <div className="truncate text-[9px] font-medium text-slate-300">{item.department}</div>
+                        <div className="mt-1 text-sm font-bold text-emerald-200">{item.active_work}</div>
+                        <div className="text-[8px] text-slate-500">{item.management_attention} attention</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {operatorBatches.length > 0 && (
+                <div className="mt-3 rounded-xl border border-cyan-300/15 bg-cyan-300/5 p-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-[11px] font-semibold text-cyan-100">Batch opportunities</h3>
+                    <span className="text-[9px] text-cyan-200">{operatorBatches.length}</span>
+                  </div>
+                  <div className="mt-2 space-y-2">
+                    {operatorBatches.slice(0, 3).map((batch) => (
+                      <div key={batch.batch_key} className="rounded-lg border border-white/5 bg-black/10 p-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="truncate text-[9px] font-medium text-slate-200">{batch.task_id.replaceAll('_', ' ')}</span>
+                          <span className="text-[9px] text-emerald-200">{batch.case_count} cases</span>
+                        </div>
+                        <p className="mt-1 text-[8px] text-slate-500">{batch.suggested_action}</p>
+                      </div>
                     ))}
                   </div>
                 </div>
