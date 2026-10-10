@@ -19,6 +19,7 @@ from .employee_automation import EmployeeAutomationService
 from .process_work_recipes import work_recipe, work_atom_metadata
 from .government_process_kernel import infer_process_profile
 from .jurisdiction_process_profiles import JurisdictionProcessRegistry
+from .work_batching import build_operator_batches
 from backend.database import SessionLocal
 from sqlalchemy import text
 
@@ -738,6 +739,24 @@ def operator_queue(
         brief.get("case_id", ""),
     ))
     return {"cases": briefs[:max(1, min(limit, 100))]}
+
+
+@router.get("/operator/batches")
+def operator_batches(
+    limit: int = 25,
+    principal: Principal = Depends(require_scope("cases:read")),
+):
+    if principal.role.lower() not in {"officer", "department_admin", "admin"}:
+        raise HTTPException(status_code=403, detail="Operator queue requires an operator role")
+    cases = _list_visible_cases(principal, limit=max(1, min(limit * 4, 100)))
+    briefs = []
+    for item in cases:
+        try:
+            briefs.append(employee_automation.brief(engine.get_case(item["case_id"])))
+        except KeyError:
+            continue
+    batches = build_operator_batches(briefs)[:max(1, min(limit, 100))]
+    return {"batches": batches}
 
 
 @router.post("/cases")
