@@ -15,6 +15,7 @@ from .deadline_guard import build_deadline_guard
 from .query_normalizer import normalize_queries
 from .field_mapper import prepare_form_mapping
 from .financial_reconciliation import reconcile_financial_position
+from .duplicate_case_detection import find_duplicate_cases
 from backend.database import SessionLocal
 
 
@@ -73,6 +74,7 @@ class AdministrativeWorker:
             "authoritative_prefill": self._authoritative_prefill,
             "deadline_guard": self._deadline_guard,
             "inspection_quality_guard": self._inspection_quality_guard,
+            "duplicate_case_screen": self._duplicate_case_screen,
             "resubmission_diff": self._resubmission_diff,
             "intermediate_handoffs": self._intermediate_handoffs,
             "verification_chain": self._verification_chain,
@@ -295,6 +297,38 @@ class AdministrativeWorker:
             "reentry_avoided": True,
             "target": "authorised service centre / customs operator",
         })
+
+    @staticmethod
+    def _duplicate_case_screen(context) -> Dict[str, Any]:
+        payload = context.payload
+        try:
+            from .case_store import DatabaseCaseStore
+            from .domain import Case
+            # Build a lightweight case view from the execution payload. Full case
+            # data is read only through the server-side store.
+            temp = Case(
+                case_id=context.case_id,
+                objective=str(payload.get("objective") or ""),
+                customer_type=str(payload.get("customer_type") or "unknown"),
+                jurisdiction=payload.get("jurisdiction") or {},
+                inputs=payload,
+                requirements=[],
+                tasks={},
+                owner_user_id=payload.get("owner_user_id"),
+                tenant_id=payload.get("tenant_id"),
+                service_id=payload.get("service_id"),
+            )
+            result = find_duplicate_cases(DatabaseCaseStore(), temp)
+        except Exception as exc:
+            result = {
+                "duplicate_candidates": [],
+                "duplicate_candidate_count": 0,
+                "safe_action": "unavailable",
+                "auto_merge": False,
+                "auto_close": False,
+                "error": str(exc),
+            }
+        return AdministrativeWorker._result(context, "duplicate_case_screen", result)
 
     @staticmethod
     def _inspection_quality_guard(context) -> Dict[str, Any]:
