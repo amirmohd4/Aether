@@ -16,6 +16,7 @@ from .query_normalizer import normalize_queries
 from .field_mapper import prepare_form_mapping
 from .financial_reconciliation import reconcile_financial_position
 from .duplicate_case_detection import find_duplicate_cases
+from .routing_intelligence import recommend_route
 from backend.database import SessionLocal
 
 
@@ -690,11 +691,23 @@ class AdministrativeWorker:
         priority = triage.get("priority", "normal")
         service_department = payload.get("service_department") or routing.get("department") or "unassigned"
         current_owner = payload.get("owner_user_id")
-        reason = [
-            "jurisdiction matched to case",
-            f"service department={service_department}",
-            f"priority={priority}",
-        ]
+        human_boundary = any(
+            isinstance(state, dict) and state.get("status") == "human_review"
+            for state in (payload.get("task_states") or {}).values()
+        )
+        physical_action = any(
+            isinstance(state, dict) and state.get("physical_action")
+            for state in (payload.get("task_states") or {}).values()
+        )
+        recommendation = recommend_route(
+            department=str(service_department),
+            jurisdiction=payload.get("jurisdiction") or {},
+            priority=str(priority),
+            human_boundary=human_boundary,
+            physical_action=physical_action,
+            exception_count=len(payload.get("case_exceptions") or []),
+        )
+        reason = list(recommendation["reasons"])
         if current_owner:
             reason.append("existing case owner retained")
         external = self._execute_external(
@@ -716,6 +729,7 @@ class AdministrativeWorker:
             "jurisdiction": payload.get("jurisdiction") or {},
             "priority": priority,
             "reason": reason,
+            "route_recommendation": recommendation,
             "workload_lookup": "requires department staffing connector",
         })
 
