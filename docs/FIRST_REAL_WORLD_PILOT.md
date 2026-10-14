@@ -12,16 +12,20 @@ Stop expanding the service catalogue and stop adding general-purpose features un
 
 - OECD's *Smart Regulations, Strong Business* research reports that in 60% of surveyed countries businesses say they must submit the same documents more than once in licensing/permitting; business organisations in only 13% say permit processes and timelines are coordinated across authorities; and business organisations in 67% report untimely decisions. These are country-level survey findings, not shares of all individual applications.
 - Jammu & Kashmir has an existing Single Window System, and the National Single Window System lists J&K approvals and a "Know Your Approvals" route.
+- Jammu Municipal Corporation already advertises an online NOC/licence system. Its official 26 March 2021 release says its online services support application submission, departmental receipt, document/fee verification, escalation to another dealing officer, status monitoring, online payment, and digitally signed output certificates. This is a critical competitive finding: Aether must not rebuild those capabilities inside JMC.
 - FSSAI already operates FoSCoS for food-business licensing/registration and tracking. Aether must complement these systems, not duplicate their application portals.
+- Therefore the local pain is still a hypothesis, not yet proven: investigate whether the actual journey between JMC, FoSCoS and any other *applicable* authorities has uncoordinated dependencies, duplicate evidence requests, manual follow-ups or no shared case ownership. If existing systems already coordinate the journey well, reject this pilot or find a different high-value workflow.
 - Aether's current controlled MVP uses synthetic government systems. It is not authorised to submit live applications or issue official decisions.
 
 ## Sources to verify during discovery
 
 1. OECD, *Smart Regulations, Strong Business* (2025): https://www.oecd.org/en/publications/smart-regulations-strong-business_93d38770-en/full-report/diagnostic-drivers-of-regulatory-burden-and-complexity_7296019b.html
-2. J&K Single Window System: https://singlewindow.jk.gov.in/
-3. NSWS J&K approvals: https://www.nsws.gov.in/portal/jammukashmir
-4. FSSAI FoSCoS: https://foscos.fssai.gov.in/
-5. Aether real-government activation gate: https://github.com/amirmohd4/Aether/blob/main/REAL_GOVERNMENT_ACTIVATION.md
+2. Jammu Municipal Corporation online NOC/licence form: https://www.jmc.jk.gov.in/NOCForm.aspx
+3. Jammu Municipal Corporation's official 26 March 2021 e-services announcement: https://www.jmc.jk.gov.in/newsdetail.aspx?id=389
+4. J&K Single Window System: https://singlewindow.jk.gov.in/
+5. NSWS J&K approvals: https://www.nsws.gov.in/portal/jammukashmir
+6. FSSAI FoSCoS: https://foscos.fssai.gov.in/
+7. Aether real-government activation gate: https://github.com/amirmohd4/Aether/blob/main/REAL_GOVERNMENT_ACTIVATION.md
 
 ## Phase 1 — map the real process before coding
 
