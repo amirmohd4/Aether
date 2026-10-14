@@ -52,6 +52,38 @@ Technical issues: https://github.com/amirmohd4/Aether/issues
 
 #GovTech #DigitalPublicInfrastructure #PublicSectorInnovation #WorkflowAutomation #ResponsibleAI
 
+## 3A. Research-preview post — safe before hosted beta is verified
+
+Use this version while the hosted demo is still being validated. It links to the repository and asks for research interviews; it does not imply that the new website or feedback form is live.
+
+**LinkedIn / founder post**
+
+I'm building Aether GovOS, an early-stage prototype exploring a difficult question: what happens after a digital application is submitted?
+
+Many complex workflows still require coordination across teams, systems, evidence checks, handoffs and exception follow-up. Aether explores whether those steps can be represented as an auditable workflow—while keeping statutory decisions, inspections and other authorised actions with people.
+
+This is a research-stage prototype. The government environment is simulated; there are no live government integrations, official decisions, or independently measured savings.
+
+I'm looking for critical feedback from GovTech builders, service designers, public-service operators, digital-government teams and researchers:
+- Where does work repeat or stall after intake?
+- Which steps are safe to automate, and which must remain human-controlled?
+- What would make an orchestration layer unsafe, redundant or impractical?
+
+Please don't share personal data or confidential case records. I'm interested in the workflow and evidence, not identifiable cases.
+
+Repository: https://github.com/amirmohd4/Aether  
+Technical feedback: https://github.com/amirmohd4/Aether/issues
+
+#GovTech #DigitalPublicInfrastructure #PublicSectorInnovation #WorkflowAutomation
+
+**X / Threads**
+
+I'm researching what happens after a digital application is submitted: handoffs, evidence checks, rework and exception follow-up.
+
+Aether is an early prototype; government systems are simulated, with no live integrations or proven savings.
+
+Critical feedback welcome: https://github.com/amirmohd4/Aether
+
 ## 4. Short post for X / Threads
 
 We're testing Aether, a workflow execution layer for the work after an application is submitted: dependencies, evidence, retries, exceptions and human-authority boundaries.
