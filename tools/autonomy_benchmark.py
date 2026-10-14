@@ -11,7 +11,6 @@ import argparse
 import csv
 import json
 import sys
-from collections import defaultdict
 from pathlib import Path
 
 TRUE = {"1", "true", "yes", "y"}
@@ -69,7 +68,7 @@ def analyze(path: Path) -> dict:
             case = cases.setdefault(case_id, {
                 "tasks": [], "baseline_staff_minutes": None, "actual_staff_minutes": None,
                 "baseline_handoffs": None, "actual_handoffs": None,
-                "outcome_verified": False, "outcome_correct": False, "unauthorized_action": False,
+                "outcome_verified": None, "outcome_correct": None,
             })
             measures = {
                 "baseline_staff_minutes": number(row.get("baseline_staff_minutes", ""), "baseline_staff_minutes", row_number),
@@ -91,10 +90,11 @@ def analyze(path: Path) -> dict:
             }
             if task["correct"] and not task["verified"]:
                 raise ValueError(f"row {row_number}: outcome_correct cannot be true unless outcome_verified is true")
+            for name, value in (("outcome_verified", task["verified"]), ("outcome_correct", task["correct"])):
+                if case[name] is not None and case[name] != value:
+                    raise ValueError(f"row {row_number}: {name} must be repeated consistently across all tasks in case {case_id!r}")
+                case[name] = value
             case["tasks"].append(task)
-            case["outcome_verified"] = case["outcome_verified"] or task["verified"]
-            case["outcome_correct"] = case["outcome_correct"] or task["correct"]
-            case["unauthorized_action"] = case["unauthorized_action"] or task["unauthorized"]
 
     if not cases:
         raise ValueError("CSV contains no task rows")
@@ -106,8 +106,9 @@ def analyze(path: Path) -> dict:
     automated_completed = sum(task["mode"] == "automated" and task["status"] == "completed" and not task["intervention"] for task in tasks)
     interventions = sum(task["intervention"] for task in tasks)
     total_cases = len(cases)
-    verified_cases = sum(case["outcome_verified"] for case in cases.values())
-    correct_verified_cases = sum(case["outcome_correct"] for case in cases.values())
+    verified_cases = sum(bool(case["outcome_verified"]) for case in cases.values())
+    correct_verified_cases = sum(bool(case["outcome_correct"]) for case in cases.values())
+    unauthorized_actions = sum(task["unauthorized"] for task in tasks)
     baseline_staff = sum(case["baseline_staff_minutes"] or 0 for case in cases.values())
     actual_staff = sum(case["actual_staff_minutes"] or 0 for case in cases.values())
     baseline_handoffs = sum(case["baseline_handoffs"] or 0 for case in cases.values())
@@ -123,7 +124,7 @@ def analyze(path: Path) -> dict:
         "cases_with_verified_outcome": verified_cases,
         "verified_outcome_case_rate": round(verified_cases / total_cases, 4),
         "correct_outcome_case_rate": round(correct_verified_cases / total_cases, 4),
-        "unauthorized_actions": sum(case["unauthorized_action"] for case in cases.values()),
+        "unauthorized_actions": unauthorized_actions,
         "baseline_staff_minutes": round(baseline_staff, 2),
         "actual_staff_minutes": round(actual_staff, 2),
         "staff_minutes_reduced": round(baseline_staff - actual_staff, 2),
@@ -133,7 +134,7 @@ def analyze(path: Path) -> dict:
         "handoffs_removed": baseline_handoffs - actual_handoffs,
         "handoff_reduction_rate": round((baseline_handoffs - actual_handoffs) / baseline_handoffs, 4) if baseline_handoffs else None,
         "release_gate": {
-            "pass": sum(case["unauthorized_action"] for case in cases.values()) == 0 and verified_cases == total_cases and correct_verified_cases == total_cases,
+            "pass": unauthorized_actions == 0 and verified_cases == total_cases and correct_verified_cases == total_cases,
             "criteria": "zero unauthorized actions; every case has a verified and correct outcome",
             "note": "This gate is necessary, not sufficient. Security, resilience, legal authority, and source-system reconciliation require separate review.",
         },
