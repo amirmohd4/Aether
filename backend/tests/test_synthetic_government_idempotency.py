@@ -18,5 +18,5 @@ def test_repeated_submission_with_same_idempotency_key_creates_one_request():
     )
 
     assert duplicate == first
-    assert len(system._requests) == 1
+    assert system.request_count == 1
     assert system.result(first)["parcel_id"] == "P-001"
