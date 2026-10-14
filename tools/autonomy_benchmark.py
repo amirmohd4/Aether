@@ -26,9 +26,13 @@ def boolean(value: str, field: str, row_number: int) -> bool:
     raise ValueError(f"row {row_number}: {field} must be true/false, got {value!r}")
 
 
-def number(value: str, field: str, row_number: int) -> float:
+def number(value: str, field: str, row_number: int) -> float | None:
+    # Blank measurements mean "not measured", never a zero-minute/zero-handoff claim.
+    normalized = (value or "").strip()
+    if not normalized:
+        return None
     try:
-        parsed = float(value or 0)
+        parsed = float(normalized)
     except ValueError as exc:
         raise ValueError(f"row {row_number}: {field} must be numeric") from exc
     if parsed < 0:
@@ -109,10 +113,16 @@ def analyze(path: Path) -> dict:
     verified_cases = sum(bool(case["outcome_verified"]) for case in cases.values())
     correct_verified_cases = sum(bool(case["outcome_correct"]) for case in cases.values())
     unauthorized_actions = sum(task["unauthorized"] for task in tasks)
-    baseline_staff = sum(case["baseline_staff_minutes"] or 0 for case in cases.values())
-    actual_staff = sum(case["actual_staff_minutes"] or 0 for case in cases.values())
-    baseline_handoffs = sum(case["baseline_handoffs"] or 0 for case in cases.values())
-    actual_handoffs = sum(case["actual_handoffs"] or 0 for case in cases.values())
+    baseline_staff_values = [case["baseline_staff_minutes"] for case in cases.values()]
+    actual_staff_values = [case["actual_staff_minutes"] for case in cases.values()]
+    baseline_handoff_values = [case["baseline_handoffs"] for case in cases.values()]
+    actual_handoff_values = [case["actual_handoffs"] for case in cases.values()]
+    baseline_staff = sum(baseline_staff_values) if all(v is not None for v in baseline_staff_values) else None
+    actual_staff = sum(actual_staff_values) if all(v is not None for v in actual_staff_values) else None
+    baseline_handoffs = sum(baseline_handoff_values) if all(v is not None for v in baseline_handoff_values) else None
+    actual_handoffs = sum(actual_handoff_values) if all(v is not None for v in actual_handoff_values) else None
+    staff_reduced = baseline_staff - actual_staff if baseline_staff is not None and actual_staff is not None else None
+    handoffs_removed = baseline_handoffs - actual_handoffs if baseline_handoffs is not None and actual_handoffs is not None else None
     return {
         "measurement_scope": "provided CSV only; not independently validated",
         "cases": total_cases,
@@ -127,12 +137,12 @@ def analyze(path: Path) -> dict:
         "unauthorized_actions": unauthorized_actions,
         "baseline_staff_minutes": round(baseline_staff, 2),
         "actual_staff_minutes": round(actual_staff, 2),
-        "staff_minutes_reduced": round(baseline_staff - actual_staff, 2),
-        "staff_minutes_reduction_rate": round((baseline_staff - actual_staff) / baseline_staff, 4) if baseline_staff else None,
+        "staff_minutes_reduced": round(staff_reduced, 2) if staff_reduced is not None else None,
+        "staff_minutes_reduction_rate": round(staff_reduced / baseline_staff, 4) if staff_reduced is not None and baseline_staff else None,
         "baseline_handoffs": baseline_handoffs,
         "actual_handoffs": actual_handoffs,
-        "handoffs_removed": baseline_handoffs - actual_handoffs,
-        "handoff_reduction_rate": round((baseline_handoffs - actual_handoffs) / baseline_handoffs, 4) if baseline_handoffs else None,
+        "handoffs_removed": handoffs_removed,
+        "handoff_reduction_rate": round(handoffs_removed / baseline_handoffs, 4) if handoffs_removed is not None and baseline_handoffs else None,
         "release_gate": {
             "pass": unauthorized_actions == 0 and completed_tasks == total_tasks and verified_cases == total_cases and correct_verified_cases == total_cases,
             "criteria": "zero unauthorized actions; every task completed; every case has a verified and correct outcome",
