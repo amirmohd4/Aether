@@ -12,7 +12,7 @@ This is a factual checklist, not a claim that all release gates have passed. The
 - [x] Supabase security advisor returned no security lints at the time checked.
 - [x] The queried application and internal tables had row-level security enabled. This does not prove tenant-isolation correctness; runtime integration tests remain necessary.
 - [x] Netlify Forms processing is enabled on the existing Aether site.
-- [x] A privacy-conscious, no-file-upload feedback form and confirmation page have been added to the release branch.
+- [x] A privacy-conscious, no-file-upload feedback form, confirmation page, and honest research-preview page have been added to the release branch.
 - [x] The app links to the feedback route from signed-in and signed-out views.
 - [x] Public copy consistently describes the government connector as synthetic and does not claim measured real-world savings.
 - [x] Netlify has the Supabase project URL configured for production, branch deploys, and deploy previews.
@@ -22,7 +22,7 @@ This is a factual checklist, not a claim that all release gates have passed. The
 
 - [ ] Deploy the exact reviewed branch/commit to a controlled preview or release candidate and record the resulting deployment URL and commit.
 - [ ] Confirm the publishable Supabase client key is available to the build and the deployed app loads without a client-side configuration exception.
-- [ ] Confirm the current build contains `/feedback.html` and the confirmation page.
+- [ ] Confirm the current build contains `/research-preview.html`, `/feedback.html`, and the confirmation page.
 - [ ] Submit one clearly labelled test response and verify it appears in Netlify Forms; then remove or mark the test response appropriately.
 - [ ] Run the synthetic end-to-end workflow, missing-document stop, retry/recovery, idempotency, and statutory-rejection tests against the exact release commit.
 - [ ] Verify the Render production configuration and health/readiness endpoint. Do not expose credentials in logs or public documentation.
