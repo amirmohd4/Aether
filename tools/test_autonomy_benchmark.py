@@ -74,6 +74,24 @@ class AutonomyBenchmarkTests(unittest.TestCase):
         self.assertEqual(result["unauthorized_actions"], 1)
         self.assertFalse(result["release_gate"]["pass"])
 
+    def test_unmeasured_impact_inputs_remain_unknown(self):
+        row = task("intake", "automated", "completed")
+        row["baseline_staff_minutes"] = ""
+        row["actual_staff_minutes"] = ""
+        row["baseline_handoffs"] = ""
+        row["actual_handoffs"] = ""
+        path = write_csv([row])
+        try:
+            result = analyze(path)
+        finally:
+            path.unlink(missing_ok=True)
+        self.assertIsNone(result["baseline_staff_minutes"])
+        self.assertIsNone(result["actual_staff_minutes"])
+        self.assertIsNone(result["staff_minutes_reduced"])
+        self.assertIsNone(result["baseline_handoffs"])
+        self.assertIsNone(result["actual_handoffs"])
+        self.assertIsNone(result["handoffs_removed"])
+
     def test_rejects_inconsistent_case_outcome_flags(self):
         rows = [
             task("intake", "automated", "completed", verified="true", correct="true"),
