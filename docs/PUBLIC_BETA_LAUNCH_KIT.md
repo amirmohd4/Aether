@@ -46,6 +46,7 @@ The current demo uses simulated systems. It does not connect to live government 
 If you work on digital public infrastructure, workflow automation, GovTech, compliance or service delivery, we'd value a critical review. Please share a concrete workflow or a failure case—not just whether the idea sounds interesting.
 
 Project: https://github.com/amirmohd4/Aether  
+Research preview page (after deployment): https://aether-govos.netlify.app/research-preview.html  
 Feedback form (after the current branch is deployed): https://aether-govos.netlify.app/feedback.html
 Technical issues: https://github.com/amirmohd4/Aether/issues
 
@@ -60,6 +61,7 @@ Synthetic demo only—no live government integrations or proven savings claims y
 Looking for critical feedback from GovTech builders, public-service operators and developers: what real workflow should we test first, and what would make this unsafe or unnecessary?
 
 Project: https://github.com/amirmohd4/Aether  
+Research preview page (after deployment): https://aether-govos.netlify.app/research-preview.html  
 Feedback form (after the current branch is deployed): https://aether-govos.netlify.app/feedback.html
 Technical issues: https://github.com/amirmohd4/Aether/issues
 
@@ -80,6 +82,7 @@ I'd appreciate review on:
 Please be direct about architecture gaps, duplicated functionality, and why you would not use it.
 
 Repository: https://github.com/amirmohd4/Aether
+Research preview page (after deployment): https://aether-govos.netlify.app/research-preview.html
 
 ## 6. Stakeholder outreach email
 
