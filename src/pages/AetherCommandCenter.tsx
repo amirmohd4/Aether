@@ -95,7 +95,9 @@ type CaseResponse = {
   }>;
 };
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8081';
+const configuredApiBase = import.meta.env.VITE_API_URL || 'http://localhost:8081';
+// Accept either an origin or an origin ending in /api; route paths below include /api themselves.
+const API_BASE = configuredApiBase.replace(/\/+$/, '').replace(/\/api$/, '');
 
 const DEMO_DOCUMENTS = [
   'identity_document',
