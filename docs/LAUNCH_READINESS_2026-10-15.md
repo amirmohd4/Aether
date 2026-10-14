@@ -15,12 +15,13 @@ This is a factual checklist, not a claim that all release gates have passed. The
 - [x] A privacy-conscious, no-file-upload feedback form and confirmation page have been added to the release branch.
 - [x] The app links to the feedback route from signed-in and signed-out views.
 - [x] Public copy consistently describes the government connector as synthetic and does not claim measured real-world savings.
-- [x] Netlify environment variables for the Supabase project URL and publishable client key have been added for builds. They take effect only after a new build/deploy; no secret service-role key was added to the frontend.
+- [x] Netlify has the Supabase project URL configured for production, branch deploys, and deploy previews.
+- [ ] The publishable browser-key mutation was acknowledged by the Netlify connector but is not visible in the environment listing; treat frontend Supabase configuration as unverified until a build proves it is available. No service-role key was added to the frontend.
 
 ## Hard blockers before calling this a live public beta
 
 - [ ] Deploy the exact reviewed branch/commit to a controlled preview or release candidate and record the resulting deployment URL and commit.
-- [ ] Confirm the deployed app loads without a client-side configuration exception.
+- [ ] Confirm the publishable Supabase client key is available to the build and the deployed app loads without a client-side configuration exception.
 - [ ] Confirm the current build contains `/feedback.html` and the confirmation page.
 - [ ] Submit one clearly labelled test response and verify it appears in Netlify Forms; then remove or mark the test response appropriately.
 - [ ] Run the synthetic end-to-end workflow, missing-document stop, retry/recovery, idempotency, and statutory-rejection tests against the exact release commit.
@@ -37,6 +38,7 @@ This is a factual checklist, not a claim that all release gates have passed. The
 - The last confirmed published deployment is from 7 October 2026 on `main`, commit `ea264bef84095e8bb128cfabb3e88abc78ff8f60`. It is stale relative to this release branch.
 - Therefore, do not advertise `https://aether-govos.netlify.app/feedback.html` as working until the new deployment and a real form submission are verified.
 - Netlify build config publishes Vite's `dist` directory and runs `npm ci && npm run build`.
+- Baseline browser security headers have been added to the branch's `netlify.toml`; they are not live until that branch/config is deployed.
 - Supabase project status: `ACTIVE_HEALTHY`; 10 migrations are recorded.
 - Security advisor: no security lints returned at the time checked. Performance advisor surfaced informational unused-index findings; do not remove indexes without workload evidence.
 
