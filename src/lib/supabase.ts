@@ -1,11 +1,16 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-// Publishable keys are browser-safe. Keep any service-role key server-side only.
+// Supabase publishable keys are designed for browser use; RLS and server-side
+// authorization remain the security boundary. Prefer build-time overrides, and
+// never place a service-role key in frontend code.
+const supabaseUrl =
+  import.meta.env.VITE_SUPABASE_URL ||
+  (import.meta.env.PROD ? 'https://lekudqjewxxunqjuqayi.supabase.co' : undefined);
 const supabaseAnonKey =
   import.meta.env.VITE_SUPABASE_ANON_KEY ||
   import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-  import.meta.env.VITE_SUPABASE_BROWSER_CLIENT;
+  import.meta.env.VITE_SUPABASE_BROWSER_CLIENT ||
+  (import.meta.env.PROD ? 'sb_publishable_1zr-O35OIeQVgBfnAVnXaQ_AewTZBqI' : undefined);
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Database configuration incomplete');
