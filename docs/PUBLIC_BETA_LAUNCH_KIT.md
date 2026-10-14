@@ -1,6 +1,6 @@
 # Aether Public Sandbox Beta — Launch and Feedback Kit
 
-**Status: prepared for review; not yet cleared for public launch.**  
+**Status: launch materials prepared; public beta remains gated on deployment and live smoke tests.**  
 **Audience:** developers, public-service designers, service-centre operators, government digital-transformation teams, researchers, potential institutional sponsors and investors.
 
 ## 1. Honest product description
@@ -19,10 +19,11 @@ Publish a working demo only after:
 - [ ] Authentication, rate limits, abuse handling, error reporting and feedback collection are reviewed.
 - [ ] Secrets, internal endpoints, stack traces and private environment data are not exposed.
 - [ ] The feedback route is tested end-to-end and has a named owner.
+- [ ] The published deployment is confirmed to contain the exact release commit, and the form appears in Netlify Forms with a successful test submission.
 - [ ] README and landing-page claims match the actual deployed build.
 - [ ] Rollback and incident contact are documented.
 
-Until these gates pass, share a research/demo preview and invite interviews; do not call it a launched public beta or invite strangers to upload real cases.
+Until these gates pass, share the repository and research preview, invite interviews, and describe the hosted site as an existing prototype preview—not a newly launched public beta. The current published Netlify deployment is stale relative to this branch, so the feedback URL above must not be advertised as live until a deploy and submission are verified.
 
 ## 3. LinkedIn launch post — use after beta gate passes
 
@@ -45,7 +46,8 @@ The current demo uses simulated systems. It does not connect to live government 
 If you work on digital public infrastructure, workflow automation, GovTech, compliance or service delivery, we'd value a critical review. Please share a concrete workflow or a failure case—not just whether the idea sounds interesting.
 
 Project: https://github.com/amirmohd4/Aether  
-Feedback: https://github.com/amirmohd4/Aether/issues
+Feedback form (after the current branch is deployed): https://aether-govos.netlify.app/feedback.html
+Technical issues: https://github.com/amirmohd4/Aether/issues
 
 #GovTech #DigitalPublicInfrastructure #PublicSectorInnovation #WorkflowAutomation #ResponsibleAI
 
@@ -58,7 +60,8 @@ Synthetic demo only—no live government integrations or proven savings claims y
 Looking for critical feedback from GovTech builders, public-service operators and developers: what real workflow should we test first, and what would make this unsafe or unnecessary?
 
 Project: https://github.com/amirmohd4/Aether  
-Feedback: https://github.com/amirmohd4/Aether/issues
+Feedback form (after the current branch is deployed): https://aether-govos.netlify.app/feedback.html
+Technical issues: https://github.com/amirmohd4/Aether/issues
 
 ## 5. Developer-community post
 
