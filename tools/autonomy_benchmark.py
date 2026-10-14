@@ -134,8 +134,8 @@ def analyze(path: Path) -> dict:
         "handoffs_removed": baseline_handoffs - actual_handoffs,
         "handoff_reduction_rate": round((baseline_handoffs - actual_handoffs) / baseline_handoffs, 4) if baseline_handoffs else None,
         "release_gate": {
-            "pass": unauthorized_actions == 0 and verified_cases == total_cases and correct_verified_cases == total_cases,
-            "criteria": "zero unauthorized actions; every case has a verified and correct outcome",
+            "pass": unauthorized_actions == 0 and completed_tasks == total_tasks and verified_cases == total_cases and correct_verified_cases == total_cases,
+            "criteria": "zero unauthorized actions; every task completed; every case has a verified and correct outcome",
             "note": "This gate is necessary, not sufficient. Security, resilience, legal authority, and source-system reconciliation require separate review.",
         },
     }
