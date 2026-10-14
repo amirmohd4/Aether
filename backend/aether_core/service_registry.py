@@ -114,13 +114,14 @@ SERVICE_DEFINITIONS = [
     ("passport", "Passport Application", "Passport", ["citizen"], ["passport application", "passport"], None, "passport"),
     ("visa", "Visa Service", "Passport", ["citizen", "business"], ["visa service", "visa application"], None, "visa_service"),
     ("food_business_license", "Food Business License/Registration", "Food Safety", ["citizen", "business", "developer"], ["restaurant", "cafe", "food business", "food license", "fssai"], "restaurant", "food_business_license"),
+]
+
+MVP_SERVICE_DEFINITIONS = list(SERVICE_DEFINITIONS)
+EXTENDED_SERVICE_DEFINITIONS = MVP_SERVICE_DEFINITIONS + INDIA_SERVICE_FAMILY_DEFINITIONS + [
     ("udyam_registration", "Udyam Registration", "MSME", ["business", "citizen"], ["udyam registration", "msme registration", "udyam certificate", "msme certificate"], None, "udyam_registration"),
     ("pension", "Government Pension Claim", "Social Welfare", ["citizen"], ["government pension claim", "pension claim", "retirement pension", "pension processing"], None, "pension_claim"),
     ("grievance", "Government Grievance", "Public Grievance", ["citizen", "business"], ["government grievance", "file grievance", "public grievance", "grievance redressal"], None, "grievance_resolution"),
 ]
-
-MVP_SERVICE_DEFINITIONS = list(SERVICE_DEFINITIONS)
-EXTENDED_SERVICE_DEFINITIONS = MVP_SERVICE_DEFINITIONS + INDIA_SERVICE_FAMILY_DEFINITIONS
 
 DEFAULT_DOCUMENTS = {
     "property": ["identity_document", "property_record"],
