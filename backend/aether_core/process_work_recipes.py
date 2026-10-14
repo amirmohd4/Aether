@@ -116,7 +116,7 @@ PROCESS_WORK_RECIPES = {
         "prepare_recommendation", "prepare_decision_brief",
     ],
     "food_license": [
-        "register_case", "case_passport", "journey_cascade", "classify_business", "check_completeness", "continuity_review", "preflight_check", "duplicate_case_screen",
+        "register_case", "case_passport", "journey_cascade", "classify_business", "check_completeness", "authoritative_prefill", "continuity_review", "preflight_check", "duplicate_case_screen",
         "validate_premises", "schedule_inspection", "inspection_quality_guard", "joint_inspection_plan",
         "shared_compliance_profile", "renewal_bundle", "prepare_recommendation",
         "calculate_fee", "prepare_decision_brief",
@@ -207,7 +207,7 @@ PROCESS_WORK_RECIPES = {
         "track_order", "start_appeal_watch",
     ],
     "grievance": [
-        "register_case", "classify_grievance", "route_case",
+        "register_case", "classify_grievance", "route_case", "whole_government_route",
         "assemble_evidence", "prepare_response", "sla_escalation",
         "close_case",
     ],
