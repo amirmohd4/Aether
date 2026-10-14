@@ -71,6 +71,8 @@ Environment:
 
 ```env
 VITE_API_URL=http://localhost:8081
+VITE_SUPABASE_URL=https://<project-ref>.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=<browser-safe-publishable-key>
 VITE_REQUIRE_AUTH=false
 ```
 
@@ -97,7 +99,7 @@ VITE_REQUIRE_AUTH=true
 AETHER_ENABLE_PRODUCTION_CONNECTORS=false
 ```
 
-Production authentication fails closed when authentication is not configured.
+Production authentication fails closed when authentication is not configured. The browser may use only a Supabase publishable/legacy anon key protected by appropriate RLS; never use the service-role key in frontend variables or source.
 
 Real government connectors are enabled only by explicit server-side configuration. Credentials must never be placed in frontend code.
 Document storage uses Supabase Storage when configured with the server-only service-role key; otherwise it uses a local development store. Extracted document text is encrypted at rest when AETHER_ENCRYPTION_KEY is configured. OCR can be connected through AETHER_OCR_BASE_URL/AETHER_OCR_TOKEN.
