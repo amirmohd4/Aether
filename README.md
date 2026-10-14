@@ -116,5 +116,5 @@ The codebase has a controlled/sandbox MVP candidate, but this does not mean the 
 
 ## Launch readiness
 
-See [the 15 October launch-readiness checkpoint](docs/LAUNCH_READINESS_2026-10-15.md) for verified hosting facts, remaining release gates, and the safe public-communication boundary. The current candidate branch includes a no-file-upload feedback form at `/feedback.html`; it must not be advertised as live until the branch is deployed and a submission is verified in Netlify Forms.
+See [the 15 October launch-readiness checkpoint](docs/LAUNCH_READINESS_2026-10-15.md) for verified hosting facts, remaining release gates, and the safe public-communication boundary. The current candidate branch includes a research-preview page at `/research-preview.html` and a no-file-upload feedback form at `/feedback.html`; neither route should be advertised as live until the branch is deployed and the form is verified in Netlify Forms.
 
