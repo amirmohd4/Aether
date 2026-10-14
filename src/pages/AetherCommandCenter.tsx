@@ -95,7 +95,9 @@ type CaseResponse = {
   }>;
 };
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8081';
+const configuredApiBase = import.meta.env.VITE_API_URL || 'http://localhost:8081';
+// Accept either an origin or an origin ending in /api; route paths below include /api themselves.
+const API_BASE = configuredApiBase.replace(/\/+$/, '').replace(/\/api$/, '');
 
 const DEMO_DOCUMENTS = [
   'identity_document',
@@ -576,6 +578,9 @@ export const AetherCommandCenter: React.FC = () => {
           >
             {authMode === 'signin' ? 'Create a new account' : 'Back to sign in'}
           </button>
+          <p className="mt-5 text-center text-xs text-slate-400">
+            Reviewing the prototype? <a href="/feedback.html" className="text-cyan-300 underline underline-offset-4">Give feedback</a>
+          </p>
         </section>
       </main>
     );
@@ -602,6 +607,7 @@ export const AetherCommandCenter: React.FC = () => {
                 {principal.role.replace('_', ' ')}{principal.department ? ' · ' + principal.department : ''}
               </span>
             )}
+            <a href="/feedback.html" className="text-cyan-300 underline underline-offset-4">Feedback</a>
             <span>MVP mode: synthetic government systems</span>
             {session && (
               <button onClick={signOut} className="rounded-lg border border-white/10 px-2 py-1 text-[10px] hover:bg-white/5">
