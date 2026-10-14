@@ -45,7 +45,7 @@ The current demo uses simulated systems. It does not connect to live government 
 If you work on digital public infrastructure, workflow automation, GovTech, compliance or service delivery, we'd value a critical review. Please share a concrete workflow or a failure case—not just whether the idea sounds interesting.
 
 Project: https://github.com/amirmohd4/Aether  
-Feedback: [add the approved public feedback URL before posting]
+Feedback: https://github.com/amirmohd4/Aether/issues
 
 #GovTech #DigitalPublicInfrastructure #PublicSectorInnovation #WorkflowAutomation #ResponsibleAI
 
@@ -58,7 +58,7 @@ Synthetic demo only—no live government integrations or proven savings claims y
 Looking for critical feedback from GovTech builders, public-service operators and developers: what real workflow should we test first, and what would make this unsafe or unnecessary?
 
 Project: https://github.com/amirmohd4/Aether  
-Feedback: [add approved public feedback URL]
+Feedback: https://github.com/amirmohd4/Aether/issues
 
 ## 5. Developer-community post
 
