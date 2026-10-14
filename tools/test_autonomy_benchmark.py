@@ -51,8 +51,19 @@ class AutonomyBenchmarkTests(unittest.TestCase):
         self.assertEqual(result["manual_interventions"], 1)
         self.assertEqual(result["staff_minutes_reduced"], 20.0)
         self.assertEqual(result["handoffs_removed"], 2.0)
-        self.assertTrue(result["release_gate"]["pass"])
+        self.assertFalse(result["release_gate"]["pass"])
         self.assertIn("not independently validated", result["measurement_scope"])
+
+    def test_passes_gate_only_when_all_tasks_complete_and_outcome_is_verified(self):
+        path = write_csv([
+            task("intake", "automated", "completed"),
+            task("review", "human", "completed", intervention="true"),
+        ])
+        try:
+            result = analyze(path)
+        finally:
+            path.unlink(missing_ok=True)
+        self.assertTrue(result["release_gate"]["pass"])
 
     def test_fails_gate_on_unauthorized_action(self):
         path = write_csv([task("submit", "automated", "completed", unauthorized="true")])
