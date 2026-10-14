@@ -121,7 +121,7 @@ _DEPARTMENT_PROCESS_DEFAULTS = {
     "grievance": GovernmentProcessProfile("grievance", "Public grievance"),
     "information commission": GovernmentProcessProfile("information_access", "Information-access service"),
     "procurement": GovernmentProcessProfile("procurement", "Public procurement", payment_sensitive=True, interdepartmental=True),
-    "pension": GovernmentProcessProfile("benefit", "Pension service", payment_sensitive=True),
+    "pension": GovernmentProcessProfile("pension", "Pension service", payment_sensitive=True),
     "social welfare": GovernmentProcessProfile("benefit", "Social welfare service", payment_sensitive=True),
     "electricity": GovernmentProcessProfile("utility_connection", "Electricity utility service", payment_sensitive=True),
     "utilities": GovernmentProcessProfile("utility_connection", "Utility service", payment_sensitive=True),
