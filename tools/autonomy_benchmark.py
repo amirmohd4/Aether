@@ -81,7 +81,7 @@ def analyze(path: Path) -> dict:
                 "actual_handoffs": number(row.get("actual_handoffs", ""), "actual_handoffs", row_number),
             }
             for name, value in measures.items():
-                if case[name] is not None and case[name] != value:
+                if case["tasks"] and case[name] != value:
                     raise ValueError(f"row {row_number}: {name} must be consistent across all tasks in case {case_id!r}")
                 case[name] = value
             task = {
