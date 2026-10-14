@@ -4,6 +4,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 FORM = ROOT / "public" / "feedback.html"
 THANKS = ROOT / "public" / "feedback-thanks.html"
+PREVIEW = ROOT / "public" / "research-preview.html"
 
 
 class PublicFeedbackFormTests(unittest.TestCase):
@@ -34,6 +35,16 @@ class PublicFeedbackFormTests(unittest.TestCase):
         html = THANKS.read_text(encoding="utf-8")
         self.assertIn("Thank you for the critical feedback", html)
         self.assertIn('href="/feedback.html"', html)
+
+    def test_research_preview_has_truthful_scope_and_feedback_links(self):
+        self.assertTrue(PREVIEW.is_file())
+        html = PREVIEW.read_text(encoding="utf-8")
+        self.assertIn("Research preview", html)
+        self.assertIn("simulated department systems", html)
+        self.assertIn("does not access protected government records", html)
+        self.assertIn("does not prove real-world time or cost savings", html)
+        self.assertIn('href="/feedback.html"', html)
+        self.assertIn("No government endorsement claimed", html)
 
 
 if __name__ == "__main__":
