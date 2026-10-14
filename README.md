@@ -112,5 +112,9 @@ See MVP_MASTER_PLAN.md and SECURITY_RELEASE_PLAN.md for the release gate.
 
 ## Truthful MVP status
 
-The software MVP is release-candidate complete for controlled/sandbox operation. Production government execution remains fail-closed until authorized live connectors, authoritative effective-dated rules, certified statutory signature/issuance integrations, provider credentials and deployed Supabase/Render/Netlify security validation are in place.
+The codebase has a controlled/sandbox MVP candidate, but this does not mean the current branch is deployed or cleared for public beta. The published Netlify site is stale relative to the candidate branch; the current feedback route, auth configuration, and hosted end-to-end journey must be verified on an exact deployment before a public beta announcement. Production government execution remains fail-closed until authorized live connectors, authoritative effective-dated rules, certified statutory signature/issuance integrations, provider credentials and deployed Supabase/Render/Netlify security validation are in place.
+
+## Launch readiness
+
+See [the 15 October launch-readiness checkpoint](docs/LAUNCH_READINESS_2026-10-15.md) for verified hosting facts, remaining release gates, and the safe public-communication boundary. The current candidate branch includes a no-file-upload feedback form at `/feedback.html`; it must not be advertised as live until the branch is deployed and a submission is verified in Netlify Forms.
 
