@@ -46,7 +46,8 @@ def test_transient_failures_retry_and_workflow_can_finish():
     )
     assert completed.status == "completed"
     assert all(task.status == TaskStatus.COMPLETED for task in completed.tasks.values())
-    assert completed.tasks["certificate"].result["issued"] is True
+    assert completed.tasks["certificate"].result["completed"] is True
+    assert completed.tasks["certificate"].result["source"] == "Aether Outcome Engine"
 
 
 def test_rejected_statutory_approval_never_issues_certificate():
