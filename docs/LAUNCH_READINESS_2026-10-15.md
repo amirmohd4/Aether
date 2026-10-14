@@ -16,12 +16,13 @@ This is a factual checklist, not a claim that all release gates have passed. The
 - [x] The app links to the feedback route from signed-in and signed-out views.
 - [x] Public copy consistently describes the government connector as synthetic and does not claim measured real-world savings.
 - [x] Netlify has the Supabase project URL configured for production, branch deploys, and deploy previews.
-- [ ] The publishable browser-key mutation was acknowledged by the Netlify connector but is not visible in the environment listing; treat frontend Supabase configuration as unverified until a build proves it is available. No service-role key was added to the frontend.
+- [x] The frontend now has a production-only fallback to the Supabase project URL and its browser-safe publishable key, while allowing build-time overrides. This key is intentionally public; no service-role key is included.
+- [ ] The actual deployed sign-in, sign-up, and authorised-membership flow still needs end-to-end verification.
 
 ## Hard blockers before calling this a live public beta
 
 - [ ] Deploy the exact reviewed branch/commit to a controlled preview or release candidate and record the resulting deployment URL and commit.
-- [ ] Confirm the publishable Supabase client key is available to the build and the deployed app loads without a client-side configuration exception.
+- [ ] Confirm the deployed app loads without a client-side configuration exception, then test sign-in/sign-up and authorised membership end-to-end.
 - [ ] Confirm the current build contains `/research-preview.html`, `/feedback.html`, and the confirmation page.
 - [ ] Submit one clearly labelled test response and verify it appears in Netlify Forms; then remove or mark the test response appropriately.
 - [ ] Run the synthetic end-to-end workflow, missing-document stop, retry/recovery, idempotency, and statutory-rejection tests against the exact release commit.
