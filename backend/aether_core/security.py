@@ -209,3 +209,14 @@ def require_role(*allowed_roles: str):
         return principal
 
     return dependency
+
+
+def require_human_authority(principal: Principal = Depends(require_principal)) -> Principal:
+    """Require a human-authority role and an explicit scope for API-key clients."""
+    if principal.auth_mode == "none":
+        return principal
+    if principal.role.lower() not in {"officer", "department_admin", "admin"}:
+        raise HTTPException(status_code=403, detail="Insufficient Aether role")
+    if principal.auth_mode == "api_key" and "*" not in principal.scopes and "human:decide" not in principal.scopes:
+        raise HTTPException(status_code=403, detail="Missing Aether API scope: human:decide")
+    return principal
