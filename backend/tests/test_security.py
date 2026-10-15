@@ -201,7 +201,7 @@ def test_public_demo_requires_explicit_safe_configuration(monkeypatch):
     from aether_core.security import require_principal
 
     monkeypatch.setenv("AETHER_ENV", "staging")
-    monkeypatch.setenv("AETHER_AUTH_MODE", "none")
+    monkeypatch.setenv("AETHER_AUTH_MODE", "supabase")
     monkeypatch.setenv("AETHER_PUBLIC_DEMO", "true")
     monkeypatch.setenv("AETHER_ENABLE_PRODUCTION_CONNECTORS", "false")
 
