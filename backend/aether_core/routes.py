@@ -1035,6 +1035,8 @@ def submit_case_documents(
     request: DocumentSubmissionRequest,
     principal: Principal = Depends(require_scope("documents:write")),
 ):
+    if principal.auth_mode == "public_demo" and any(not isinstance(document, str) for document in request.documents):
+        raise HTTPException(status_code=400, detail="Public demo accepts fictional document-type references only; do not send document contents.")
     try:
         case = engine.get_case(case_id)
         _authorize_case(case, principal)
