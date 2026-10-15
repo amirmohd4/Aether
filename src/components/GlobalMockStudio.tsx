@@ -246,7 +246,7 @@ export const GlobalMockStudio: React.FC = () => {
           </div>
         </div>
       </div>
-      <div className="mt-5 flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-4 text-[10px] text-slate-500"><span>Mock templates: {servicesConfig.length} · Scenarios: routine path, missing evidence, human review, retry · synthetic only</span><button type="button" onClick={() => { setJourney(null); setReference(''); setEvidence([]); setFeedback(''); setFeedbackMessage(''); }} className="flex items-center gap-1 rounded-lg border border-white/10 px-3 py-2 text-slate-300"><RotateCcw className="h-3 w-3" /> Reset mock</button></div>
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-4 text-[10px] text-slate-500"><span>Mock templates: {servicesConfig.length} · Scenarios: routine path, missing evidence, human review, retry, adverse path · synthetic only</span><button type="button" onClick={() => { setJourney(null); setReference(''); setEvidence([]); setFeedback(''); setFeedbackMessage(''); }} className="flex items-center gap-1 rounded-lg border border-white/10 px-3 py-2 text-slate-300"><RotateCcw className="h-3 w-3" /> Reset mock</button></div>
     </section>
   );
 };
