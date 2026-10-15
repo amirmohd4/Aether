@@ -5,6 +5,7 @@ ROOT = Path(__file__).resolve().parents[1]
 FORM = ROOT / "public" / "feedback.html"
 THANKS = ROOT / "public" / "feedback-thanks.html"
 PREVIEW = ROOT / "public" / "research-preview.html"
+NETLIFY = ROOT / "netlify.toml"
 
 
 class PublicFeedbackFormTests(unittest.TestCase):
@@ -45,6 +46,17 @@ class PublicFeedbackFormTests(unittest.TestCase):
         self.assertIn("does not prove real-world time or cost savings", html)
         self.assertIn('href="/feedback.html"', html)
         self.assertIn("No government endorsement claimed", html)
+
+
+    def test_preview_links_to_safe_interactive_demo(self):
+        preview = PREVIEW.read_text(encoding="utf-8").lower()
+        netlify = NETLIFY.read_text(encoding="utf-8")
+        self.assertIn('href="/"', preview)
+        self.assertIn("try the interactive synthetic sandbox", preview)
+        self.assertIn("[context.deploy-preview.environment]", netlify)
+        self.assertIn('VITE_API_URL = "https://aether-public-demo.onrender.com"', netlify)
+        self.assertIn('VITE_REQUIRE_AUTH = "false"', netlify)
+        self.assertIn('VITE_PUBLIC_DEMO = "true"', netlify)
 
 
 if __name__ == "__main__":
