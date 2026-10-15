@@ -23,14 +23,13 @@ export const INDIA_32_SERVICES: ServiceItem[] = [
   { id: 'in_crop_insurance', name: 'PM Fasal Bima Crop Insurance', category: 'Health & Agriculture', description: 'Agricultural yield coverage registration and claim processing', icon: '🌱' },
   { id: 'in_caste_domicile', name: 'Caste & Domicile Certificate', category: 'Identity & Documents', description: 'Issue government residence and community identity verification', icon: '📜' },
   { id: 'in_ration_card', name: 'Ration Card Pass & Family Addition', category: 'Health & Welfare', description: 'Apply for national food security card or update family members', icon: '🍚' },
-  { id: 'in_court_efiling', name: 'Court Case E-Filing & Order Audit', category: 'Legal & Courts', description: 'E-file judicial petition and audit digital court orders', icon: '⚖️' },
   { id: 'in_passport_renew', name: 'Passport Renewal & Tatkaal Pass', category: 'Identity & Documents', description: 'Re-issue passport or request expedited Tatkaal processing', icon: '🛂' },
   { id: 'in_gst_reg', name: 'GST Registration & Filing', category: 'Taxes & Revenue', description: 'Obtain Goods & Services Tax identification number and file returns', icon: '📊' },
   { id: 'in_elec_conn', name: 'New Electricity Utility Connection', category: 'Utilities & Power', description: 'Request new residential or commercial power meter connection', icon: '⚡' },
   { id: 'in_water_conn', name: 'Water & Sewage Connection Permit', category: 'Utilities & Power', description: 'Apply for municipal drinking water supply and sanitation pipeline', icon: '🚰' },
   { id: 'in_police_pcc', name: 'Police Clearance Certificate (PCC)', category: 'Legal & Security', description: 'Background verification report for employment or international visa', icon: '👮' },
   { id: 'in_fire_noc', name: 'Fire Safety NOC Clearance', category: 'Business & Licenses', description: 'Inspect establishment for fire compliance certificate issuance', icon: '🔥' },
-  { id: 'in_legal_heir', name: 'Legal Heirship & Succession Certificate', category: 'Legal & Courts', description: 'Establish legal inheritance rights for deceased asset transfer', icon: '📋' },
+  { id: 'in_legal_heir', name: 'Legal Heirship & Succession Certificate', category: 'Identity & Documents', description: 'Request administrative verification for inheritance-related records', icon: '📋' },
   { id: 'in_arms_license', name: 'Arms License Application & Renewal', category: 'Legal & Security', description: 'Permit application for personal security firearm under Arms Act', icon: '🛡️' },
   { id: 'in_pension_life', name: 'Pension Dispersal & Jeevan Pramaan', category: 'Health & Welfare', description: 'Submit digital life certificate for monthly pension credit', icon: '👵' },
   { id: 'in_fssai_food', name: 'FSSAI Food Safety License', category: 'Business & Licenses', description: 'Registration and license for food manufacturers, vendors, and restaurants', icon: '🍲' },
@@ -52,7 +51,6 @@ export const GENERIC_SERVICES: ServiceItem[] = [
   { id: 'gen_passport_renew', name: 'Passport Renewal', category: 'Identity & Documents', description: 'Renew passport or apply for international travel document', icon: '🛂' },
   { id: 'gen_tax_clearance', name: 'Tax Clearance Certificate', category: 'Taxes & Revenue', description: 'Obtain official tax status clearance certificate', icon: '🧾' },
   { id: 'gen_building_permit', name: 'Building Permit', category: 'Property & Land', description: 'Apply for construction approval or renovation permit', icon: '🏗️' },
-  { id: 'gen_court_filing', name: 'Court Case Filing', category: 'Legal & Courts', description: 'Submit legal document filing or check judicial case status', icon: '⚖️' },
   { id: 'gen_crop_insurance', name: 'Crop Insurance', category: 'Health & Agriculture', description: 'Register for agricultural support and crop disaster coverage', icon: '🌾' }
 ];
 
@@ -82,7 +80,7 @@ export const ServiceList: React.FC<ServiceListProps> = ({
     <div className="w-full space-y-3 text-left">
       <div className="flex items-center justify-between px-1">
         <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-          {isIndia ? 'Legacy reference catalog (32 services)' : 'Available Services'}
+          {isIndia ? 'India reference catalog (31 non-judicial templates)' : 'Available Services'}
         </span>
         <span className="text-xs text-slate-400 font-medium">
           {filteredServices.length} service{filteredServices.length !== 1 ? 's' : ''}
