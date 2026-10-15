@@ -7,79 +7,28 @@ import {
 export interface ServiceItem {
   id: string;
   name: string;
-  category: 'Identity & Documents' | 'Property & Land' | 'Business & Licenses' | 'Transport & Driving' | 'Health & Welfare';
+  category: string;
   description: string;
   icon: string;
   processingTime: string;
 }
 
-export const MASTER_GLOBAL_SERVICES: ServiceItem[] = [
-  {
-    id: 'birth_cert',
-    name: 'Birth Certificate',
-    category: 'Identity & Documents',
-    description: 'Instant vital statistics registration, civil registry verification, and e-Birth Certificate issuance.',
-    icon: '🆔',
-    processingTime: '< 3 minutes'
-  },
-  {
-    id: 'prop_reg',
-    name: 'Property Registration',
-    category: 'Property & Land',
-    description: 'Cadastral land registry audit, instant title verification, stamp duty settlement, and digital title deed issuance.',
-    icon: '🏠',
-    processingTime: '< 30 seconds'
-  },
-  {
-    id: 'biz_license',
-    name: 'Business License',
-    category: 'Business & Licenses',
-    description: 'Automated company incorporation, trade name reservation, municipal clearance, and commercial license.',
-    icon: '📄',
-    processingTime: '< 2 minutes'
-  },
-  {
-    id: 'driving_license',
-    name: 'Driving License',
-    category: 'Transport & Driving',
-    description: 'Biometric driver record verification, citation audit, and digital driving permit pass.',
-    icon: '🚗',
-    processingTime: '< 1 minute'
-  },
-  {
-    id: 'crop_insurance',
-    name: 'Crop Insurance',
-    category: 'Health & Welfare',
-    description: 'Satellite agricultural land parcel check, weather index audit, and instant claim payout clearance.',
-    icon: '🌾',
-    processingTime: '< 5 minutes'
-  },
-  {
-    id: 'passport_renew',
-    name: 'Passport Renewal',
-    category: 'Identity & Documents',
-    description: 'Consular database audit, identity verification, and diplomatic passport re-issuance pass.',
-    icon: '🛂',
-    processingTime: '< 4 minutes'
-  },
-  {
-    id: 'tax_clearance',
-    name: 'Tax Clearance Certificate',
-    category: 'Business & Licenses',
-    description: 'Revenue authority audit, zero-liability calculation, and official tax compliance certificate.',
-    icon: '🧾',
-    processingTime: '< 30 seconds'
-  },
-  {
-    id: 'building_permit',
-    name: 'Building & Construction Permit',
-    category: 'Property & Land',
-    description: 'Zoning compliance check, architectural AI safety audit, and municipal construction pass.',
-    icon: '🏗️',
-    processingTime: '< 10 minutes'
-  }
-];
-
+export const MASTER_GLOBAL_SERVICES: ServiceItem[] = servicesConfig.map((service) => ({
+  id: service.id,
+  name: service.label,
+  category: service.id === 'birth-certificate' || service.id === 'death-certificate' || service.id === 'passport' || service.id === 'visa'
+    ? 'Identity & Documents'
+    : /property|mutation|encumbrance|land|title|building|housing|pmay|rera/.test(service.id)
+      ? 'Property & Land'
+      : /driving|vehicle/.test(service.id)
+        ? 'Transport & Driving'
+        : /scholarship|admission|transfer|ration|pds|farmer|crop/.test(service.id)
+          ? 'Health & Welfare'
+          : 'Business & Licenses',
+  description: `Synthetic workflow template. Requirements and service availability depend on the jurisdiction; no official system is connected.`,
+  icon: service.icon,
+  processingTime: 'Mock only',
+}));
 interface ServiceSearchProps {
   onSelectService: (service: ServiceItem) => void;
   autoFocus?: boolean;
