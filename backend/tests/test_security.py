@@ -57,7 +57,7 @@ def test_officer_cannot_access_case_outside_authorized_jurisdiction():
     try:
         _authorize_case(
             _case(),
-            Principal("officer-3", "officer", "tenant-1", "supabase", "business", {"country": "India", "state": "Maharashtra"}),
+            Principal("officer-3", "officer", "tenant-1", "supabase", "Revenue", {"country": "India", "state": "Maharashtra"}),
         )
     except HTTPException as exc:
         assert exc.status_code == 404
@@ -127,7 +127,7 @@ def test_officer_without_required_jurisdiction_is_denied():
     try:
         _authorize_case(
             _case(),
-            Principal("officer-1", "officer", "tenant-1", "supabase", "Revenue", {"state": "Jammu and Kashmir", "district": "Jammu"}),
+            Principal("officer-1", "officer", "tenant-1", "supabase", "Revenue", {"state": "Jammu and Kashmir", "district": "Srinagar"}),
         )
     except HTTPException as exc:
         assert exc.status_code == 404
