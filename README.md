@@ -4,6 +4,15 @@ Aether GovOS is an early-stage government-workflow orchestration prototype. It e
 
 **Product hypothesis:** Aether could coordinate the work between a service request and its eventual official outcome, while the responsible authority remains the system of record and decision-maker.
 
+## Public research preview
+
+- **[Open the interactive synthetic preview](https://deploy-preview-10--stunning-sopapillas-ae1187.netlify.app/)**
+- [Share feedback](https://deploy-preview-10--stunning-sopapillas-ae1187.netlify.app/feedback.html)
+- [Launch-readiness checklist](docs/launch-readiness-checklist.md)
+- [Global mock-preview plan](docs/global-mock-preview-plan.md)
+
+Use fictional values only. The preview demonstrates workflow patterns; it does not contact government systems, submit official applications, issue records, or make legal decisions. Feedback submissions are registered by Netlify Forms, but end-to-end delivery has not yet been verified.
+
 ## Current MVP
 
 - 32 public mock services in the user-facing service catalogue
