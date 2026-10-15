@@ -52,6 +52,21 @@ jobs:
           cache: npm
       - name: Install frontend dependencies
         run: npm ci
+      - name: Report dependency audit findings
+        shell: bash
+        run: |
+          npm audit --json > /tmp/npm-audit.json || true
+          node - <<'NODE'
+          const report = require('/tmp/npm-audit.json');
+          const counts = report.metadata?.vulnerabilities || {};
+          console.log('npm audit counts:', JSON.stringify(counts));
+          for (const [name, item] of Object.entries(report.vulnerabilities || {})) {
+            console.log(`AUDIT ${item.severity}: ${name} range=${item.range} fixAvailable=${JSON.stringify(item.fixAvailable)}`);
+            for (const advisory of item.via || []) {
+              if (typeof advisory === 'object') console.log(`  - ${advisory.title}: ${advisory.url}`);
+            }
+          }
+          NODE
       - name: Typecheck
         run: npm run lint
       - name: Build frontend
