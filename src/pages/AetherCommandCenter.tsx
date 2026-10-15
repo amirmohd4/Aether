@@ -758,14 +758,6 @@ export const AetherCommandCenter: React.FC = () => {
             className="w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm"
           />
           {authMessage && <p className="mt-3 text-xs text-cyan-200">{authMessage}</p>}
-                    <button
-            type="button"
-            onClick={simulateProcess}
-            disabled={!objective.trim() || loading}
-            className="mr-2 rounded-xl border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-[10px] font-semibold text-cyan-100 hover:bg-cyan-300/15 disabled:opacity-50"
-          >
-            Pre-check journey
-          </button>
 <button
             onClick={submitAuth}
             disabled={authLoading || !authEmail || !authPassword}
@@ -880,6 +872,36 @@ export const AetherCommandCenter: React.FC = () => {
               onChange={(e) => setObjective(e.target.value)}
               className="mt-2 h-24 w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm outline-none focus:border-cyan-400"
             />
+            <button
+              type="button"
+              onClick={simulateProcess}
+              disabled={!objective.trim() || loading || tenantSelectionRequired}
+              className="mt-2 w-full rounded-xl border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-xs font-semibold text-cyan-100 hover:bg-cyan-300/15 disabled:opacity-50"
+            >
+              Pre-check synthetic journey
+            </button>
+            {preflightSimulation && (
+              <div className="mt-3 rounded-xl border border-white/10 bg-black/10 p-3 text-xs">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-semibold text-slate-200">Pre-check result</span>
+                  <span className="rounded-full border border-cyan-300/20 px-2 py-1 text-[10px] text-cyan-100">{preflightSimulation.status.replaceAll('_', ' ')}</span>
+                </div>
+                {preflightSimulation.blockers.length > 0 && (
+                  <ul className="mt-2 list-disc space-y-1 pl-4 text-amber-200">
+                    {preflightSimulation.blockers.map((item, index) => <li key={item.code + index}>{item.message}</li>)}
+                  </ul>
+                )}
+                {preflightSimulation.warnings.length > 0 && (
+                  <ul className="mt-2 list-disc space-y-1 pl-4 text-slate-300">
+                    {preflightSimulation.warnings.map((item, index) => <li key={item.code + index}>{item.message}</li>)}
+                  </ul>
+                )}
+                {preflightSimulation.next_steps.length > 0 && (
+                  <div className="mt-2 text-slate-300"><span className="font-semibold">Next steps:</span> {preflightSimulation.next_steps.join(' · ')}</div>
+                )}
+                <p className="mt-2 text-[10px] text-slate-500">Synthetic pre-check only; no official system or record was queried.</p>
+              </div>
+            )}
 
             <label className="mt-4 block text-xs font-semibold text-slate-300">Customer</label>
             <select
