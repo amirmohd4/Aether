@@ -1,7 +1,7 @@
-# Aether GovOS — J&K Pilot Pack (Draft for Validation)
+# Aether GovOS — Global Mock Preview & Pilot Plan
 
 **Status:** Planning draft; not an approved government proposal or a live integration.  
-**Scope:** One service, one jurisdiction, one authorised system interface.  
+**Scope:** Global product preview using jurisdiction-neutral mock workflows; live integrations are added only for explicitly authorised jurisdictions and systems.  
 **Operating mode today:** Synthetic/mock government data only.  
 **Excluded:** Judicial/JusticeOS workflows, production citizen data, unauthorised scraping or portal automation, autonomous statutory decisions.
 
@@ -11,7 +11,7 @@ Build and demonstrate one complete, low-risk service journey in Aether's Synthet
 
 The MVP should prove that Aether can coordinate a case, preserve evidence provenance, execute permitted digital tasks, recover from transient failures, stop at a human-authority boundary, and produce an auditable final status.
 
-## 1. Proposed pilot hypothesis
+## 1. Global preview hypothesis
 
 > For a narrowly scoped public-service workflow, Aether can reduce repeated data entry and manual status-chasing while preserving the department's authority, existing system of record, security requirements, and auditability.
 
@@ -58,7 +58,7 @@ Each fixture should define:
 
 Mock connectors should be selected explicitly by environment/configuration. Production startup must reject demo sessions, mock credentials, synthetic government endpoints, and missing/empty operation allowlists.
 
-## 5. Live-integration gate
+## 5. Live-integration gate (jurisdiction-specific, never hard-coded globally)
 
 No live connector is activated until all of the following are recorded and reviewed:
 
@@ -112,7 +112,7 @@ Targets should be agreed with the pilot partner after baseline collection. Do no
 - CI covers happy path, exception path, authorization, tenant isolation, idempotency, resume/restart, and audit integrity.
 - The demo UI clearly distinguishes simulated status from official status.
 
-## 9. Decision gates
+## 9. Global preview and live-integration decision gates
 
 1. **Mock demonstration:** internal engineering acceptance.
 2. **Process validation:** a knowledgeable service owner confirms the workflow and statutory boundaries.
@@ -122,12 +122,10 @@ Targets should be agreed with the pilot partner after baseline collection. Do no
 
 ## Official discovery starting points
 
-- API Setu: https://apisetu.gov.in/
-- API Setu policy: https://www.apisetu.gov.in/api-policy
-- J&K IT Department: https://itd.jk.gov.in/
-- J&K ServicePlus: https://jansugam.jk.gov.in/login.do
+- India: API Setu — https://apisetu.gov.in/ and policy — https://www.apisetu.gov.in/api-policy
+- Other countries: use the relevant national, state/provincial, regional or municipal digital-government API catalogues and the owning department's approved integration process.
 
-These are discovery starting points, not proof that a specific service API is available or that Aether has access. Verify the current process and obtain permission from the relevant system owner.
+These are discovery starting points, not proof that a specific service API is available or that Aether has access. Every live connector must be configured for a documented jurisdiction, system owner, approved purpose and explicit operation allowlist. Keep jurisdiction rules and credentials outside the global core.
 
 ## Current truth
 
