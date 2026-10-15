@@ -118,7 +118,7 @@ if legacy_api_enabled:
 app.include_router(aether_v2_router)
 
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 async def root():
     return {
         "service": "Aether GovOS",
