@@ -14,7 +14,7 @@
 - [x] Synthetic-only disclaimers state that no official application, record, approval, or certificate is created.
 - [x] Legacy national-ID intake has been replaced with a fictional demo reference.
 - [x] Legacy results no longer claim a real application was approved or a document was downloaded.
-- [x] Frontend type-check/build and backend test/CI workflows passed on the reviewed commits (check the latest branch runs before release).
+- [x] Latest branch CI passed: 144 backend tests, frontend type-check/build, live synthetic-sandbox smoke test, public-launch asset tests, and the npm audit gate.
 
 ## Required before announcing the research preview
 
