@@ -56,6 +56,6 @@ Production cannot be honestly declared complete until the environment has extern
 
 ## Release discipline
 
-Development remains on aether-mvp-build. The release branch is main.
+The public research-preview work is on `launch/public-research-preview` and is proposed in PR #10; `main` remains the release branch. The PR is intentionally not merged as part of this preview-validation work.
 
 Do not enable live connectors or bypass the production fail-closed checks just to make a demo appear production-ready.
