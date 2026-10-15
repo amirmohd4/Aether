@@ -46,6 +46,19 @@ async def platform_hardening(request, call_next):
     limit = max(30, int(os.getenv("AETHER_RATE_LIMIT_PER_MINUTE", "300")))
     client_host = request.client.host if request.client else "unknown"
     now = time.monotonic()
+    if client_host not in _rate_windows and len(_rate_windows) >= 5000:
+        stale_hosts = [
+            host for host, window in _rate_windows.items()
+            if not window or now - window[-1] >= 60
+        ]
+        for host in stale_hosts:
+            _rate_windows.pop(host, None)
+        if len(_rate_windows) >= 5000:
+            return JSONResponse(
+                status_code=429,
+                content={"detail": "Rate limit capacity reached", "request_id": request_id},
+                headers={"Retry-After": "60", "X-Request-ID": request_id},
+            )
     bucket = _rate_windows[client_host]
     while bucket and now - bucket[0] >= 60:
         bucket.popleft()
