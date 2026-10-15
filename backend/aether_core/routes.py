@@ -951,10 +951,15 @@ def start_case(request: StartCaseRequest, principal: Principal = Depends(require
 
 
 def _authorize_case(case, principal: Principal) -> None:
-    if principal.auth_mode == "none" or principal.role.lower() == "admin":
+    if principal.auth_mode == "none":
         return
     same_owner = case.owner_user_id and case.owner_user_id == principal.subject
     same_tenant = case.tenant_id and principal.tenant_id and case.tenant_id == principal.tenant_id
+    # Tenant membership admins are not global platform administrators.
+    if principal.role.lower() == "admin":
+        if same_tenant:
+            return
+        raise HTTPException(status_code=404, detail="Case not found")
     if principal.auth_mode == "api_key" and same_tenant:
         return
     if principal.role.lower() in {"officer", "department_admin"} and same_tenant:
@@ -979,8 +984,13 @@ def _list_visible_cases(
     limit: int = 50,
 ):
     safe_limit = max(1, min(limit, 100))
-    if principal.role.lower() == "admin" or principal.auth_mode == "none":
+    if principal.auth_mode == "none":
         return engine.store.list(status=status, limit=safe_limit)
+
+    if principal.role.lower() == "admin":
+        if not principal.tenant_id:
+            return []
+        return engine.store.list(tenant_id=principal.tenant_id, status=status, limit=safe_limit)
 
     if principal.role.lower() in {"officer", "department_admin"} and principal.tenant_id:
         candidates = engine.store.list(
