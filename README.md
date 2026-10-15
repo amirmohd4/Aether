@@ -1,8 +1,8 @@
 # Aether GovOS
 
-Aether is a government execution layer. It takes a real-world objective, understands the requested service, discovers requirements, builds a cross-department work graph, executes independent digital work in parallel, verifies results, stops at legally required human actions, and resumes until the outcome is complete.
+Aether GovOS is an early-stage government-workflow orchestration prototype. It explores how an outcome-first interface could map requirements, coordinate permitted digital tasks, recover from exceptions, verify results, and stop at legally required human actions. The public research preview uses synthetic systems only.
 
-**Core product:** Aether automates the work between a government application and the government decision/outcome.
+**Product hypothesis:** Aether could coordinate the work between a service request and its eventual official outcome, while the responsible authority remains the system of record and decision-maker.
 
 ## Current MVP
 
@@ -104,7 +104,7 @@ Document storage uses Supabase Storage when configured with the server-only serv
 
 ## Deployment policy
 
-During MVP construction, development work stays on aether-mvp-build and main is release-only.
+Public research-preview changes stay on `launch/public-research-preview`; `main` remains release-only. Do not merge or publish a production release until the current readiness checklist is satisfied and the release is explicitly approved.
 
 Do not deploy every small change. Before release, run the complete test/security/persistence gate. Then merge the final MVP to main, apply Supabase migrations, deploy the Render backend, publish the final Netlify frontend, run smoke tests, and keep a rollback path.
 
@@ -112,7 +112,7 @@ See MVP_MASTER_PLAN.md and SECURITY_RELEASE_PLAN.md for the release gate.
 
 ## Truthful MVP status
 
-The software MVP is release-candidate complete for controlled/sandbox operation. Production government execution remains fail-closed until authorized live connectors, authoritative effective-dated rules, certified statutory signature/issuance integrations, provider credentials and deployed Supabase/Render/Netlify security validation are in place.
+The repository contains a working controlled/sandbox prototype, but it is **not yet approved as launch-ready**. The public preview still requires final deployed-preview checks, a verified feedback-form submission, manual scenario/accessibility checks, and review of outstanding dependency/security findings. Production government execution remains fail-closed until authorised live connectors, authoritative effective-dated rules, statutory signature/issuance integrations, provider credentials, and deployed Supabase/Render/Netlify security validation are in place.
 
 
 
