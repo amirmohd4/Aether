@@ -37,8 +37,17 @@ def test_cross_tenant_user_cannot_access_case():
         raise AssertionError("cross-tenant access should be rejected")
 
 
-def test_admin_can_access_case():
-    _authorize_case(_case(), Principal("admin-1", "admin", "tenant-x", "supabase"))
+def test_admin_can_access_case_within_own_tenant():
+    _authorize_case(_case(), Principal("admin-1", "admin", "tenant-1", "supabase"))
+
+
+def test_admin_cannot_access_case_in_another_tenant():
+    try:
+        _authorize_case(_case(), Principal("admin-1", "admin", "tenant-x", "supabase"))
+    except HTTPException as exc:
+        assert exc.status_code == 404
+    else:
+        raise AssertionError("tenant admin must not access another tenant's case")
 
 
 def test_officer_cannot_access_case_outside_authorized_department():
@@ -152,3 +161,21 @@ def test_api_key_human_decision_allows_explicit_scope():
 
     principal = Principal("api-key:test", "officer", "tenant-1", "api_key", scopes=frozenset({"human:decide"}))
     assert require_human_authority(principal) == principal
+
+
+
+def test_admin_case_listing_is_tenant_scoped(monkeypatch):
+    from aether_core.routes import _list_visible_cases
+
+    monkeypatch.setattr(
+        "aether_core.routes.engine.store.list",
+        lambda **kwargs: kwargs,
+    )
+    result = _list_visible_cases(
+        Principal("admin-1", "admin", "tenant-1", "supabase"),
+        status="waiting_for_human",
+        limit=10,
+    )
+    assert result["tenant_id"] == "tenant-1"
+    assert result["status"] == "waiting_for_human"
+    assert result["limit"] == 10
