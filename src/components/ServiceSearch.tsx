@@ -1,13 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { 
-  Search, Shield, Home, Briefcase, Car, Wheat, Scale, 
+  Search, Shield, Home, Briefcase, Car, Wheat, 
   FileText, Sparkles, ChevronRight, X, UserCheck, ShieldCheck
 } from 'lucide-react';
 
 export interface ServiceItem {
   id: string;
   name: string;
-  category: 'Identity & Documents' | 'Property & Land' | 'Business & Licenses' | 'Transport & Driving' | 'Health & Welfare' | 'Legal & Courts';
+  category: 'Identity & Documents' | 'Property & Land' | 'Business & Licenses' | 'Transport & Driving' | 'Health & Welfare';
   description: string;
   icon: string;
   processingTime: string;
@@ -55,13 +55,6 @@ export const MASTER_GLOBAL_SERVICES: ServiceItem[] = [
     processingTime: '< 5 minutes'
   },
   {
-    id: 'court_filing',
-    name: 'Court Case Filing',
-    category: 'Legal & Courts',
-    description: 'E-filing judicial petitions, case clearance verification, and digital court order issuance.',
-    icon: '⚖️',
-    processingTime: '< 2 minutes'
-  },
   {
     id: 'passport_renew',
     name: 'Passport Renewal',
@@ -107,7 +100,6 @@ export const ServiceSearch: React.FC<ServiceSearchProps> = ({
     { label: 'Business & Licenses', icon: Briefcase },
     { label: 'Transport & Driving', icon: Car },
     { label: 'Health & Welfare', icon: Wheat },
-    { label: 'Legal & Courts', icon: Scale },
   ];
 
   const filteredServices = useMemo(() => {
