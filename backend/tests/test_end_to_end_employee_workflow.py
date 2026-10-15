@@ -127,4 +127,4 @@ def test_citizen_to_employee_processing_to_authorised_synthetic_outcome(monkeypa
 
     audit_response = client.get(f"{BASE}/cases/{case_id}/audit")
     assert audit_response.status_code == 200, audit_response.text
-    assert audit_response.json()["integrity"], "case audit chain did not verify"
+    assert audit_response.json()["integrity"]["valid"] is True, audit_response.json()["integrity"]
