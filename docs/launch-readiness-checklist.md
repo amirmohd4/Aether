@@ -18,7 +18,7 @@
 
 ## Required before announcing the research preview
 
-- [x] Verify the latest Netlify deploy is ready and serves the expected PR commit. Current verified preview: https://deploy-preview-10--stunning-sopapillas-ae1187.netlify.app
+- [x] Verify the latest Netlify deploy is ready and serves the expected PR commit. Current verified preview: https://deploy-preview-10--aether-govos.netlify.app
 - [ ] Manually exercise all five scenarios on representative identity, property, business, welfare/tax, and permit templates.
 - [x] Confirm the feedback form is registered with Netlify Forms on the current preview deployment; submission count remains zero, so delivery is not yet proven.
 - [ ] Send one controlled test feedback submission and verify it appears in the correct form; then remove test data if appropriate.
