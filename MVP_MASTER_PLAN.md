@@ -10,17 +10,17 @@ Objective → understand → discover requirements → create case → build gov
 
 ## Controlled-MVP status
 
-**Controlled/sandbox MVP: COMPLETE.**
+**Controlled/sandbox software: implemented; research-preview CI and smoke checks: passing. Production release gate: NOT COMPLETE.**
 
-The planned controlled-MVP software and deployment gate are complete. Aether can run deterministic, non-authoritative government execution scenarios using the unified Command Center, persistent case/work-graph engine, worker runtime, private document storage, audit trail, RBAC and service marketplace.
+The controlled software path can run deterministic, non-authoritative workflow scenarios through the unified Command Center, case/work-graph engine, worker runtime, document storage, audit trail, RBAC and service marketplace. The public research-preview branch has passing backend tests, frontend build checks, and synthetic-demo smoke tests. These checks do not by themselves verify the production-domain frontend, production Render/Supabase runtime, feedback delivery, rollback readiness, or any live government integration.
 
-This is a release status for the controlled/sandbox product, not a claim of live government authority.
+This status describes the controlled software and its preview checks—not production approval or live government authority.
 
 ## Completed product backbone
 
 - Objective understanding with ranked service candidates and ambiguity stop
 - Requirements discovery with source provenance/authority status
-- 34-service shared registry and marketplace
+- 32-service non-judicial shared registry and marketplace
 - Government ontology
 - Dependency-aware work graphs and parallel task execution
 - Durable queue, retries, idempotency, checkpoints and case leases
@@ -38,32 +38,18 @@ This is a release status for the controlled/sandbox product, not a claim of live
 - Operator analytics
 - Unified Aether Command Center
 - Worker runtime with durable leases and notification dispatch
-- Render deployment with managed-Postgres migration discipline and database-ready worker
-- Vercel frontend deployment and SPA fallback
-- Supabase RLS/security hardening
-- Automated backend/frontend CI and deployed smoke testing
+- Backend/worker deployment architecture with managed-Postgres migration discipline
+- Netlify-hosted public research preview with a separate synthetic-only Render demo backend
+- Supabase RLS/security hardening in the codebase and migration set
+- Automated backend/frontend CI and synthetic-preview smoke tests
 
 ## Deployment validation completed
 
 ### GitHub
-The final release line has passing backend tests, frontend build/typecheck and deployment smoke testing.
+The current `launch/public-research-preview` head (`099d3e558bfa9224fc1fb6115a1a7d2d4b5582ac`) has passing backend tests, frontend build/typecheck, public-launch asset checks, autonomy benchmark, and synthetic public-demo smoke tests. The production-domain deployment and rollback gate are not certified by these preview checks.
 
-### Supabase
-The connected Aether project has the required persistence/operational migrations applied, the private document bucket, RLS enabled on the exposed legacy and internal execution data, explicit server-only runtime policies, and no current security-advisor lints.
-
-The runtime database role has only the access needed by the Aether server/worker and does not require database/schema creation privileges.
-
-### Render
-The Aether backend is live at the configured Render URL.
-
-Verified:
-- Docker release starts successfully
-- `/health` returns HTTP 200
-- `/ready` reports the database ready
-- worker connects to Supabase successfully
-- worker produces successful durable ticks
-- managed PostgreSQL is migration-owned; runtime no longer attempts schema creation
-- worker failure backoff protects the service from connection storms
+### Production Supabase and Render
+The production Supabase/Render state must be re-verified against the currently intended production project and service before release. Do not infer production health from a successful research-preview build or from the separate public-demo deployment. Confirm migrations, RLS/security-advisor findings, `/health`, `/ready`, database readiness, worker ticks, runtime permissions, and rollback behavior during the production release gate.
 
 ### Netlify and Render — current public research preview
 The current public research preview is hosted on Netlify and uses a separate Render service (`aether-public-demo`) for synthetic-only backend requests. The public preview must not use production credentials or live government connectors. The Netlify production-domain deploy and the separate production Render/Supabase runtime must be verified independently before any production release; a ready deploy preview is not evidence that the production stack is approved or healthy.
