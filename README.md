@@ -6,7 +6,7 @@ Aether is a government execution layer. It takes a real-world objective, underst
 
 ## Current MVP
 
-- 34 services in the shared service registry
+- 32 public mock services in the user-facing service catalogue
 - Objective understanding with ranked service candidates
 - Requirement discovery with jurisdiction/source provenance
 - Reusable cross-department work graphs
