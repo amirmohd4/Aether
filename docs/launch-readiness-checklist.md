@@ -18,13 +18,13 @@
 
 ## Required before announcing the research preview
 
-- [ ] Verify the latest Netlify deploy is ready and serves the expected PR commit.
+- [x] Verify the latest Netlify deploy is ready and serves the expected PR commit. Current verified preview: https://deploy-preview-10--stunning-sopapillas-ae1187.netlify.app
 - [ ] Manually exercise all five scenarios on representative identity, property, business, welfare/tax, and permit templates.
 - [x] Confirm the feedback form is registered with Netlify Forms on the current preview deployment; submission count remains zero, so delivery is not yet proven.
 - [ ] Send one controlled test feedback submission and verify it appears in the correct form; then remove test data if appropriate.
 - [ ] Check mobile layout, keyboard access, form validation, and error states.
 - [ ] Review all public copy for unsupported claims about instant processing, universal availability, official approval, and measured savings.
-- [ ] Review dependency/security alerts and decide how to address unresolved high-severity findings.
+- [x] Patch the identified frontend dependency advisories; `npm audit` reports zero known vulnerabilities, and CI now fails on moderate-or-higher npm advisories.
 - [ ] Confirm the preview backend is isolated from production data and credentials.
 
 ## Required before any live government pilot
