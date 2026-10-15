@@ -1,6 +1,6 @@
 # Aether GovOS — Global Mock Preview & Pilot Plan
 
-**Status:** Planning draft; not an approved government proposal or a live integration.  
+**Status:** Working research-preview plan; not an approved government proposal or a live integration.  
 **Scope:** Global product preview using jurisdiction-neutral mock workflows; live integrations are added only for explicitly authorised jurisdictions and systems.  
 **Operating mode today:** Synthetic/mock government data only.  
 **Excluded:** Judicial/JusticeOS workflows, production citizen data, unauthorised scraping or portal automation, autonomous statutory decisions.
@@ -126,6 +126,16 @@ Targets should be agreed with the pilot partner after baseline collection. Do no
 - Other countries: use the relevant national, state/provincial, regional or municipal digital-government API catalogues and the owning department's approved integration process.
 
 These are discovery starting points, not proof that a specific service API is available or that Aether has access. Every live connector must be configured for a documented jurisdiction, system owner, approved purpose and explicit operation allowlist. Keep jurisdiction rules and credentials outside the global core.
+
+## Current public preview implementation
+
+The public research-preview branch contains a client-side mock studio driven by the canonical 32-service shortcut catalogue. It supports five user-selectable scenarios: routine path, missing evidence, authority/human review, retry after a synthetic transient failure, and an adverse evidence/rule-conflict path. Workflow stages are selected by service family (for example, property, permits, identity/records, welfare/tax, and business services).
+
+The mock studio uses fictional checklist items and generates a synthetic reference locally. It does not submit a case to a government endpoint, validate actual jurisdictional rules, or create an official record. India-specific reference templates are labelled separately from configurable workflow patterns. The legacy country/service selector uses the same canonical catalogue; it does not claim all 32 templates are legally available in every country.
+
+The static feedback form is registered with Netlify Forms, but a successful end-to-end submission has not yet been verified. Treat the feedback path as configured, not proven, until a controlled test submission is received and confirmed.
+
+Before public promotion, verify the deployed preview renders the latest branch commit, manually exercise all five scenario modes on representative templates, confirm the form receives a test submission, and recheck mobile accessibility, privacy copy, and error states. A passing build alone does not satisfy these checks.
 
 ## Current truth
 
