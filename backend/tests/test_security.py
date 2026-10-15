@@ -273,3 +273,29 @@ def test_public_demo_sessions_are_isolated(monkeypatch):
     second = require_principal(_request([(b"x-aether-demo-session", b"550e8400-e29b-41d4-a716-446655440001")]))
     assert first.tenant_id != second.tenant_id
     assert first.subject != second.subject
+
+
+
+def test_public_demo_blocks_real_document_upload():
+    from aether_core.routes import upload_case_document
+
+    principal = Principal("public-demo:session", "demo", "public-demo:session", "public_demo")
+    try:
+        upload_case_document("A-TEST", "identity_document", None, principal)
+    except HTTPException as exc:
+        assert exc.status_code == 403
+    else:
+        raise AssertionError("public demo must disable real document uploads")
+
+
+def test_public_demo_blocks_api_key_management():
+    from aether_core.routes import list_api_keys, revoke_api_key
+
+    principal = Principal("public-demo:session", "demo", "public-demo:session", "public_demo")
+    for action in (lambda: list_api_keys(principal), lambda: revoke_api_key("prefix", principal)):
+        try:
+            action()
+        except HTTPException as exc:
+            assert exc.status_code == 403
+        else:
+            raise AssertionError("public demo must disable API-key management")
