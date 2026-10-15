@@ -66,8 +66,6 @@ SERVICE_ALIASES = {
     "pmay": ["pradhan mantri awas yojana", "pmay housing benefit"],
     "affordable_housing": ["affordable housing project", "housing development project"],
     "rera_registration": ["real estate regulation registration", "register real estate project"],
-    "court_case_filing": ["start a court case", "file a lawsuit", "legal case filing"],
-    "e_court": ["e court services", "online court service"],
     "passport": ["new passport", "passport renewal"],
     "visa": ["visa application", "travel visa"],
     "food_business_license": ["food business registration", "restaurant license", "fssai registration", "cafe license"],
@@ -109,8 +107,6 @@ SERVICE_DEFINITIONS = [
     ("pmay", "PMAY Housing", "Housing", ["citizen"], ["pmay", "housing assistance"], None, "housing_benefit"),
     ("affordable_housing", "Affordable Housing", "Housing", ["citizen", "developer"], ["affordable housing"], "commercial_project", "housing_project"),
     ("rera_registration", "RERA Project Registration", "RERA", ["developer", "business"], ["rera registration", "rera"], "commercial_project", "rera_registration"),
-    ("court_case_filing", "Court Case Filing", "Courts", ["citizen", "business"], ["court case filing", "file court case"], None, "case_filing"),
-    ("e_court", "E-Court Service", "Courts", ["citizen", "business"], ["e-court", "ecourt"], None, "court_service"),
     ("passport", "Passport Application", "Passport", ["citizen"], ["passport application", "passport"], None, "passport"),
     ("visa", "Visa Service", "Passport", ["citizen", "business"], ["visa service", "visa application"], None, "visa_service"),
     ("food_business_license", "Food Business License/Registration", "Food Safety", ["citizen", "business", "developer"], ["restaurant", "cafe", "food business", "food license", "fssai"], "restaurant", "food_business_license"),
@@ -191,10 +187,6 @@ def _document_defaults(service_id: str) -> List[str]:
         return ["identity_document", "land_record"]
     if service_id == "crop_insurance":
         return ["identity_document", "land_record", "crop_record"]
-    if service_id == "court_case_filing":
-        return ["identity_document", "case_documents"]
-    if service_id == "e_court":
-        return ["identity_document"]
     return ["identity_document"]
 
 
