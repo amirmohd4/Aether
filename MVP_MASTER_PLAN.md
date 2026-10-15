@@ -65,14 +65,14 @@ Verified:
 - managed PostgreSQL is migration-owned; runtime no longer attempts schema creation
 - worker failure backoff protects the service from connection storms
 
-### Vercel
-The Aether Command Center frontend is deployed successfully through the connected Vercel projects. Netlify is no longer part of the official deployment stack.
+### Netlify and Render — current public research preview
+The current public research preview is hosted on Netlify and uses a separate Render service (`aether-public-demo`) for synthetic-only backend requests. The public preview must not use production credentials or live government connectors. The Netlify production-domain deploy and the separate production Render/Supabase runtime must be verified independently before any production release; a ready deploy preview is not evidence that the production stack is approved or healthy.
 
 ## Controlled-MVP boundaries
 
 The controlled MVP intentionally uses deterministic synthetic government integrations. It does not issue official government decisions/documents and does not represent live government authority.
 
-The 34-service catalog shares a common execution backbone. Some services have deeper domain-specific workflow templates than others; this is a deliberate controlled-MVP scope choice, not a silent claim that every jurisdiction has fully modeled legal procedures.
+The canonical user-facing catalog contains 32 non-judicial synthetic service templates and shares a common execution backbone. Some services have deeper domain-specific workflow templates than others; this is a deliberate controlled-MVP scope choice, not a claim that every jurisdiction has fully modeled legal procedures.
 
 ## Production / scale work after MVP
 
