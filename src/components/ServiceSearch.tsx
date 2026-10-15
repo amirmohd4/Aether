@@ -3,6 +3,7 @@ import {
   Search, Shield, Home, Briefcase, Car, Wheat, 
   FileText, Sparkles, ChevronRight, X, UserCheck, ShieldCheck
 } from 'lucide-react';
+import { servicesConfig } from '../servicesConfig';
 
 export interface ServiceItem {
   id: string;
