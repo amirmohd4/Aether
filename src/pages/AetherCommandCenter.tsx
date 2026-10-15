@@ -209,9 +209,9 @@ function taskList(tasks: CaseResponse['tasks']): Task[] {
 export const AetherCommandCenter: React.FC = () => {
   const [objective, setObjective] = useState('I want to open a restaurant');
   const [customerType, setCustomerType] = useState('business');
-  const [country, setCountry] = useState('India');
-  const [state, setState] = useState('Jammu and Kashmir');
-  const [district, setDistrict] = useState('Jammu');
+  const [country, setCountry] = useState('Global mock environment');
+  const [state, setState] = useState('');
+  const [district, setDistrict] = useState('');
   const [caseData, setCaseData] = useState<CaseResponse | null>(null);
   const [preflightSimulation, setPreflightSimulation] = useState<{
     status: string;
@@ -895,10 +895,14 @@ export const AetherCommandCenter: React.FC = () => {
               <option value="citizen">Citizen</option>
             </select>
 
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              <input value={country} onChange={(e) => setCountry(e.target.value)} className="rounded-lg border border-white/10 bg-slate-900 p-2 text-xs" />
-              <input value={state} onChange={(e) => setState(e.target.value)} className="rounded-lg border border-white/10 bg-slate-900 p-2 text-xs" />
-              <input value={district} onChange={(e) => setDistrict(e.target.value)} className="rounded-lg border border-white/10 bg-slate-900 p-2 text-xs" />
+            <div className="mt-4">
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">Jurisdiction context (optional; mock mode)</p>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                <input aria-label="Country or global demo context" placeholder="Global mock environment / country" value={country} onChange={(e) => setCountry(e.target.value)} className="min-w-0 rounded-lg border border-white/10 bg-slate-900 p-2 text-xs" />
+                <input aria-label="State or region" placeholder="State / region (optional)" value={state} onChange={(e) => setState(e.target.value)} className="min-w-0 rounded-lg border border-white/10 bg-slate-900 p-2 text-xs" />
+                <input aria-label="District or locality" placeholder="District / locality (optional)" value={district} onChange={(e) => setDistrict(e.target.value)} className="min-w-0 rounded-lg border border-white/10 bg-slate-900 p-2 text-xs" />
+              </div>
+              <p className="mt-1 text-[10px] text-slate-500">These fields provide context only; they do not load verified local legal rules.</p>
             </div>
 
             <label className="mt-4 flex items-center gap-2 text-xs text-slate-300">
