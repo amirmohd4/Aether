@@ -20,7 +20,7 @@
 
 - [ ] Verify the latest Netlify deploy is ready and serves the expected PR commit.
 - [ ] Manually exercise all five scenarios on representative identity, property, business, welfare/tax, and permit templates.
-- [ ] Confirm the feedback form is detected by Netlify Forms after a deploy with form detection enabled.
+- [x] Confirm the feedback form is registered with Netlify Forms on the current preview deployment; submission count remains zero, so delivery is not yet proven.
 - [ ] Send one controlled test feedback submission and verify it appears in the correct form; then remove test data if appropriate.
 - [ ] Check mobile layout, keyboard access, form validation, and error states.
 - [ ] Review all public copy for unsupported claims about instant processing, universal availability, official approval, and measured savings.
