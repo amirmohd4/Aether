@@ -6,9 +6,21 @@ FORM = ROOT / "public" / "feedback.html"
 THANKS = ROOT / "public" / "feedback-thanks.html"
 PREVIEW = ROOT / "public" / "research-preview.html"
 NETLIFY = ROOT / "netlify.toml"
+SERVICES = ROOT / "src" / "servicesConfig.ts"
 
 
 class PublicFeedbackFormTests(unittest.TestCase):
+
+    def test_canonical_catalog_has_32_unique_nonjudicial_templates(self):
+        import re
+
+        source = SERVICES.read_text(encoding="utf-8")
+        ids = re.findall(r"\\{ id: '([^']+)'", source)
+        self.assertEqual(len(ids), 32)
+        self.assertEqual(len(ids), len(set(ids)))
+        self.assertNotIn("court-case", source.lower())
+        self.assertNotIn("e-court", source.lower())
+
     def test_netlify_form_is_discoverable_and_posted(self):
         html = FORM.read_text(encoding="utf-8")
         self.assertIn('name="aether-feedback"', html)
