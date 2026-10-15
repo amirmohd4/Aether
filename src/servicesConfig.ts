@@ -46,3 +46,19 @@ export const servicesConfig: ServiceConfig[] = [
   { id: 'visa', label: 'Visa Services', icon: '✈️', component: 'VisaApplication', endpoint: '/visa' },
   { id: 'food-business-license', label: 'Food Business License / Registration', icon: '🍲', component: 'FoodBusinessLicenseApplication', endpoint: '/food-business-license' },
 ];
+
+
+/**
+ * Service availability and requirements are jurisdiction-specific. These tags
+ * describe the demo template's origin, not a claim that the service exists everywhere.
+ */
+const INDIA_SPECIFIC_REFERENCE_IDS = new Set([
+  'gst', 'company', 'ration-card', 'pds-subsidy', 'pmay',
+  'rera-project', 'pf-esi', 'food-business-license',
+]);
+
+export function getServiceJurisdictionScope(serviceId: string): string {
+  return INDIA_SPECIFIC_REFERENCE_IDS.has(serviceId)
+    ? 'India-specific reference'
+    : 'Configurable workflow pattern';
+}
