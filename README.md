@@ -121,7 +121,7 @@ See MVP_MASTER_PLAN.md and SECURITY_RELEASE_PLAN.md for the release gate.
 
 ## Truthful MVP status
 
-The repository contains a working controlled/sandbox prototype, but it is **not yet approved as launch-ready**. The public preview still requires final deployed-preview checks, a verified feedback-form submission, manual scenario/accessibility checks, and review of outstanding dependency/security findings. Production government execution remains fail-closed until authorised live connectors, authoritative effective-dated rules, statutory signature/issuance integrations, provider credentials, and deployed Supabase/Render/Netlify security validation are in place.
+The repository contains a working controlled/sandbox prototype, but it is **not yet approved as launch-ready**. The public preview still requires a controlled feedback-form submission and manual scenario/accessibility checks. The latest npm audit reports zero known vulnerabilities, and CI blocks new moderate-or-higher npm advisories. Production government execution remains fail-closed until authorised live connectors, authoritative effective-dated rules, statutory signature/issuance integrations, provider credentials, and deployed Supabase/Render/Netlify security validation are in place.
 
 
 
