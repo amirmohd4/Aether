@@ -67,6 +67,8 @@ jobs:
             }
           }
           NODE
+      - name: Fail on known dependency vulnerabilities
+        run: npm audit --audit-level=moderate
       - name: Typecheck
         run: npm run lint
       - name: Build frontend
