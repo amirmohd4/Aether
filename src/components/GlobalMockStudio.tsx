@@ -57,9 +57,15 @@ export const GlobalMockStudio: React.FC = () => {
     setReference(ref);
     if (scenario === 'missing' && missingEvidence.length === 0) {
       setJourney([
-        { title: 'Intake and validation', detail: 'All checklist items are marked as supplied, so this scenario is changed to a missing-evidence check.', status: 'complete' },
-        { title: 'Evidence validation', detail: 'For this test, one required item is flagged as unverified. The user must confirm or replace it.', status: 'attention' },
+        { title: 'Intake and validation', detail: 'The supplied checklist is complete, but this scenario deliberately marks one evidence item as unverified to test recovery.', status: 'complete' },
+        { title: 'Evidence validation', detail: 'A mock evidence item needs confirmation. The user must confirm or replace it before the journey can continue.', status: 'attention' },
         { title: 'Processing', detail: 'Paused until evidence is resolved.', status: 'pending' },
+      ]);
+    } else if (scenario !== 'missing' && missingEvidence.length > 0) {
+      setJourney([
+        { title: 'Intake and validation', detail: 'The fictional request has been received.', status: 'complete' },
+        { title: 'Evidence validation', detail: 'Missing checklist items: ' + missingEvidence.join(', ') + '. The workflow pauses instead of pretending the case is complete.', status: 'attention' },
+        { title: 'Processing', detail: 'Not started until the required mock evidence is marked as supplied.', status: 'pending' },
       ]);
     } else {
       setJourney(tasksFor(service.label, scenario));
@@ -138,7 +144,8 @@ export const GlobalMockStudio: React.FC = () => {
               {steps.map((step, i) => <div key={step} className="rounded-lg border border-white/5 bg-white/[0.03] p-2"><div className="text-[10px] text-cyan-200">0{i + 1}</div><div className="mt-1 text-[10px] leading-4 text-slate-300">{step}</div></div>)}
             </div>
             {!journey ? <div className="mt-4 rounded-xl border border-dashed border-white/10 p-8 text-center"><ClipboardCheck className="mx-auto h-8 w-8 text-slate-500" /><p className="mt-3 text-sm text-slate-300">Your simulated process graph will appear here.</p><p className="mt-1 text-xs text-slate-500">No government connector is called by this studio.</p></div> : <>
-              <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-cyan-300/20 bg-cyan-300/[0.05] p-3"><div><div className="text-[10px] uppercase tracking-wide text-cyan-200">Simulation reference</div><div className="mt-1 font-mono text-sm text-white">{reference}</div></div><span className="rounded-full border border-amber-300/20 bg-amber-300/[0.06] px-2 py-1 text-[10px] text-amber-100">NOT OFFICIAL</span></div>
+              <p className="mt-4 text-xs text-slate-300"><span className="font-semibold text-white">Outcome being tested:</span> {objective.trim() || service?.label || 'Selected service'}</p>
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-cyan-300/20 bg-cyan-300/[0.05] p-3"><div><div className="text-[10px] uppercase tracking-wide text-cyan-200">Simulation reference</div><div className="mt-1 font-mono text-sm text-white">{reference}</div></div><span className="rounded-full border border-amber-300/20 bg-amber-300/[0.06] px-2 py-1 text-[10px] text-amber-100">NOT OFFICIAL</span></div>
               <div className="mt-3 space-y-2">
                 {journey.map((step, i) => <div key={step.title} className="flex gap-3 rounded-xl border border-white/5 bg-white/[0.025] p-3"><div className="mt-0.5">{step.status === 'complete' ? <CheckCircle2 className="h-4 w-4 text-emerald-300" /> : step.status === 'attention' ? <CircleAlert className="h-4 w-4 text-amber-300" /> : <FileText className="h-4 w-4 text-slate-500" />}</div><div><div className="text-sm font-medium text-slate-100">{i + 1}. {step.title}</div><p className="mt-1 text-xs leading-5 text-slate-400">{step.detail}</p></div></div>)}
               </div>
@@ -149,6 +156,7 @@ export const GlobalMockStudio: React.FC = () => {
           <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
             <h3 className="text-sm font-semibold text-white">4. Share feedback</h3>
             <p className="mt-1 text-xs text-slate-400">Tell us what was confusing, missing, or worth automating. Feedback is not sent automatically from this mock screen.</p>
+            <a href="/feedback.html" className="mt-2 inline-flex text-xs font-semibold text-cyan-200 underline underline-offset-4">Open the Aether feedback form</a>
             <div className="mt-3 grid gap-3 sm:grid-cols-[120px_1fr]">
               <label className="text-xs text-slate-300">Rating
                 <select value={rating} onChange={e => setRating(e.target.value)} className="mt-2 w-full rounded-lg border border-white/10 bg-slate-900 p-2 text-sm text-white">{['5','4','3','2','1'].map(x => <option key={x} value={x}>{x} / 5</option>)}</select>
