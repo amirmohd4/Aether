@@ -12,9 +12,22 @@ The workflow engine must own the case from intake to verified outcome. Tasks sho
 
 Do not treat a generated note, a queued request, an HTTP 200, or a successful submission as a verified government outcome. A result counts as verified only when an authoritative source or approved test double confirms the expected state.
 
-## What to run now
+## Automated end-to-end proof
 
-1. Select one existing end-to-end workflow template already in the repo; do not add a new generic platform.
+The repository now includes `backend/tests/test_end_to_end_employee_workflow.py`. It exercises a fictional restaurant-onboarding case through citizen intake, internal employee tasks, an explicit human-authority pause, simulated approvals, final case completion, event checks, and persisted audit-chain verification. It intentionally excludes JusticeOS/judicial workflows.
+
+Verified on candidate commit `20d28f2a1799056357c27ec111943b038c3e868b`: [Aether MVP CI](https://github.com/amirmohd4/Aether/actions/runs/38686985214) passed, including the backend suite (**137 passed**), frontend build, autonomy benchmark tests, public feedback asset checks, and live public-demo smoke test. The end-to-end test is synthetic software verification only; it is not evidence of live-government integration or measured staff-time savings.
+
+Run the focused test from the repository root:
+
+```bash
+cd backend
+PYTHONPATH=.:.. pytest -q tests/test_end_to_end_employee_workflow.py
+```
+
+## What to run next
+
+1. Expand the same workflow's fault-injection coverage (missing documents, conflicting data, duplicate delivery, timeout/outage, stale rule version, required inspection, statutory approval) without adding unrelated features.
 2. Create a synthetic test case with explicit tasks: intake, document completeness, rule/eligibility checks, fee/evidence reconciliation where applicable, authorised interdepartment requests, response tracking, exception recovery, and final outcome verification.
 3. Run the case with no human intervention for all permitted routine tasks. Inject missing documents, conflicting data, duplicate delivery, timeout/outage, stale rule version, required inspection, and statutory approval.
 4. Confirm every injected fault produces a safe retry, a recoverable blocked state, or a clearly owned human exception. It must never invent an inspection, decision, payment, certificate, or external state change.
