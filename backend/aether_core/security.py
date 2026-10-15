@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 import hashlib
 import hmac
 import os
+import re
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -184,10 +185,14 @@ def require_principal(request: Request) -> Principal:
         if environment == "production" or connectors_enabled:
             raise HTTPException(status_code=500, detail="Public demo safety configuration is invalid")
         if mode == "none":
+            session_token = request.headers.get("X-Aether-Demo-Session", "").strip().lower()
+            if not re.fullmatch(r"[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}", session_token):
+                raise HTTPException(status_code=400, detail="A valid public demo session is required")
+            session_hash = hashlib.sha256(session_token.encode("utf-8")).hexdigest()[:32]
             return Principal(
-                subject="public-demo",
+                subject=f"public-demo:{session_hash}",
                 role="demo",
-                tenant_id="public-demo",
+                tenant_id=f"public-demo:{session_hash}",
                 auth_mode="public_demo",
             )
 
