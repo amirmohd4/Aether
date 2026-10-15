@@ -179,3 +179,65 @@ def test_admin_case_listing_is_tenant_scoped(monkeypatch):
     assert result["tenant_id"] == "tenant-1"
     assert result["status"] == "waiting_for_human"
     assert result["limit"] == 10
+
+
+
+def _request():
+    from starlette.requests import Request
+
+    return Request({
+        "type": "http",
+        "method": "GET",
+        "path": "/",
+        "headers": [],
+        "client": ("127.0.0.1", 1234),
+        "server": ("testserver", 80),
+        "scheme": "http",
+        "query_string": b"",
+    })
+
+
+def test_public_demo_requires_explicit_safe_configuration(monkeypatch):
+    from aether_core.security import require_principal
+
+    monkeypatch.setenv("AETHER_ENV", "staging")
+    monkeypatch.setenv("AETHER_AUTH_MODE", "none")
+    monkeypatch.setenv("AETHER_PUBLIC_DEMO", "true")
+    monkeypatch.setenv("AETHER_ENABLE_PRODUCTION_CONNECTORS", "false")
+
+    principal = require_principal(_request())
+    assert principal.auth_mode == "public_demo"
+    assert principal.tenant_id == "public-demo"
+    assert principal.role == "demo"
+
+
+def test_public_demo_rejects_production_environment(monkeypatch):
+    from aether_core.security import require_principal
+
+    monkeypatch.setenv("AETHER_ENV", "production")
+    monkeypatch.setenv("AETHER_AUTH_MODE", "none")
+    monkeypatch.setenv("AETHER_PUBLIC_DEMO", "true")
+    monkeypatch.setenv("AETHER_ENABLE_PRODUCTION_CONNECTORS", "false")
+
+    try:
+        require_principal(_request())
+    except HTTPException as exc:
+        assert exc.status_code == 500
+    else:
+        raise AssertionError("public demo must never run in production")
+
+
+def test_public_demo_rejects_enabled_government_connectors(monkeypatch):
+    from aether_core.security import require_principal
+
+    monkeypatch.setenv("AETHER_ENV", "staging")
+    monkeypatch.setenv("AETHER_AUTH_MODE", "none")
+    monkeypatch.setenv("AETHER_PUBLIC_DEMO", "true")
+    monkeypatch.setenv("AETHER_ENABLE_PRODUCTION_CONNECTORS", "true")
+
+    try:
+        require_principal(_request())
+    except HTTPException as exc:
+        assert exc.status_code == 500
+    else:
+        raise AssertionError("public demo must reject live connector configuration")
