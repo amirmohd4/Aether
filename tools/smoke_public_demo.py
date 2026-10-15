@@ -33,16 +33,17 @@ def wait_for_demo(session_id: str) -> None:
     headers = {"X-Aether-Demo-Session": session_id}
     last = (0, 0, 0)
     for _ in range(36):
+        root_status, _, _ = request("/", method="HEAD")
         health_status, _, _ = request("/health")
         ready_status, _, _ = request("/ready")
         me_status, _, me_body = request("/api/aether/v2/me", headers=headers)
         last = (health_status, ready_status, me_status)
-        if health_status == 200 and ready_status == 200 and me_status == 200:
+        if root_status == 200 and health_status == 200 and ready_status == 200 and me_status == 200:
             principal = json.loads(me_body)
             if principal.get("auth_mode") == "public_demo" and principal.get("tenant_id", "").startswith("public-demo:"):
                 return
         time.sleep(10)
-    raise RuntimeError(f"public demo did not become ready with session auth; HTTP statuses health/ready/me={last}")
+    raise RuntimeError(f"public demo did not become ready with session auth; HTTP statuses root/health/ready/me={root_status}/{last[0]}/{last[1]}/{last[2]}")
 
 
 def main() -> None:
