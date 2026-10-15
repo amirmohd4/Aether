@@ -408,10 +408,15 @@ class DatabaseCaseStore:
         previous_hash: str | None = None,
         sequence: int | None = None,
         event_hash: str | None = None,
+        timestamp: str | None = None,
     ) -> Dict[str, Any]:
         self._ensure_schema()
+        event_timestamp = timestamp or datetime.now(timezone.utc).isoformat()
+        created_at = datetime.fromisoformat(event_timestamp.replace("Z", "+00:00"))
+        if created_at.tzinfo is None:
+            created_at = created_at.replace(tzinfo=timezone.utc)
         entry = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": event_timestamp,
             "action": action,
             "actor": actor,
             "case_id": case_id,
@@ -426,7 +431,7 @@ class DatabaseCaseStore:
                 action=action,
                 actor=actor,
                 tenant_id=self._case_tenant(case_id),
-                created_at=datetime.utcnow(),
+                created_at=created_at,
                 data=entry["data"],
                 previous_hash=previous_hash,
                 event_hash=event_hash or "",
