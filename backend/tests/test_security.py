@@ -207,7 +207,7 @@ def test_public_demo_requires_explicit_safe_configuration(monkeypatch):
 
     principal = require_principal(_request([(b"x-aether-demo-session", b"550e8400-e29b-41d4-a716-446655440000")]))
     assert principal.auth_mode == "public_demo"
-    assert principal.tenant_id == "public-demo"
+    assert principal.tenant_id.startswith("public-demo:")
     assert principal.role == "demo"
 
 
@@ -258,3 +258,18 @@ def test_public_demo_rejects_missing_session(monkeypatch):
         assert exc.status_code == 400
     else:
         raise AssertionError("public demo must require a session identifier")
+
+
+
+def test_public_demo_sessions_are_isolated(monkeypatch):
+    from aether_core.security import require_principal
+
+    monkeypatch.setenv("AETHER_ENV", "staging")
+    monkeypatch.setenv("AETHER_AUTH_MODE", "none")
+    monkeypatch.setenv("AETHER_PUBLIC_DEMO", "true")
+    monkeypatch.setenv("AETHER_ENABLE_PRODUCTION_CONNECTORS", "false")
+
+    first = require_principal(_request([(b"x-aether-demo-session", b"550e8400-e29b-41d4-a716-446655440000")]))
+    second = require_principal(_request([(b"x-aether-demo-session", b"550e8400-e29b-41d4-a716-446655440001")]))
+    assert first.tenant_id != second.tenant_id
+    assert first.subject != second.subject
