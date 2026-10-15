@@ -114,3 +114,22 @@ See MVP_MASTER_PLAN.md and SECURITY_RELEASE_PLAN.md for the release gate.
 
 The software MVP is release-candidate complete for controlled/sandbox operation. Production government execution remains fail-closed until authorized live connectors, authoritative effective-dated rules, certified statutory signature/issuance integrations, provider credentials and deployed Supabase/Render/Netlify security validation are in place.
 
+
+
+## Controlled public research sandbox
+
+The deploy-preview context is wired to a separate Render service, `aether-public-demo`, rather than the authenticated production backend. It is a synthetic-only sandbox: production government connectors and legacy APIs are disabled; requests are rate-limited and body-size capped; file uploads and API-key management are disabled; and anonymous demo cases are partitioned by a random browser session identifier. The service uses local SQLite storage on a free Render instance, so demo data is temporary and can be lost on restart or redeploy.
+
+**Never enter real names, contact details, identity numbers, confidential records, or actual documents.** Use fictional values only. Human steps and payment records are simulated; they do not issue official decisions or move money. The production Netlify context keeps authentication required and points to the separately configured backend.
+
+## Autonomy measurement and release gate
+
+The benchmark tool reports only values present in a supplied CSV; blank impact measurements remain unknown. It does not claim live validation or real-world savings without measured and independently checked data.
+
+```bash
+python -m unittest tools.test_autonomy_benchmark -v
+python -m unittest tools.test_public_feedback_form -v
+python tools/autonomy_benchmark.py path/to/measured-task-export.csv
+```
+
+See [Autonomous Execution Proof](docs/AUTONOMOUS_EXECUTION_PROOF.md) for the CSV schema, metrics, and the necessary-but-not-sufficient release gate.
