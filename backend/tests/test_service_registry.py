@@ -12,8 +12,10 @@ def test_service_registry_resolves_food_business_to_shared_service():
 def test_service_registry_contains_broad_govos_service_catalog():
     registry = ServiceRegistry()
     ids = {service.id for service in registry.all()}
-    assert len(ids) >= 32
+    assert len(ids) == 32
     assert {"property_registration", "gst_registration", "passport", "rera_registration", "crop_insurance"} <= ids
+    assert "court_case_filing" not in ids
+    assert "e_court" not in ids
 
 
 def test_service_registry_respects_customer_type():
