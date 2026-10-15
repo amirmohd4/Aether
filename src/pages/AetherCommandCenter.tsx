@@ -1357,33 +1357,35 @@ export const AetherCommandCenter: React.FC = () => {
                       Record selected document types
                     </button>
 
-                    <div className="mt-4 rounded-xl border border-white/10 bg-slate-950/40 p-3">
-                      <p className="text-[11px] font-semibold text-slate-200">Upload actual document</p>
-                      <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
-                        <select
-                          value={uploadDocumentType}
-                          onChange={(e) => setUploadDocumentType(e.target.value)}
-                          className="rounded-lg border border-white/10 bg-slate-900 p-2 text-xs"
-                        >
-                          <option value="">Choose required type</option>
-                          {missingDocuments.map((document) => (
-                            <option key={document} value={document}>{document}</option>
-                          ))}
-                        </select>
-                        <input
-                          type="file"
-                          onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
-                          className="rounded-lg border border-white/10 bg-slate-900 p-2 text-xs text-slate-300"
-                        />
-                        <button
-                          onClick={uploadDocument}
-                          disabled={loading || !uploadDocumentType || !uploadFile}
-                          className="rounded-lg border border-cyan-300/20 px-3 py-2 text-xs font-bold text-cyan-100 disabled:opacity-50"
-                        >
-                          Upload
-                        </button>
+                    {!publicDemo && (
+                      <div className="mt-4 rounded-xl border border-white/10 bg-slate-950/40 p-3">
+                        <p className="text-[11px] font-semibold text-slate-200">Upload actual document</p>
+                        <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+                          <select
+                            value={uploadDocumentType}
+                            onChange={(e) => setUploadDocumentType(e.target.value)}
+                            className="rounded-lg border border-white/10 bg-slate-900 p-2 text-xs"
+                          >
+                            <option value="">Choose required type</option>
+                            {missingDocuments.map((document) => (
+                              <option key={document} value={document}>{document}</option>
+                            ))}
+                          </select>
+                          <input
+                            type="file"
+                            onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+                            className="rounded-lg border border-white/10 bg-slate-900 p-2 text-xs text-slate-300"
+                          />
+                          <button
+                            onClick={uploadDocument}
+                            disabled={loading || !uploadDocumentType || !uploadFile}
+                            className="rounded-lg border border-cyan-300/20 px-3 py-2 text-xs font-bold text-cyan-100 disabled:opacity-50"
+                          >
+                            Upload
+                          </button>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 )}
 
