@@ -408,6 +408,8 @@ def create_api_key(data: Dict[str, Any] | None = None, principal: Principal = De
 
 @router.post("/api-keys/{key_prefix}/revoke")
 def revoke_api_key(key_prefix: str, principal: Principal = Depends(require_scope("cases:write"))):
+    if principal.auth_mode == "public_demo":
+        raise HTTPException(status_code=403, detail="API-key management is disabled in the public synthetic demo")
     if not principal.tenant_id:
         raise HTTPException(status_code=403, detail="Active tenant is required")
     try:
@@ -430,6 +432,8 @@ def revoke_api_key(key_prefix: str, principal: Principal = Depends(require_scope
 
 @router.get("/api-keys")
 def list_api_keys(principal: Principal = Depends(require_scope("cases:read"))):
+    if principal.auth_mode == "public_demo":
+        raise HTTPException(status_code=403, detail="API-key management is disabled in the public synthetic demo")
     if not principal.tenant_id:
         raise HTTPException(status_code=403, detail="Active tenant is required")
     try:
@@ -516,6 +520,8 @@ def upload_case_document(
     file: UploadFile = File(...),
     principal: Principal = Depends(require_scope("documents:write")),
 ):
+    if principal.auth_mode == "public_demo":
+        raise HTTPException(status_code=403, detail="File uploads are disabled in the public synthetic demo. Use fictional document references only.")
     try:
         case = engine.get_case(case_id)
         _authorize_case(case, principal)
