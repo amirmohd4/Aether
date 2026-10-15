@@ -7,7 +7,7 @@ export type ServiceConfig = {
 };
 
 /**
- * User-facing service shortcuts. This list mirrors the 34-service Aether
+ * User-facing service shortcuts. This list mirrors the 32-service Aether
  * backend registry; specialized forms are used where available and the
  * generic Aether service surface is used for services that do not need a
  * bespoke legacy form.
@@ -42,8 +42,6 @@ export const servicesConfig: ServiceConfig[] = [
   { id: 'pmay', label: 'PMAY Application', icon: '🏠', component: 'PMAYApplication', endpoint: '/pmay' },
   { id: 'housing', label: 'Affordable Housing', icon: '🏘️', component: 'AffordableHousingApplication', endpoint: '/housing' },
   { id: 'rera-project', label: 'RERA Project Registration', icon: '🏗️', component: 'RERAProjectApplication', endpoint: '/rera-project' },
-  { id: 'court-case', label: 'Court Case Filing', icon: '⚖️', component: 'CourtCaseApplication', endpoint: '/court-case' },
-  { id: 'e-court', label: 'E-Court', icon: '💻', component: 'ECourtApplication', endpoint: '/e-court' },
   { id: 'passport', label: 'Passport Application', icon: '📔', component: 'PassportApplication', endpoint: '/passport' },
   { id: 'visa', label: 'Visa Services', icon: '✈️', component: 'VisaApplication', endpoint: '/visa' },
   { id: 'food-business-license', label: 'Food Business License / Registration', icon: '🍲', component: 'FoodBusinessLicenseApplication', endpoint: '/food-business-license' },
