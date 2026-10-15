@@ -55,7 +55,6 @@ export const MASTER_GLOBAL_SERVICES: ServiceItem[] = [
     processingTime: '< 5 minutes'
   },
   {
-  {
     id: 'passport_renew',
     name: 'Passport Renewal',
     category: 'Identity & Documents',
