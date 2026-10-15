@@ -39,7 +39,9 @@ _rate_windows = defaultdict(deque)
 @app.middleware("http")
 async def platform_hardening(request, call_next):
     request_id = request.headers.get("X-Request-ID") or uuid4().hex
-    production = os.getenv("AETHER_ENV", "development").strip().lower() == "production"
+    environment = os.getenv("AETHER_ENV", "development").strip().lower()
+    production = environment == "production"
+    rate_limit_enabled = environment in {"staging", "production"} or os.getenv("AETHER_PUBLIC_DEMO", "false").strip().lower() == "true"
 
     limit = max(30, int(os.getenv("AETHER_RATE_LIMIT_PER_MINUTE", "300")))
     client_host = request.client.host if request.client else "unknown"
@@ -47,7 +49,7 @@ async def platform_hardening(request, call_next):
     bucket = _rate_windows[client_host]
     while bucket and now - bucket[0] >= 60:
         bucket.popleft()
-    if production and len(bucket) >= limit:
+    if rate_limit_enabled and len(bucket) >= limit:
         return JSONResponse(
             status_code=429,
             content={"detail": "Rate limit exceeded", "request_id": request_id},
