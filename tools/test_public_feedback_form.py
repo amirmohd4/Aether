@@ -15,7 +15,7 @@ class PublicFeedbackFormTests(unittest.TestCase):
         import re
 
         source = SERVICES.read_text(encoding="utf-8")
-        ids = re.findall(r"\\{ id: '([^']+)'", source)
+        ids = re.findall(r"\{ id: '([^']+)'", source)
         self.assertEqual(len(ids), 32)
         self.assertEqual(len(ids), len(set(ids)))
         self.assertNotIn("court-case", source.lower())
