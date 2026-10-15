@@ -159,6 +159,17 @@ type CaseResponse = {
 };
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8081';
+const publicDemo = import.meta.env.VITE_PUBLIC_DEMO === 'true';
+
+function getPublicDemoSession(): string {
+  const key = 'aether.public_demo_session';
+  let sessionId = window.localStorage.getItem(key);
+  if (!sessionId) {
+    sessionId = crypto.randomUUID();
+    window.localStorage.setItem(key, sessionId);
+  }
+  return sessionId;
+}
 
 const DEMO_DOCUMENTS = [
   'identity_document',
@@ -397,11 +408,14 @@ export const AetherCommandCenter: React.FC = () => {
   }, [caseData]);
 
   const authHeaders = () => {
-    if (!session?.access_token) return {};
-    return {
-      Authorization: `Bearer ${session.access_token}`,
-      ...(selectedTenantId ? { 'X-Aether-Tenant-ID': selectedTenantId } : {}),
-    };
+    const headers: Record<string, string> = {};
+    if (session?.access_token) {
+      headers.Authorization = `Bearer ${session.access_token}`;
+    } else if (publicDemo) {
+      headers['X-Aether-Demo-Session'] = getPublicDemoSession();
+    }
+    if (selectedTenantId) headers['X-Aether-Tenant-ID'] = selectedTenantId;
+    return headers;
   };
 
   const tenantSelectionRequired = tenantOptions.length > 1 && !selectedTenantId;
@@ -772,6 +786,11 @@ export const AetherCommandCenter: React.FC = () => {
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100">
       <div className="mx-auto max-w-7xl px-5 py-8 lg:px-8">
+        {publicDemo && (
+          <div role="alert" className="mb-6 rounded-xl border border-amber-300/30 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">
+            <strong>Public synthetic sandbox.</strong> Use fictional examples only. No government systems are connected, and no official decision is made. Real document uploads and API-key management are disabled.
+          </div>
+        )}
         <header className="mb-8 flex flex-col gap-4 border-b border-white/10 pb-6 md:flex-row md:items-end md:justify-between">
           <div>
             <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-cyan-300">
