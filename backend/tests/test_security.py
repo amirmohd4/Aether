@@ -25,7 +25,7 @@ def test_owner_can_access_own_case():
 
 
 def test_same_tenant_officer_can_access_case():
-    _authorize_case(_case(), Principal("officer-1", "officer", "tenant-1", "supabase"))
+    _authorize_case(_case(), Principal("officer-1", "officer", "tenant-1", "supabase", "Revenue", {"country": "India", "state": "Jammu and Kashmir"}))
 
 
 def test_cross_tenant_user_cannot_access_case():
@@ -111,3 +111,44 @@ def test_officer_case_listing_filters_department_and_jurisdiction(monkeypatch):
     )
 
     assert [item["case_id"] for item in visible] == [allowed.case_id]
+
+
+
+def test_officer_without_department_is_denied():
+    try:
+        _authorize_case(_case(), Principal("officer-1", "officer", "tenant-1", "supabase"))
+    except HTTPException as exc:
+        assert exc.status_code == 404
+    else:
+        raise AssertionError("officer without a department assignment must be denied")
+
+
+def test_officer_without_required_jurisdiction_is_denied():
+    try:
+        _authorize_case(
+            _case(),
+            Principal("officer-1", "officer", "tenant-1", "supabase", "Revenue", {"state": "Jammu and Kashmir", "district": "Jammu"}),
+        )
+    except HTTPException as exc:
+        assert exc.status_code == 404
+    else:
+        raise AssertionError("case outside the assigned jurisdiction must be denied")
+
+
+def test_api_key_human_decision_requires_explicit_scope():
+    from aether_core.security import require_human_authority
+
+    principal = Principal("api-key:test", "officer", "tenant-1", "api_key", scopes=frozenset({"cases:read", "cases:write"}))
+    try:
+        require_human_authority(principal)
+    except HTTPException as exc:
+        assert exc.status_code == 403
+    else:
+        raise AssertionError("API key must have human:decide scope")
+
+
+def test_api_key_human_decision_allows_explicit_scope():
+    from aether_core.security import require_human_authority
+
+    principal = Principal("api-key:test", "officer", "tenant-1", "api_key", scopes=frozenset({"human:decide"}))
+    assert require_human_authority(principal) == principal
