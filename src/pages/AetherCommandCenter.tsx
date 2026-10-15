@@ -798,7 +798,7 @@ export const AetherCommandCenter: React.FC = () => {
               <Globe2 className="h-4 w-4" /> Aether GovOS
             </div>
             <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
-              Tell Aether the outcome. Aether executes the work.
+              Describe the outcome. Explore how Aether could coordinate the work.
             </h1>
             <p className="mt-2 max-w-3xl text-sm text-slate-400">
               Objective → understanding → requirements → work graph → parallel execution → verification → human authority → outcome.
@@ -839,7 +839,7 @@ export const AetherCommandCenter: React.FC = () => {
           <aside className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
             <h2 className="text-lg font-semibold">Start a case</h2>
             <p className="mt-1 text-xs text-slate-400">
-              Describe the real-world objective instead of navigating department forms.
+              Describe a fictional service outcome instead of navigating department forms. This workspace currently uses synthetic systems only.
             </p>
 
             <button
@@ -924,7 +924,7 @@ export const AetherCommandCenter: React.FC = () => {
             <div className="mt-3 rounded-xl border border-cyan-300/10 bg-cyan-300/5 p-3 text-[11px] text-cyan-100">
               {useDemoEvidence
                 ? 'Demo mode supplies synthetic document types so the execution graph can be exercised end-to-end.'
-                : 'Guided intake mode creates the real case first and lets you record required document types before Aether executes.'}
+                : 'Guided intake mode creates a synthetic demo case and lets you record mock document types. It does not submit an official application.'}
             </div>
 
             <button
@@ -933,7 +933,7 @@ export const AetherCommandCenter: React.FC = () => {
               className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-400 px-4 py-3 text-sm font-bold text-slate-950 disabled:opacity-50"
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
-              Start Aether execution
+              Run workflow simulation
             </button>
 
             {caseData && (
@@ -942,7 +942,7 @@ export const AetherCommandCenter: React.FC = () => {
                 disabled={loading}
                 className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-slate-200 disabled:opacity-50"
               >
-                <RefreshCw className="h-3.5 w-3.5" /> Run another case
+                <RefreshCw className="h-3.5 w-3.5" /> Run another simulation
               </button>
             )}
 
