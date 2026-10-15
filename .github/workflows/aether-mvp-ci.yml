@@ -57,6 +57,21 @@ jobs:
       - name: Build frontend
         run: npm run build
 
+  public-demo-smoke:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'launch/public-research-preview'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Smoke-test the live public synthetic sandbox
+        env:
+          AETHER_PUBLIC_DEMO_URL: https://aether-public-demo.onrender.com
+          AETHER_PREVIEW_ORIGIN: https://deploy-preview-10--aether-govos.netlify.app
+        run: python tools/smoke_public_demo.py
+
   public-launch-assets:
     runs-on: ubuntu-latest
     steps:
