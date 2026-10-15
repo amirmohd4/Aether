@@ -3,7 +3,7 @@ import {
   Search, Shield, Home, Briefcase, Car, Wheat, 
   FileText, Sparkles, ChevronRight, X, UserCheck, ShieldCheck
 } from 'lucide-react';
-import { servicesConfig } from '../servicesConfig';
+import { getServiceJurisdictionScope, servicesConfig } from '../servicesConfig';
 
 export interface ServiceItem {
   id: string;
@@ -140,6 +140,9 @@ export const ServiceSearch: React.FC<ServiceSearchProps> = ({
                     </span>
                     <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-950 text-slate-400 border border-slate-800">
                       {service.category}
+                    </span>
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-cyan-950/50 text-cyan-200 border border-cyan-800/50">
+                      {getServiceJurisdictionScope(service.id)}
                     </span>
                   </div>
                   <p className="text-xs text-slate-400 mt-1 line-clamp-2">
