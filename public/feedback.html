@@ -60,6 +60,11 @@
         <input id="workflow" name="workflow" maxlength="240" required placeholder="e.g. business licence renewal across departments">
       </div>
       <div class="field">
+        <label for="mock_context">Mock test context (optional)</label>
+        <input id="mock_context" name="mock_context" maxlength="1000" placeholder="Service, jurisdiction label, scenario, and rating from the mock studio">
+        <span class="hint">This is context about a synthetic test, not an official case or application.</span>
+      </div>
+      <div class="field">
         <label for="example">What happened in a recent real example you observed?</label>
         <textarea id="example" name="observed_example" maxlength="3000" required placeholder="Describe the process, not the person or case. Please omit names, IDs, and confidential details."></textarea>
         <span class="hint">Separate what you directly observed from what you suspect.</span>
@@ -98,6 +103,21 @@
       <button type="submit">Send feedback</button>
     </form>
     <footer>Submitting this form sends your response to the Aether project maintainers through Netlify Forms for product research and follow-up if you opt in. Do not include personal identifiers, confidential comments, or information you are not authorised to share. Responses may be used to improve the prototype; do not assume anonymity if you voluntarily provide contact details. Feedback does not imply government endorsement. <a href="https://github.com/amirmohd4/Aether">Review the project on GitHub</a>.</footer>
+  <script>
+    (function () {
+      const params = new URLSearchParams(window.location.search);
+      const workflow = params.get('workflow');
+      const context = [
+        params.get('jurisdiction'),
+        params.get('scenario'),
+        params.get('rating') ? 'Rating: ' + params.get('rating') + '/5' : ''
+      ].filter(Boolean).join(' · ');
+      const workflowField = document.getElementById('workflow');
+      const contextField = document.getElementById('mock_context');
+      if (workflowField && workflow && !workflowField.value) workflowField.value = workflow;
+      if (contextField && context && !contextField.value) contextField.value = context;
+    })();
+  </script>
   </main>
 </body>
 </html>
