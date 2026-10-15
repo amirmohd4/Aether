@@ -8,6 +8,11 @@
   VITE_SUPABASE_ANON_KEY = "sb_publishable_1zr-O35OIeQVgBfnAVnXaQ_AewTZBqI"
   VITE_REQUIRE_AUTH = "true"
 
+[context.deploy-preview.environment]
+  VITE_API_URL = "https://aether-public-demo.onrender.com"
+  VITE_REQUIRE_AUTH = "false"
+  VITE_PUBLIC_DEMO = "true"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
