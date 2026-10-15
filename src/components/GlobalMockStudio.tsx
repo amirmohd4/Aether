@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { getServiceJurisdictionScope, servicesConfig } from '../servicesConfig';
 import { CheckCircle2, CircleAlert, ClipboardCheck, FileText, Globe2, Play, RotateCcw, ShieldAlert } from 'lucide-react';
 
-type Scenario = 'happy' | 'missing' | 'review' | 'retry';
+type Scenario = 'happy' | 'missing' | 'review' | 'retry' | 'rejected';
 type JourneyStep = { title: string; detail: string; status: 'complete' | 'attention' | 'pending' };
 
 const scenarioLabels: Record<Scenario, string> = {
@@ -10,6 +10,7 @@ const scenarioLabels: Record<Scenario, string> = {
   missing: 'Missing evidence — request more information',
   review: 'Authority boundary — human review required',
   retry: 'Temporary system failure — safe retry',
+  rejected: 'Adverse scenario — rule or evidence conflict',
 };
 
 function requirementsFor(id: string, label: string): string[] {
@@ -84,6 +85,12 @@ function tasksFor(serviceId: string, serviceLabel: string, scenario: Scenario): 
     { title: 'Synthetic connector request', detail: 'The first mock attempt failed with a simulated transient error. A stable idempotency key is retained for retry.', status: 'attention' },
     { title: 'Retry and reconcile', detail: 'The mock retry recovered without creating a duplicate simulated request.', status: 'complete' },
     { title: 'Synthetic outcome verification', detail: 'The response was reconciled against the simulator only; no real source of record was contacted.', status: 'complete' },
+  ];
+  if (scenario === 'rejected') return [
+    ...base,
+    { title: 'Evidence / rule conflict detected', detail: 'The synthetic scenario deliberately introduces a mismatch or failed illustrative condition. This is not a real legal assessment.', status: 'attention' },
+    { title: 'Stop and explain the reason', detail: 'Aether pauses downstream work, records the mock reason, and identifies what evidence or authorised review may be needed.', status: 'complete' },
+    { title: 'Official decision remains external', detail: 'No official rejection or adverse decision is made. A real determination belongs to the responsible authority with applicable review rights.', status: 'pending' },
   ];
   return [
     ...base,
