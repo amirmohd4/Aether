@@ -41,6 +41,7 @@ For the selected service, obtain a written integration packet containing:
 - approved data categories and retention rules.
 
 ### Technical contract
+- Explicit per-department `allowed_operations` allowlist: only operations approved by the system owner may be configured; an empty or missing allowlist is rejected.
 - base URL(s) and environment separation;
 - authentication mechanism and credential process;
 - API/OpenAPI documentation;
