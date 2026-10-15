@@ -41,7 +41,20 @@ async def platform_hardening(request, call_next):
     request_id = request.headers.get("X-Request-ID") or uuid4().hex
     environment = os.getenv("AETHER_ENV", "development").strip().lower()
     production = environment == "production"
-    rate_limit_enabled = environment in {"staging", "production"} or os.getenv("AETHER_PUBLIC_DEMO", "false").strip().lower() == "true"
+    public_demo = os.getenv("AETHER_PUBLIC_DEMO", "false").strip().lower() == "true"
+    rate_limit_enabled = environment in {"staging", "production"} or public_demo
+
+    if public_demo:
+        try:
+            content_length = int(request.headers.get("content-length", "0"))
+        except ValueError:
+            content_length = 0
+        if content_length > 1_048_576:
+            return JSONResponse(
+                status_code=413,
+                content={"detail": "Public demo request body exceeds 1 MiB", "request_id": request_id},
+                headers={"X-Request-ID": request_id},
+            )
 
     limit = max(30, int(os.getenv("AETHER_RATE_LIMIT_PER_MINUTE", "300")))
     client_host = request.client.host if request.client else "unknown"
