@@ -141,18 +141,25 @@ export const GlobalMockStudio: React.FC = () => {
     setFeedbackMessage('');
   }
 
-  function copyFeedback() {
+  async function copyFeedback() {
     const text = [
       'Aether GovOS — mock journey feedback',
       'Service: ' + (service?.label || serviceId),
+      'Template scope: ' + (service ? getServiceJurisdictionScope(service.id) : 'Unknown'),
       'Jurisdiction label: ' + jurisdiction,
       'Scenario: ' + scenarioLabels[scenario],
+      'Objective: ' + (objective.trim() || service?.label || serviceId),
       'Rating: ' + rating + '/5',
       'Feedback: ' + feedback,
       'Demo reference: ' + reference,
       'Note: synthetic test only; no official application submitted.',
     ].join('\n');
-    void navigator.clipboard?.writeText(text).then(() => setFeedbackMessage('Feedback copied. Paste it into the feedback page or your message to the Aether team.')).catch(() => setFeedbackMessage(text));
+    try {
+      await navigator.clipboard.writeText(text);
+      setFeedbackMessage('Feedback copied. Paste it into the feedback page or your message to the Aether team.');
+    } catch {
+      setFeedbackMessage(text);
+    }
   }
 
   return (
