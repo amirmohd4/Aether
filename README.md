@@ -6,8 +6,8 @@ Aether GovOS is an early-stage government-workflow orchestration prototype. It e
 
 ## Public research preview
 
-- **[Open the interactive synthetic preview](https://deploy-preview-10--stunning-sopapillas-ae1187.netlify.app/)**
-- [Share feedback](https://deploy-preview-10--stunning-sopapillas-ae1187.netlify.app/feedback.html)
+- **[Open the interactive synthetic preview](https://deploy-preview-10--aether-govos.netlify.app/)**
+- [Share feedback](https://deploy-preview-10--aether-govos.netlify.app/feedback.html)
 - [Launch-readiness checklist](docs/launch-readiness-checklist.md)
 - [Global mock-preview plan](docs/global-mock-preview-plan.md)
 
