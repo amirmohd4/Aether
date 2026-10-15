@@ -958,11 +958,14 @@ def _authorize_case(case, principal: Principal) -> None:
     if principal.auth_mode == "api_key" and same_tenant:
         return
     if principal.role.lower() in {"officer", "department_admin"} and same_tenant:
-        if principal.department and case.service_department:
-            if principal.department.lower() != case.service_department.lower():
-                raise HTTPException(status_code=404, detail="Case not found")
+        # Officer authority must be explicitly assigned; missing scope is not
+        # interpreted as tenant-wide access.
+        if not principal.department or not case.service_department:
+            raise HTTPException(status_code=404, detail="Case not found")
+        if principal.department.strip().casefold() != case.service_department.strip().casefold():
+            raise HTTPException(status_code=404, detail="Case not found")
         for key, value in (principal.jurisdiction or {}).items():
-            if value and case.jurisdiction.get(key) and case.jurisdiction.get(key) != value:
+            if value and str(case.jurisdiction.get(key, "")).strip().casefold() != str(value).strip().casefold():
                 raise HTTPException(status_code=404, detail="Case not found")
         return
     if same_owner and (not case.tenant_id or not principal.tenant_id or same_tenant):
