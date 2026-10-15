@@ -182,14 +182,14 @@ def test_admin_case_listing_is_tenant_scoped(monkeypatch):
 
 
 
-def _request():
+def _request(headers=None):
     from starlette.requests import Request
 
     return Request({
         "type": "http",
         "method": "GET",
         "path": "/",
-        "headers": [],
+        "headers": headers or [],
         "client": ("127.0.0.1", 1234),
         "server": ("testserver", 80),
         "scheme": "http",
@@ -205,7 +205,7 @@ def test_public_demo_requires_explicit_safe_configuration(monkeypatch):
     monkeypatch.setenv("AETHER_PUBLIC_DEMO", "true")
     monkeypatch.setenv("AETHER_ENABLE_PRODUCTION_CONNECTORS", "false")
 
-    principal = require_principal(_request())
+    principal = require_principal(_request([(b"x-aether-demo-session", b"550e8400-e29b-41d4-a716-446655440000")]))
     assert principal.auth_mode == "public_demo"
     assert principal.tenant_id == "public-demo"
     assert principal.role == "demo"
