@@ -174,7 +174,24 @@ def _supabase_principal(request: Request) -> Principal:
 
 def require_principal(request: Request) -> Principal:
     mode = auth_mode()
-    if os.getenv("AETHER_ENV", "development").strip().lower() == "production" and mode == "none":
+    environment = os.getenv("AETHER_ENV", "development").strip().lower()
+    public_demo = os.getenv("AETHER_PUBLIC_DEMO", "false").strip().lower() == "true"
+
+    if public_demo:
+        # Anonymous demo mode is permitted only outside production and with
+        # real government connectors explicitly disabled.
+        connectors_enabled = os.getenv("AETHER_ENABLE_PRODUCTION_CONNECTORS", "false").strip().lower() == "true"
+        if environment == "production" or connectors_enabled:
+            raise HTTPException(status_code=500, detail="Public demo safety configuration is invalid")
+        if mode == "none":
+            return Principal(
+                subject="public-demo",
+                role="demo",
+                tenant_id="public-demo",
+                auth_mode="public_demo",
+            )
+
+    if environment == "production" and mode == "none":
         raise HTTPException(status_code=500, detail="Production authentication is not configured")
     if mode == "none":
         return Principal(
@@ -212,8 +229,10 @@ def require_role(*allowed_roles: str):
 
 
 def require_human_authority(principal: Principal = Depends(require_principal)) -> Principal:
-    """Require a human-authority role and an explicit scope for API-key clients."""
+    """Require authority for real users; public demo approvals are synthetic only."""
     if principal.auth_mode == "none":
+        return principal
+    if principal.auth_mode == "public_demo":
         return principal
     if principal.role.lower() not in {"officer", "department_admin", "admin"}:
         raise HTTPException(status_code=403, detail="Insufficient Aether role")
