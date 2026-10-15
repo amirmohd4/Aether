@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { servicesConfig } from '../servicesConfig';
+import { getServiceJurisdictionScope, servicesConfig } from '../servicesConfig';
 import { CheckCircle2, CircleAlert, ClipboardCheck, FileText, Globe2, Play, RotateCcw, ShieldAlert } from 'lucide-react';
 
 type Scenario = 'happy' | 'missing' | 'review' | 'retry';
@@ -22,16 +22,77 @@ function requirementsFor(id: string, label: string): string[] {
   return ['Applicant or organisation details', 'Service-specific reference', 'Supporting evidence'];
 }
 
-function tasksFor(serviceLabel: string, scenario: Scenario): JourneyStep[] {
-  const base: JourneyStep[] = [
-    { title: 'Intake and validation', detail: 'Check that the fictional request has the minimum fields and evidence checklist.', status: 'complete' },
-    { title: 'Service and jurisdiction routing', detail: 'Map the request to a workflow template; no official rules are certified by this demo.', status: 'complete' },
-    { title: 'Evidence and dependency checks', detail: 'Create a provenance-aware checklist and identify work that can run in parallel.', status: 'complete' },
+function workflowStages(serviceId: string, serviceLabel: string): Array<{ title: string; detail: string }> {
+  const key = (serviceId + ' ' + serviceLabel).toLowerCase();
+  if (/property|mutation|encumbrance|title|land conversion/.test(key)) return [
+    { title: 'Resolve property or parcel', detail: 'Match the fictional parcel reference and identify the relevant land-record source.' },
+    { title: 'Check ownership and restrictions', detail: 'Compare mock ownership, encumbrance, tax, or transaction evidence; discrepancies become exceptions.' },
+    { title: 'Coordinate registry and local checks', detail: 'Prepare dependent registry, valuation, planning, or local-authority tasks for the configured workflow.' },
+    { title: 'Authority boundary and record reconciliation', detail: 'A registrar or other authorised person makes any legally required decision. Only a synthetic status is shown here.' },
   ];
-  if (scenario === 'missing') return [...base, { title: 'Applicant action needed', detail: 'Simulation found a missing evidence item. Add the missing item before the mock workflow can continue.', status: 'attention' }, { title: 'Authority processing', detail: 'Not started because the mock intake is incomplete.', status: 'pending' }];
-  if (scenario === 'review') return [...base, { title: 'Authority / physical review', detail: 'A legally authorised person or physical inspection would be required in a real process. Aether does not make that decision.', status: 'attention' }, { title: 'Official outcome', detail: 'Blocked pending the responsible authority; no approval or certificate is issued in this demo.', status: 'pending' }];
-  if (scenario === 'retry') return [...base, { title: 'Synthetic connector request', detail: 'First attempt failed with a simulated transient error; the same idempotency key is reused for a safe retry.', status: 'attention' }, { title: 'Retry and reconcile', detail: 'Mock retry recovered without creating a duplicate request.', status: 'complete' }, { title: 'Outcome verification', detail: 'A synthetic result was reconciled against the simulator response only.', status: 'complete' }];
-  return [...base, { title: 'Synthetic connector orchestration', detail: 'Mock department tasks are sequenced and independent checks are grouped.', status: 'complete' }, { title: 'Outcome reconciliation', detail: 'The simulated result is checked for consistency and assigned a demo reference.', status: 'complete' }, { title: 'Human boundary and audit', detail: 'Any statutory decision, identity adjudication, or physical action remains outside autonomous mock completion.', status: 'complete' }];
+  if (/building|housing|pmay|rera|factory|fire|environment/.test(key)) return [
+    { title: 'Resolve site, project, or eligibility', detail: 'Validate fictional applicant and site/project references against the selected template.' },
+    { title: 'Coordinate technical and compliance checks', detail: 'Model planning, safety, environmental, eligibility, or project-document checks as dependent tasks.' },
+    { title: 'Inspection and exception routing', detail: 'Flag any inspection, disputed evidence, or professional sign-off for an authorised person.' },
+    { title: 'Permit / benefit status reconciliation', detail: 'Reconcile only synthetic task results. No permit, benefit, or approval is issued by this preview.' },
+  ];
+  if (/gst|tax|pf|esi|pds|ration|pension|scholarship|farmer|crop|pmay|subsidy/.test(key)) return [
+    { title: 'Resolve applicant and programme', detail: 'Match the fictional person or organisation to the selected tax, contribution, insurance, or welfare workflow.' },
+    { title: 'Check eligibility and evidence', detail: 'Compare illustrative identity, income, household, contribution, or supporting-evidence fields.' },
+    { title: 'Duplicate, liability, and exception checks', detail: 'Model possible duplicate records, missing evidence, mismatches, or a referral for manual review.' },
+    { title: 'Authorised determination and status check', detail: 'Any legal entitlement, tax determination, or payment decision remains with the responsible authority.' },
+  ];
+  if (/birth|death|passport|visa|police clearance|fir|driving|vehicle|marriage/.test(key)) return [
+    { title: 'Resolve identity and application reference', detail: 'Match fictional applicant and event, travel, driver, vehicle, or report references.' },
+    { title: 'Cross-check supporting records', detail: 'Compare illustrative source records and identify mismatches or missing evidence.' },
+    { title: 'Route statutory or physical checks', detail: 'Identity adjudication, interview, biometric capture, investigation, or other required action stays with authorised people.' },
+    { title: 'Registry status reconciliation', detail: 'Show a synthetic status only; this preview cannot issue a certificate, passport, licence, visa, or police record.' },
+  ];
+  if (/company|business|trade|license|licence|food|medical|admission|transfer|water/.test(key)) return [
+    { title: 'Validate applicant and service scope', detail: 'Check fictional entity/person details, activity, location, and selected service template.' },
+    { title: 'Coordinate department prerequisites', detail: 'Represent dependent registration, premises, tax, utility, or institutional checks without contacting official systems.' },
+    { title: 'Resolve missing items and compliance exceptions', detail: 'Pause for additional evidence, an inspection, or an authorised review where required.' },
+    { title: 'Reconcile synthetic service status', detail: 'Return a demo reference and workflow state, not an official registration, licence, admission, or connection.' },
+  ];
+  return [
+    { title: 'Validate fictional intake', detail: 'Check minimum fields and the illustrative evidence checklist for this template.' },
+    { title: 'Resolve source records and dependencies', detail: 'Map the workflow to mock source checks; jurisdiction-specific rules remain unverified until configured.' },
+    { title: 'Coordinate exceptions and human review', detail: 'Pause when evidence is incomplete or a legal, professional, or physical action is required.' },
+    { title: 'Reconcile synthetic outcome', detail: 'Record a demo state only. No official record, decision, or certificate is created.' },
+  ];
+}
+
+function tasksFor(serviceId: string, serviceLabel: string, scenario: Scenario): JourneyStep[] {
+  const stages = workflowStages(serviceId, serviceLabel);
+  const base: JourneyStep[] = [
+    { title: 'Intake and validation', detail: 'A fictional request was received and checked for basic completeness.', status: 'complete' },
+    { title: 'Service and jurisdiction routing', detail: 'Aether selected a reusable workflow template. The jurisdiction label does not certify local law or service availability.', status: 'complete' },
+    { title: 'Evidence and dependency checks', detail: 'The mock engine created a checklist and mapped dependent work; no official records were queried.', status: 'complete' },
+  ];
+  if (scenario === 'missing') return [
+    ...base,
+    { title: 'Applicant action needed', detail: 'The simulation found an evidence gap. The workflow pauses until the fictional item is supplied or clarified.', status: 'attention' },
+    { title: 'Downstream processing', detail: 'Not started because the mock intake is incomplete.', status: 'pending' },
+  ];
+  if (scenario === 'review') return [
+    ...base,
+    { title: stages[2]?.title || 'Authority / physical review', detail: 'A legally authorised person or physical inspection may be required in a real process. Aether does not make that decision.', status: 'attention' },
+    { title: 'Official outcome', detail: 'Held for the responsible authority; no approval, entitlement, certificate, or official record is issued in this demo.', status: 'pending' },
+  ];
+  if (scenario === 'retry') return [
+    ...base,
+    { title: 'Synthetic connector request', detail: 'The first mock attempt failed with a simulated transient error. A stable idempotency key is retained for retry.', status: 'attention' },
+    { title: 'Retry and reconcile', detail: 'The mock retry recovered without creating a duplicate simulated request.', status: 'complete' },
+    { title: 'Synthetic outcome verification', detail: 'The response was reconciled against the simulator only; no real source of record was contacted.', status: 'complete' },
+  ];
+  return [
+    ...base,
+    ...stages.map((stage, index) => ({
+      title: stage.title,
+      detail: stage.detail,
+      status: index === stages.length - 1 ? 'attention' as const : 'complete' as const,
+    })),
+  ];
 }
 
 export const GlobalMockStudio: React.FC = () => {
@@ -68,7 +129,7 @@ export const GlobalMockStudio: React.FC = () => {
         { title: 'Processing', detail: 'Not started until the required mock evidence is marked as supplied.', status: 'pending' },
       ]);
     } else {
-      setJourney(tasksFor(service.label, scenario));
+      setJourney(tasksFor(service.id, service.label, scenario));
     }
     setFeedbackMessage('');
   }
@@ -93,7 +154,7 @@ export const GlobalMockStudio: React.FC = () => {
         <div>
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-cyan-200"><Globe2 className="h-4 w-4" /> Global research preview</div>
           <h2 className="mt-2 text-2xl font-bold text-white md:text-3xl">Test a complete mock journey</h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">Choose any of the 32 service templates, test different outcomes, and tell us where Aether should reduce friction. Use fictional details only.</p>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">Choose any of the 32 service templates, test different workflow paths, and tell us where Aether should reduce friction. Some templates are India-specific references; all actual requirements and availability must be configured and verified for the relevant jurisdiction. Use fictional details only.</p>
         </div>
         <div className="flex items-center gap-2 rounded-xl border border-amber-300/20 bg-amber-300/[0.07] px-3 py-2 text-[11px] text-amber-100"><ShieldAlert className="h-4 w-4 shrink-0" /> SYNTHETIC ONLY · NOT AN OFFICIAL RECORD</div>
       </div>
@@ -105,6 +166,7 @@ export const GlobalMockStudio: React.FC = () => {
               <select value={serviceId} onChange={e => { setServiceId(e.target.value); setJourney(null); setEvidence([]); }} className="mt-2 w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm font-normal text-white">
                 {servicesConfig.map(item => <option key={item.id} value={item.id}>{item.icon} {item.label}</option>)}
               </select>
+              <span className="mt-1 block text-[10px] font-normal text-cyan-200">{service ? getServiceJurisdictionScope(service.id) : ''}</span>
             </label>
             <label className="text-xs font-semibold text-slate-300">Demo jurisdiction label
               <select value={jurisdiction} onChange={e => setJurisdiction(e.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm font-normal text-white">
@@ -170,7 +232,7 @@ export const GlobalMockStudio: React.FC = () => {
           </div>
         </div>
       </div>
-      <div className="mt-5 flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-4 text-[10px] text-slate-500"><span>Mock templates: {servicesConfig.length} · Outcomes: routine, missing evidence, human review, retry</span><button type="button" onClick={() => { setJourney(null); setReference(''); setEvidence([]); setFeedback(''); setFeedbackMessage(''); }} className="flex items-center gap-1 rounded-lg border border-white/10 px-3 py-2 text-slate-300"><RotateCcw className="h-3 w-3" /> Reset mock</button></div>
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-4 text-[10px] text-slate-500"><span>Mock templates: {servicesConfig.length} · Scenarios: routine path, missing evidence, human review, retry · synthetic only</span><button type="button" onClick={() => { setJourney(null); setReference(''); setEvidence([]); setFeedback(''); setFeedbackMessage(''); }} className="flex items-center gap-1 rounded-lg border border-white/10 px-3 py-2 text-slate-300"><RotateCcw className="h-3 w-3" /> Reset mock</button></div>
     </section>
   );
 };
