@@ -27,13 +27,11 @@ PYTHONPATH=.:.. pytest -q tests/test_end_to_end_employee_workflow.py
 
 ## What to run next
 
-1. Expand the same workflow's fault-injection coverage (missing documents, conflicting data, duplicate delivery, timeout/outage, stale rule version, required inspection, statutory approval) without adding unrelated features.
-2. Create a synthetic test case with explicit tasks: intake, document completeness, rule/eligibility checks, fee/evidence reconciliation where applicable, authorised interdepartment requests, response tracking, exception recovery, and final outcome verification.
-3. Run the case with no human intervention for all permitted routine tasks. Inject missing documents, conflicting data, duplicate delivery, timeout/outage, stale rule version, required inspection, and statutory approval.
-4. Confirm every injected fault produces a safe retry, a recoverable blocked state, or a clearly owned human exception. It must never invent an inspection, decision, payment, certificate, or external state change.
-5. Compare the case state with the synthetic system of record and retain the event/audit export.
-6. Record a manual baseline separately: staff minutes and handoffs from observed cases or a department-approved time study. Do not invent baseline numbers.
-7. Repeat with an authorised sandbox or shadow pilot only after written permission and data/security review.
+1. Extend the existing end-to-end test with fault injection: missing documents, conflicting data, duplicate delivery, timeout/outage, and stale rule version.
+2. Verify each injected fault causes a safe retry, recoverable blocked state, or clearly owned human exception. It must never invent an inspection, decision, payment, certificate, or external state change.
+3. Reconcile the final case state against the synthetic system of record and retain the event/audit export.
+4. Record a manual baseline separately using observed cases or a department-approved time study. Measure staff minutes and handoffs; do not invent baseline numbers.
+5. Repeat in an authorised sandbox or shadow pilot only after written permission and data/security review.
 
 ## Metrics and definitions
 
