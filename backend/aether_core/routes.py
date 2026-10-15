@@ -9,7 +9,7 @@ from .engine import engine
 from .requirements_engine import RequirementEngine
 from .rule_registry import RuleRegistry
 from .verification import VerificationEngine
-from .security import Principal, require_principal, require_role, require_scope
+from .security import Principal, require_human_authority, require_principal, require_role, require_scope
 from .understanding import ObjectiveUnderstandingEngine
 from .document_store import DocumentStore, document_summary
 from .notifications import NotificationService
@@ -1114,7 +1114,7 @@ def get_case(case_id: str, principal: Principal = Depends(require_scope("cases:r
 
 
 @router.post("/cases/{case_id}/human/{task_id}")
-def human_decision(case_id: str, task_id: str, request: HumanDecisionRequest, principal: Principal = Depends(require_role("officer", "department_admin", "admin"))):
+def human_decision(case_id: str, task_id: str, request: HumanDecisionRequest, principal: Principal = Depends(require_human_authority)):
     try:
         case = engine.get_case(case_id)
         _authorize_case(case, principal)
