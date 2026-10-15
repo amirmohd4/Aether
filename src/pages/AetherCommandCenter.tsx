@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { GlobalMockStudio } from '../components/GlobalMockStudio';
 import {
   Activity, ArrowRight, CheckCircle2, CircleAlert, FileText,
   Globe2, Loader2, ShieldCheck, UserRound, RefreshCw
@@ -831,6 +832,8 @@ export const AetherCommandCenter: React.FC = () => {
             )}
           </div>
         </header>
+
+        <GlobalMockStudio />
 
         <section className="grid gap-6 lg:grid-cols-[380px_1fr]">
           <aside className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
