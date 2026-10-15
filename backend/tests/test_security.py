@@ -241,3 +241,20 @@ def test_public_demo_rejects_enabled_government_connectors(monkeypatch):
         assert exc.status_code == 500
     else:
         raise AssertionError("public demo must reject live connector configuration")
+
+
+
+def test_public_demo_rejects_missing_session(monkeypatch):
+    from aether_core.security import require_principal
+
+    monkeypatch.setenv("AETHER_ENV", "staging")
+    monkeypatch.setenv("AETHER_AUTH_MODE", "none")
+    monkeypatch.setenv("AETHER_PUBLIC_DEMO", "true")
+    monkeypatch.setenv("AETHER_ENABLE_PRODUCTION_CONNECTORS", "false")
+
+    try:
+        require_principal(_request())
+    except HTTPException as exc:
+        assert exc.status_code == 400
+    else:
+        raise AssertionError("public demo must require a session identifier")
