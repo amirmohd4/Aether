@@ -125,7 +125,7 @@ def test_production_connector_requires_https_and_bearer_token(monkeypatch):
     monkeypatch.setenv("AETHER_ENABLE_PRODUCTION_CONNECTORS", "true")
     monkeypatch.setenv(
         "AETHER_PRODUCTION_CONNECTORS",
-        '{"Land Records": {"base_url": "https://sandbox.gov.example", "bearer_token": "test-token"}}',
+        '{"Land Records": {"base_url": "https://sandbox.gov.example"}}',
     )
     with pytest.raises(RuntimeError, match="bearer_token"):
         ConnectorRegistry()
