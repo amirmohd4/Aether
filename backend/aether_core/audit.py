@@ -7,11 +7,19 @@ from threading import RLock
 from typing import Any, Dict, List
 
 
+def _canonical_timestamp(value: str) -> str:
+    """Normalize SQLite/PostgreSQL timestamp round-trips to one UTC spelling."""
+    parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc).isoformat()
+
+
 def _event_hash(entry: Dict[str, Any]) -> str:
     canonical = json.dumps(
         {
             "sequence": entry["sequence"],
-            "timestamp": entry["timestamp"],
+            "timestamp": _canonical_timestamp(entry["timestamp"]),
             "action": entry["action"],
             "actor": entry["actor"],
             "case_id": entry["case_id"],
