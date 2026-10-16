@@ -91,7 +91,7 @@ A legacy file is deleted only when:
 
 ## Next product phase
 
-See `docs/MARKET_RESEARCH_AND_PRODUCT_STRATEGY.md` for the evidence-backed market thesis and `REAL_GOVERNMENT_ACTIVATION.md` for live-integration controls.
+See `docs/MARKET_RESEARCH_AND_PRODUCT_STRATEGY.md` for the evidence-backed market thesis, `docs/ADMINISTRATIVE_WORKFLOW_RESEARCH_REGISTER.md` for candidate workflows and validation criteria, and `REAL_GOVERNMENT_ACTIVATION.md` for live-integration controls.
 
 The immediate next phase is **market validation plus one measurable vertical workflow**, not broad feature expansion:
 1. Build and maintain a source-backed inventory of real administrative workflows across contractor operations, education administration and bank operations.
