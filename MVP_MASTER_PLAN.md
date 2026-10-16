@@ -2,7 +2,9 @@
 
 ## Product target
 
-Aether is a Government Operating System / execution layer. The controlled MVP supports one shared execution backbone for citizens, businesses, banks/NBFCs, developers/real-estate, insurers, enterprises and government officers.
+Aether is an Administrative Execution OS: a governed, cross-organisation execution layer. One shared core supports citizens, businesses, banks/NBFCs, developers/real-estate, insurers, enterprises, contractors, education departments and public officers through validated vertical workflow packs. The platform coordinates existing systems rather than assuming it replaces each system of record.
+
+The long-term vision spans education and public administration ministries, local government, public works, regulated financial services and enterprise compliance. The first commercial workflow must be chosen using evidence of pain, budget ownership, reachable buyers, integration permission and measurable ROI—not by adding catalogue breadth.
 
 Core promise:
 
@@ -89,9 +91,14 @@ A legacy file is deleted only when:
 
 ## Next product phase
 
-See `REAL_GOVERNMENT_ACTIVATION.md` for the production activation workflow. The next phase is authorized real-world integration, not more controlled-MVP scaffolding:
-- onboard the first government sandbox/certified connector;
-- load authoritative rule packs;
-- configure production providers;
-- execute security/load validation;
-- then promote the controlled deployment posture toward real production.
+See `docs/MARKET_RESEARCH_AND_PRODUCT_STRATEGY.md` for the evidence-backed market thesis and `REAL_GOVERNMENT_ACTIVATION.md` for live-integration controls.
+
+The immediate next phase is **market validation plus one measurable vertical workflow**, not broad feature expansion:
+1. Build and maintain a source-backed inventory of real administrative workflows across contractor operations, education administration and bank operations.
+2. Verify the current procedure, role, system of record, rules, exception path, buyer, incumbent tools and integration access for each candidate.
+3. Select one workflow only after a named design partner/sponsor, baseline data and permitted test path are plausible.
+4. Measure staff minutes, elapsed time, handoffs, rework, first-pass completeness, correct verified outcomes and exceptions before/after.
+5. Implement a vertical pack on the shared execution core, test failure recovery and authority boundaries, then run an authorised sandbox or controlled pilot.
+6. Activate live connectors only after the production checklist in `REAL_GOVERNMENT_ACTIVATION.md` is satisfied and release approval is explicit.
+
+Do not claim customer demand, time savings, live integrations or profitability before measured evidence exists.
