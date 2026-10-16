@@ -7,6 +7,7 @@ Aether GovOS is an early-stage government-workflow orchestration prototype. It e
 **Long-term scope:** the same core can support public administration, education departments, public works, contractors, banks, insurers, developers, MSMEs and system integrators through validated vertical workflow packs.
 
 - [Market research and product strategy](docs/MARKET_RESEARCH_AND_PRODUCT_STRATEGY.md)
+- [Administrative workflow research register](docs/ADMINISTRATIVE_WORKFLOW_RESEARCH_REGISTER.md)
 
 ## Public research preview
 
@@ -21,7 +22,7 @@ Use fictional values only. The preview demonstrates workflow patterns; it does n
 
 The platform is designed around an outcome-to-work compiler, versioned administrative process graph, evidence provenance, authorised connector/action fabric, durable execution and recovery, role-aware workbench, outcome verification, and measured operations analytics. The research strategy deliberately starts with a narrow paid workflow while preserving a cross-administration architecture. Education administration is a first-class long-term vertical, not a separate unrelated product.
 
-See [Market Research and Product Strategy](docs/MARKET_RESEARCH_AND_PRODUCT_STRATEGY.md) for the source-backed market thesis, education workflows, vertical comparisons, autonomy policy, commercial model and 90-day research plan.
+See [Market Research and Product Strategy](docs/MARKET_RESEARCH_AND_PRODUCT_STRATEGY.md) for the source-backed market thesis, education workflows, vertical comparisons, autonomy policy, commercial model and 90-day research plan. Use the [Administrative Workflow Research Register](docs/ADMINISTRATIVE_WORKFLOW_RESEARCH_REGISTER.md) to track candidate workflows, buyer hypotheses, evidence strength, disconfirmation questions and pilot gates.
 
 ## Current MVP
 
