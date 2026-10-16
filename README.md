@@ -2,7 +2,11 @@
 
 Aether GovOS is an early-stage government-workflow orchestration prototype. It explores how an outcome-first interface could map requirements, coordinate permitted digital tasks, recover from exceptions, verify results, and stop at legally required human actions. The public research preview uses synthetic systems only.
 
-**Product hypothesis:** Aether could coordinate the work between a service request and its eventual official outcome, while the responsible authority remains the system of record and decision-maker.
+**Product thesis:** Aether is an Administrative Execution OS: a governed, cross-organisation execution layer that coordinates permitted work across systems, employees and departments, then verifies the outcome while preserving the authority of each system of record.
+
+**Long-term scope:** the same core can support public administration, education departments, public works, contractors, banks, insurers, developers, MSMEs and system integrators through validated vertical workflow packs.
+
+- [Market research and product strategy](docs/MARKET_RESEARCH_AND_PRODUCT_STRATEGY.md)
 
 ## Public research preview
 
@@ -12,6 +16,12 @@ Aether GovOS is an early-stage government-workflow orchestration prototype. It e
 - [Global mock-preview plan](docs/global-mock-preview-plan.md)
 
 Use fictional values only. The preview demonstrates workflow patterns; it does not contact government systems, submit official applications, issue records, or make legal decisions. Feedback submissions are registered by Netlify Forms, but end-to-end delivery has not yet been verified.
+
+## Product strategy
+
+The platform is designed around an outcome-to-work compiler, versioned administrative process graph, evidence provenance, authorised connector/action fabric, durable execution and recovery, role-aware workbench, outcome verification, and measured operations analytics. The research strategy deliberately starts with a narrow paid workflow while preserving a cross-administration architecture. Education administration is a first-class long-term vertical, not a separate unrelated product.
+
+See [Market Research and Product Strategy](docs/MARKET_RESEARCH_AND_PRODUCT_STRATEGY.md) for the source-backed market thesis, education workflows, vertical comparisons, autonomy policy, commercial model and 90-day research plan.
 
 ## Current MVP
 
