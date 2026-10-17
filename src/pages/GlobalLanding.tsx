@@ -79,7 +79,7 @@ export const GlobalLanding: React.FC = () => {
               Aether
             </h1>
             <p className="text-base font-medium text-slate-600">
-              Government services, simplified.
+              A global execution layer for public-service workflows
             </p>
           </div>
         </div>
@@ -161,10 +161,10 @@ export const GlobalLanding: React.FC = () => {
             <Loader2 className="w-10 h-10 text-[#1a365d] animate-spin mx-auto" />
             <div className="space-y-1">
               <h3 className="text-lg font-bold text-slate-900">
-                Preparing your Aether workflow...
+                Preparing a synthetic workflow preview...
               </h3>
               <p className="text-xs text-slate-500">
-                Running Aether's controlled workflow engine
+                No government systems are contacted in this preview
               </p>
             </div>
           </div>

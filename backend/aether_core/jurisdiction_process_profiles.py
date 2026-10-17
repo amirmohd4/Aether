@@ -108,7 +108,9 @@ class JurisdictionProcessRegistry:
         def specificity(profile: JurisdictionProcessProfile) -> int:
             return int(bool(profile.state)) + int(bool(profile.district))
 
-        return max(candidates, key=specificity)
+        # When an authority publishes a replacement with equal jurisdiction specificity,
+        # prefer the latest inserted profile so change detection sees the new effective pack.
+        return max(enumerate(candidates), key=lambda item: (specificity(item[1]), item[0]))[1]
 
     def all(self) -> List[JurisdictionProcessProfile]:
         return list(self._profiles)

@@ -9,7 +9,7 @@ from .engine import engine
 from .requirements_engine import RequirementEngine
 from .rule_registry import RuleRegistry
 from .verification import VerificationEngine
-from .security import Principal, require_principal, require_role, require_scope
+from .security import Principal, require_human_authority, require_principal, require_role, require_scope
 from .understanding import ObjectiveUnderstandingEngine
 from .document_store import DocumentStore, document_summary
 from .notifications import NotificationService
@@ -408,6 +408,8 @@ def create_api_key(data: Dict[str, Any] | None = None, principal: Principal = De
 
 @router.post("/api-keys/{key_prefix}/revoke")
 def revoke_api_key(key_prefix: str, principal: Principal = Depends(require_scope("cases:write"))):
+    if principal.auth_mode == "public_demo":
+        raise HTTPException(status_code=403, detail="API-key management is disabled in the public synthetic demo")
     if not principal.tenant_id:
         raise HTTPException(status_code=403, detail="Active tenant is required")
     try:
@@ -430,6 +432,8 @@ def revoke_api_key(key_prefix: str, principal: Principal = Depends(require_scope
 
 @router.get("/api-keys")
 def list_api_keys(principal: Principal = Depends(require_scope("cases:read"))):
+    if principal.auth_mode == "public_demo":
+        raise HTTPException(status_code=403, detail="API-key management is disabled in the public synthetic demo")
     if not principal.tenant_id:
         raise HTTPException(status_code=403, detail="Active tenant is required")
     try:
@@ -516,6 +520,8 @@ def upload_case_document(
     file: UploadFile = File(...),
     principal: Principal = Depends(require_scope("documents:write")),
 ):
+    if principal.auth_mode == "public_demo":
+        raise HTTPException(status_code=403, detail="File uploads are disabled in the public synthetic demo. Use fictional document references only.")
     try:
         case = engine.get_case(case_id)
         _authorize_case(case, principal)
@@ -951,18 +957,26 @@ def start_case(request: StartCaseRequest, principal: Principal = Depends(require
 
 
 def _authorize_case(case, principal: Principal) -> None:
-    if principal.auth_mode == "none" or principal.role.lower() == "admin":
+    if principal.auth_mode == "none":
         return
     same_owner = case.owner_user_id and case.owner_user_id == principal.subject
     same_tenant = case.tenant_id and principal.tenant_id and case.tenant_id == principal.tenant_id
+    # Tenant membership admins are not global platform administrators.
+    if principal.role.lower() == "admin":
+        if same_tenant:
+            return
+        raise HTTPException(status_code=404, detail="Case not found")
     if principal.auth_mode == "api_key" and same_tenant:
         return
     if principal.role.lower() in {"officer", "department_admin"} and same_tenant:
-        if principal.department and case.service_department:
-            if principal.department.lower() != case.service_department.lower():
-                raise HTTPException(status_code=404, detail="Case not found")
+        # Officer authority must be explicitly assigned; missing scope is not
+        # interpreted as tenant-wide access.
+        if not principal.department or not case.service_department:
+            raise HTTPException(status_code=404, detail="Case not found")
+        if principal.department.strip().casefold() != case.service_department.strip().casefold():
+            raise HTTPException(status_code=404, detail="Case not found")
         for key, value in (principal.jurisdiction or {}).items():
-            if value and case.jurisdiction.get(key) and case.jurisdiction.get(key) != value:
+            if value and str(case.jurisdiction.get(key, "")).strip().casefold() != str(value).strip().casefold():
                 raise HTTPException(status_code=404, detail="Case not found")
         return
     if same_owner and (not case.tenant_id or not principal.tenant_id or same_tenant):
@@ -976,8 +990,13 @@ def _list_visible_cases(
     limit: int = 50,
 ):
     safe_limit = max(1, min(limit, 100))
-    if principal.role.lower() == "admin" or principal.auth_mode == "none":
+    if principal.auth_mode == "none":
         return engine.store.list(status=status, limit=safe_limit)
+
+    if principal.role.lower() == "admin":
+        if not principal.tenant_id:
+            return []
+        return engine.store.list(tenant_id=principal.tenant_id, status=status, limit=safe_limit)
 
     if principal.role.lower() in {"officer", "department_admin"} and principal.tenant_id:
         candidates = engine.store.list(
@@ -1016,6 +1035,8 @@ def submit_case_documents(
     request: DocumentSubmissionRequest,
     principal: Principal = Depends(require_scope("documents:write")),
 ):
+    if principal.auth_mode == "public_demo" and any(not isinstance(document, str) for document in request.documents):
+        raise HTTPException(status_code=400, detail="Public demo accepts fictional document-type references only; do not send document contents.")
     try:
         case = engine.get_case(case_id)
         _authorize_case(case, principal)
@@ -1114,7 +1135,7 @@ def get_case(case_id: str, principal: Principal = Depends(require_scope("cases:r
 
 
 @router.post("/cases/{case_id}/human/{task_id}")
-def human_decision(case_id: str, task_id: str, request: HumanDecisionRequest, principal: Principal = Depends(require_role("officer", "department_admin", "admin"))):
+def human_decision(case_id: str, task_id: str, request: HumanDecisionRequest, principal: Principal = Depends(require_human_authority)):
     try:
         case = engine.get_case(case_id)
         _authorize_case(case, principal)

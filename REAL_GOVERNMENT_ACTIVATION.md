@@ -41,6 +41,7 @@ For the selected service, obtain a written integration packet containing:
 - approved data categories and retention rules.
 
 ### Technical contract
+- Explicit per-department `allowed_operations` allowlist: only operations approved by the system owner may be configured; an empty or missing allowlist is rejected.
 - base URL(s) and environment separation;
 - authentication mechanism and credential process;
 - API/OpenAPI documentation;
@@ -175,6 +176,6 @@ Therefore the next engineering work is adapter implementation and certification 
 
 ## 11. First target recommendation
 
-For the first real-world pilot, use one J&K service where the department can provide a clear technical owner, sandbox, authoritative rules and measurable outcome.
+Keep the product global by design, with India as the first research market; do not hard-code a single state or city as the product identity. Select the first real-world pilot only after comparing candidate workflows against pain severity, repeat volume, a named buyer/sponsor, integration permission, authoritative rules, security burden and measurable outcomes.
 
-Do not start with a multi-department mega-integration. Prove one certified workflow completely, then reuse the connector/rule/audit pattern for the next services.
+Candidate discovery tracks are contractor bill-readiness/contract dependencies, education scholarship or staff-service workflows, bank loan-file completeness, and developer permit coordination. These are hypotheses, not preselected pilots. Choose one workflow and one jurisdiction with an accountable owner, approved sandbox/interface and verifiable completion signal. Do not start with a multi-department mega-integration. Prove one workflow completely, then reuse the connector/rule/audit pattern.

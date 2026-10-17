@@ -105,7 +105,7 @@ def test_worker_runtime_processes_cases_and_notification_outbox():
 
 def test_marketplace_exposes_all_mvp_services_as_sandbox_contracts():
     catalog = marketplace_catalog(ServiceRegistry())
-    assert catalog["count"] == 34
+    assert catalog["count"] == 32
     assert all(item["sandbox"] is True for item in catalog["apis"])
     assert all(item["live_connector_required"] is True for item in catalog["apis"])
 

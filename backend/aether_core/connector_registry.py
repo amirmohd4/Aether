@@ -41,6 +41,15 @@ class ConnectorRegistry:
                 raise RuntimeError(
                     f"Production connector config for {department} needs bearer_token"
                 )
+            allowed_operations = {
+                str(op).strip()
+                for op in (config.get("allowed_operations") or [])
+                if str(op).strip()
+            }
+            if not allowed_operations:
+                raise RuntimeError(
+                    f"Production connector config for {department} needs a non-empty allowed_operations list"
+                )
             base_url = str(config["base_url"]).rstrip("/")
             if not base_url.startswith("https://"):
                 raise RuntimeError(
@@ -53,11 +62,7 @@ class ConnectorRegistry:
                     base_url=base_url,
                     bearer_token=str(config["bearer_token"]) if config.get("bearer_token") else None,
                     timeout_seconds=float(config.get("timeout_seconds", 10)),
-                    allowed_operations={
-                        str(op)
-                        for op in (config.get("allowed_operations") or [])
-                        if str(op).strip()
-                    },
+                    allowed_operations=allowed_operations,
                 ),
             )
 
