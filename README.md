@@ -9,8 +9,12 @@ Aether GovOS is an early-stage government-workflow orchestration prototype. It e
 ## Research and strategy
 
 - [Market research and product strategy](docs/MARKET_RESEARCH_AND_PRODUCT_STRATEGY.md)
-- [India administrative service atlas](docs/INDIA_ADMINISTRATIVE_SERVICE_ATLAS.md) — department/service families, current systems to investigate, workflow stages, buyer hypotheses, automation boundaries and official source links
-- [Administrative workflow research register](docs/ADMINISTRATIVE_WORKFLOW_RESEARCH_REGISTER.md) — ranked discovery hypotheses, disconfirmation questions and pilot gates
+- [India administrative service atlas](docs/INDIA_ADMINISTRATIVE_SERVICE_ATLAS.md) — service families, current systems to investigate, workflows, buyer hypotheses, automation boundaries and official sources
+- [Administrative workflow research register](docs/ADMINISTRATIVE_WORKFLOW_RESEARCH_REGISTER.md) — discovery hypotheses, disconfirmation questions and pilot gates
+- [Education scholarship workflow dossier](docs/workflow-dossiers/EDU-01-scholarship-case.md) — application, verification, sanction, payment and exception handling
+- [Contractor tender-to-payment workflow dossier](docs/workflow-dossiers/GOV-03-contractor-tender-to-payment.md) — tender, contract execution, bill readiness and payment reconciliation
+
+These are desk-research assets, not validated live process maps or proof of customer demand. Every production workflow must be checked against current rules, the exact jurisdiction, the system of record and authorised access.
 
 ## Public research preview
 
