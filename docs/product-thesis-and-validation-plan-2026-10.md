@@ -163,3 +163,21 @@ Keep the current shared workflow backbone but make the product less like a gener
 - Search is a continuing evidence-gathering process, not a literal exhaustive audit of every social network or all official statements.
 - All production rules must be checked against current primary law, official service rules and department instructions before being used in live execution.
 - This file is a product strategy artifact, not legal advice or proof of customer demand.
+
+
+## Addendum — Parliamentary evidence strengthens the coordination thesis (19 October 2026)
+
+The Rajya Sabha Department-related Parliamentary Standing Committee on Commerce's 201st report, *Doing Business in India: The Way Forward* (7 August 2026), is unusually relevant because it heard from government departments, GeM, industry bodies (CII/FICCI/FIEO), banks and financial institutions. Its published recommendations state that:
+- approvals and NOCs remain time-consuming despite single-window systems;
+- overlapping licences and separate inspections create duplicate work;
+- local-level compliance remains a gap even after central reforms;
+- NSWS has API-based links to state single-window systems, yet implementation on the ground remains slower than the promise;
+- authorities should publish timelines and performance data, improve grievance handling, and measure outcomes through ground-reality verification rather than paperwork alone.
+
+Source: https://www.pib.gov.in/PressReleasePage.aspx?PRID=2296240  
+Independent summary: https://prsindia.org/policy/report-summaries/doing-business-in-india-the-way-forward
+
+**Strategic implication:** the market is not waiting for another form portal. It needs the journey after the form: dependency coordination, deadline ownership, evidence continuity, exception resolution, and verified outcomes across systems. However, Aether must not assume it can grant statutory "deemed approvals" or change legal timelines. Those are legislative/policy decisions; Aether can measure clocks, issue permitted reminders/escalations, and act on an approved rule only where the competent authority has established it.
+
+The report also increases the competitive bar: NSWS and state single-window systems are direct adjacent infrastructure. Aether must demonstrate complementary value through an integration-first architecture and a measurable before/after pilot, not claim the whole single-window category is unserved.
+
