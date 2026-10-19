@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { GlobalMockStudio } from '../components/GlobalMockStudio';
 import {
   Activity, ArrowRight, CheckCircle2, CircleAlert, FileText,
   Globe2, Loader2, ShieldCheck, UserRound, RefreshCw
@@ -159,6 +160,17 @@ type CaseResponse = {
 };
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8081';
+const publicDemo = import.meta.env.VITE_PUBLIC_DEMO === 'true';
+
+function getPublicDemoSession(): string {
+  const key = 'aether.public_demo_session';
+  let sessionId = window.localStorage.getItem(key);
+  if (!sessionId) {
+    sessionId = crypto.randomUUID();
+    window.localStorage.setItem(key, sessionId);
+  }
+  return sessionId;
+}
 
 const DEMO_DOCUMENTS = [
   'identity_document',
@@ -197,9 +209,9 @@ function taskList(tasks: CaseResponse['tasks']): Task[] {
 export const AetherCommandCenter: React.FC = () => {
   const [objective, setObjective] = useState('I want to open a restaurant');
   const [customerType, setCustomerType] = useState('business');
-  const [country, setCountry] = useState('India');
-  const [state, setState] = useState('Jammu and Kashmir');
-  const [district, setDistrict] = useState('Jammu');
+  const [country, setCountry] = useState('Global mock environment');
+  const [state, setState] = useState('');
+  const [district, setDistrict] = useState('');
   const [caseData, setCaseData] = useState<CaseResponse | null>(null);
   const [preflightSimulation, setPreflightSimulation] = useState<{
     status: string;
@@ -397,11 +409,14 @@ export const AetherCommandCenter: React.FC = () => {
   }, [caseData]);
 
   const authHeaders = () => {
-    if (!session?.access_token) return {};
-    return {
-      Authorization: `Bearer ${session.access_token}`,
-      ...(selectedTenantId ? { 'X-Aether-Tenant-ID': selectedTenantId } : {}),
-    };
+    const headers: Record<string, string> = {};
+    if (session?.access_token) {
+      headers.Authorization = `Bearer ${session.access_token}`;
+    } else if (publicDemo) {
+      headers['X-Aether-Demo-Session'] = getPublicDemoSession();
+    }
+    if (selectedTenantId) headers['X-Aether-Tenant-ID'] = selectedTenantId;
+    return headers;
   };
 
   const tenantSelectionRequired = tenantOptions.length > 1 && !selectedTenantId;
@@ -743,14 +758,6 @@ export const AetherCommandCenter: React.FC = () => {
             className="w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm"
           />
           {authMessage && <p className="mt-3 text-xs text-cyan-200">{authMessage}</p>}
-                    <button
-            type="button"
-            onClick={simulateProcess}
-            disabled={!objective.trim() || loading}
-            className="mr-2 rounded-xl border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-[10px] font-semibold text-cyan-100 hover:bg-cyan-300/15 disabled:opacity-50"
-          >
-            Pre-check journey
-          </button>
 <button
             onClick={submitAuth}
             disabled={authLoading || !authEmail || !authPassword}
@@ -772,13 +779,18 @@ export const AetherCommandCenter: React.FC = () => {
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100">
       <div className="mx-auto max-w-7xl px-5 py-8 lg:px-8">
+        {publicDemo && (
+          <div role="alert" className="mb-6 rounded-xl border border-amber-300/30 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">
+            <strong>Public synthetic sandbox.</strong> Use fictional examples only. No government systems are connected, and no official decision is made. Real document uploads and API-key management are disabled.
+          </div>
+        )}
         <header className="mb-8 flex flex-col gap-4 border-b border-white/10 pb-6 md:flex-row md:items-end md:justify-between">
           <div>
             <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-cyan-300">
               <Globe2 className="h-4 w-4" /> Aether GovOS
             </div>
             <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
-              Tell Aether the outcome. Aether executes the work.
+              Describe the outcome. Explore how Aether could coordinate the work.
             </h1>
             <p className="mt-2 max-w-3xl text-sm text-slate-400">
               Objective → understanding → requirements → work graph → parallel execution → verification → human authority → outcome.
@@ -813,11 +825,13 @@ export const AetherCommandCenter: React.FC = () => {
           </div>
         </header>
 
+        <GlobalMockStudio />
+
         <section className="grid gap-6 lg:grid-cols-[380px_1fr]">
           <aside className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
             <h2 className="text-lg font-semibold">Start a case</h2>
             <p className="mt-1 text-xs text-slate-400">
-              Describe the real-world objective instead of navigating department forms.
+              Describe a fictional service outcome instead of navigating department forms. This workspace currently uses synthetic systems only.
             </p>
 
             <button
@@ -858,6 +872,36 @@ export const AetherCommandCenter: React.FC = () => {
               onChange={(e) => setObjective(e.target.value)}
               className="mt-2 h-24 w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm outline-none focus:border-cyan-400"
             />
+            <button
+              type="button"
+              onClick={simulateProcess}
+              disabled={!objective.trim() || loading || tenantSelectionRequired}
+              className="mt-2 w-full rounded-xl border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-xs font-semibold text-cyan-100 hover:bg-cyan-300/15 disabled:opacity-50"
+            >
+              Pre-check synthetic journey
+            </button>
+            {preflightSimulation && (
+              <div className="mt-3 rounded-xl border border-white/10 bg-black/10 p-3 text-xs">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-semibold text-slate-200">Pre-check result</span>
+                  <span className="rounded-full border border-cyan-300/20 px-2 py-1 text-[10px] text-cyan-100">{preflightSimulation.status.replaceAll('_', ' ')}</span>
+                </div>
+                {preflightSimulation.blockers.length > 0 && (
+                  <ul className="mt-2 list-disc space-y-1 pl-4 text-amber-200">
+                    {preflightSimulation.blockers.map((item, index) => <li key={item.code + index}>{item.message}</li>)}
+                  </ul>
+                )}
+                {preflightSimulation.warnings.length > 0 && (
+                  <ul className="mt-2 list-disc space-y-1 pl-4 text-slate-300">
+                    {preflightSimulation.warnings.map((item, index) => <li key={item.code + index}>{item.message}</li>)}
+                  </ul>
+                )}
+                {preflightSimulation.next_steps.length > 0 && (
+                  <div className="mt-2 text-slate-300"><span className="font-semibold">Next steps:</span> {preflightSimulation.next_steps.join(' · ')}</div>
+                )}
+                <p className="mt-2 text-[10px] text-slate-500">Synthetic pre-check only; no official system or record was queried.</p>
+              </div>
+            )}
 
             <label className="mt-4 block text-xs font-semibold text-slate-300">Customer</label>
             <select
@@ -873,10 +917,14 @@ export const AetherCommandCenter: React.FC = () => {
               <option value="citizen">Citizen</option>
             </select>
 
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              <input value={country} onChange={(e) => setCountry(e.target.value)} className="rounded-lg border border-white/10 bg-slate-900 p-2 text-xs" />
-              <input value={state} onChange={(e) => setState(e.target.value)} className="rounded-lg border border-white/10 bg-slate-900 p-2 text-xs" />
-              <input value={district} onChange={(e) => setDistrict(e.target.value)} className="rounded-lg border border-white/10 bg-slate-900 p-2 text-xs" />
+            <div className="mt-4">
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">Jurisdiction context (optional; mock mode)</p>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                <input aria-label="Country or global demo context" placeholder="Global mock environment / country" value={country} onChange={(e) => setCountry(e.target.value)} className="min-w-0 rounded-lg border border-white/10 bg-slate-900 p-2 text-xs" />
+                <input aria-label="State or region" placeholder="State / region (optional)" value={state} onChange={(e) => setState(e.target.value)} className="min-w-0 rounded-lg border border-white/10 bg-slate-900 p-2 text-xs" />
+                <input aria-label="District or locality" placeholder="District / locality (optional)" value={district} onChange={(e) => setDistrict(e.target.value)} className="min-w-0 rounded-lg border border-white/10 bg-slate-900 p-2 text-xs" />
+              </div>
+              <p className="mt-1 text-[10px] text-slate-500">These fields provide context only; they do not load verified local legal rules.</p>
             </div>
 
             <label className="mt-4 flex items-center gap-2 text-xs text-slate-300">
@@ -898,7 +946,7 @@ export const AetherCommandCenter: React.FC = () => {
             <div className="mt-3 rounded-xl border border-cyan-300/10 bg-cyan-300/5 p-3 text-[11px] text-cyan-100">
               {useDemoEvidence
                 ? 'Demo mode supplies synthetic document types so the execution graph can be exercised end-to-end.'
-                : 'Guided intake mode creates the real case first and lets you record required document types before Aether executes.'}
+                : 'Guided intake mode creates a synthetic demo case and lets you record mock document types. It does not submit an official application.'}
             </div>
 
             <button
@@ -907,7 +955,7 @@ export const AetherCommandCenter: React.FC = () => {
               className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-400 px-4 py-3 text-sm font-bold text-slate-950 disabled:opacity-50"
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
-              Start Aether execution
+              Run workflow simulation
             </button>
 
             {caseData && (
@@ -916,7 +964,7 @@ export const AetherCommandCenter: React.FC = () => {
                 disabled={loading}
                 className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-slate-200 disabled:opacity-50"
               >
-                <RefreshCw className="h-3.5 w-3.5" /> Run another case
+                <RefreshCw className="h-3.5 w-3.5" /> Run another simulation
               </button>
             )}
 
@@ -1089,7 +1137,7 @@ export const AetherCommandCenter: React.FC = () => {
                   <Activity className="mx-auto h-10 w-10 text-cyan-300" />
                   <h2 className="mt-4 text-xl font-semibold">No active case</h2>
                   <p className="mt-2 text-sm text-slate-400">
-                    Try a restaurant, property-loan, factory/project, licence, certificate, or other service from the 34-service MVP catalog.
+                    Try a restaurant, property-loan, factory/project, licence, certificate, or other service from the 32-service MVP catalogue.
                   </p>
                 </div>
               </div>
@@ -1338,33 +1386,35 @@ export const AetherCommandCenter: React.FC = () => {
                       Record selected document types
                     </button>
 
-                    <div className="mt-4 rounded-xl border border-white/10 bg-slate-950/40 p-3">
-                      <p className="text-[11px] font-semibold text-slate-200">Upload actual document</p>
-                      <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
-                        <select
-                          value={uploadDocumentType}
-                          onChange={(e) => setUploadDocumentType(e.target.value)}
-                          className="rounded-lg border border-white/10 bg-slate-900 p-2 text-xs"
-                        >
-                          <option value="">Choose required type</option>
-                          {missingDocuments.map((document) => (
-                            <option key={document} value={document}>{document}</option>
-                          ))}
-                        </select>
-                        <input
-                          type="file"
-                          onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
-                          className="rounded-lg border border-white/10 bg-slate-900 p-2 text-xs text-slate-300"
-                        />
-                        <button
-                          onClick={uploadDocument}
-                          disabled={loading || !uploadDocumentType || !uploadFile}
-                          className="rounded-lg border border-cyan-300/20 px-3 py-2 text-xs font-bold text-cyan-100 disabled:opacity-50"
-                        >
-                          Upload
-                        </button>
+                    {!publicDemo && (
+                      <div className="mt-4 rounded-xl border border-white/10 bg-slate-950/40 p-3">
+                        <p className="text-[11px] font-semibold text-slate-200">Upload actual document</p>
+                        <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+                          <select
+                            value={uploadDocumentType}
+                            onChange={(e) => setUploadDocumentType(e.target.value)}
+                            className="rounded-lg border border-white/10 bg-slate-900 p-2 text-xs"
+                          >
+                            <option value="">Choose required type</option>
+                            {missingDocuments.map((document) => (
+                              <option key={document} value={document}>{document}</option>
+                            ))}
+                          </select>
+                          <input
+                            type="file"
+                            onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+                            className="rounded-lg border border-white/10 bg-slate-900 p-2 text-xs text-slate-300"
+                          />
+                          <button
+                            onClick={uploadDocument}
+                            disabled={loading || !uploadDocumentType || !uploadFile}
+                            className="rounded-lg border border-cyan-300/20 px-3 py-2 text-xs font-bold text-cyan-100 disabled:opacity-50"
+                          >
+                            Upload
+                          </button>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 )}
 

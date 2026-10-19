@@ -33,3 +33,30 @@ def test_restaurant_full_vertical_slice_resumes_after_inspection_and_approval():
     assert case.tasks["record_update"].status == TaskStatus.COMPLETED
     assert case.tasks["certificate"].status == TaskStatus.COMPLETED
     assert case.outcome["status"] == "completed"
+
+def test_missing_required_documents_stop_before_downstream_execution():
+    engine = AetherExecutionEngine()
+    case = engine.create_case(
+        objective="I want to open a restaurant",
+        customer_type="business",
+        jurisdiction={"country": "India", "state": "Jammu and Kashmir", "district": "Jammu"},
+        inputs={
+            "owner_name": "Synthetic Missing-Docs Applicant",
+            "parcel_id": "P-MISSING-DOCS",
+            "area": 2.0,
+            "documents": ["identity_document"],
+            "enforce_intake_gate": True,
+        },
+    )
+
+    paused = engine.execute_until_pause(case.case_id)
+
+    assert paused.status == "waiting_for_human"
+    assert paused.tasks["document_intake"].status == TaskStatus.HUMAN_REVIEW
+    assert paused.tasks["premises_check"].status != TaskStatus.COMPLETED
+    assert paused.tasks["certificate"].status != TaskStatus.COMPLETED
+    assert any(
+        exception.get("type") == "DOC-MISSING"
+        for exception in paused.exceptions
+    )
+

@@ -127,3 +127,60 @@ def test_supabase_auth_refuses_arbitrary_tenant_selection(monkeypatch):
         "X-Aether-Tenant-ID": "tenant-a",
     }))
     assert principal.tenant_id == "tenant-a"
+
+
+def test_demo_header_cannot_bypass_auth_when_public_demo_is_disabled(monkeypatch):
+    monkeypatch.setenv("AETHER_ENV", "staging")
+    monkeypatch.setenv("AETHER_AUTH_MODE", "supabase")
+    monkeypatch.setenv("AETHER_PUBLIC_DEMO", "false")
+
+    try:
+        require_principal(_request({
+            "X-Aether-Demo-Session": "123e4567-e89b-42d3-a456-426614174000",
+        }))
+    except HTTPException as exc:
+        assert exc.status_code == 401
+        assert "bearer" in exc.detail.lower()
+    else:
+        raise AssertionError("a demo-session header must not bypass Supabase authentication")
+
+
+def test_public_demo_fails_closed_in_production(monkeypatch):
+    monkeypatch.setenv("AETHER_ENV", "production")
+    monkeypatch.setenv("AETHER_AUTH_MODE", "supabase")
+    monkeypatch.setenv("AETHER_PUBLIC_DEMO", "true")
+    monkeypatch.setenv("AETHER_ENABLE_PRODUCTION_CONNECTORS", "false")
+
+    try:
+        require_principal(_request({
+            "X-Aether-Demo-Session": "123e4567-e89b-42d3-a456-426614174000",
+        }))
+    except HTTPException as exc:
+        assert exc.status_code == 500
+        assert "safety configuration" in exc.detail.lower()
+    else:
+        raise AssertionError("public demo must be rejected in production")
+
+
+def test_public_demo_sessions_are_isolated_and_require_valid_uuids(monkeypatch):
+    monkeypatch.setenv("AETHER_ENV", "staging")
+    monkeypatch.setenv("AETHER_AUTH_MODE", "supabase")
+    monkeypatch.setenv("AETHER_PUBLIC_DEMO", "true")
+    monkeypatch.setenv("AETHER_ENABLE_PRODUCTION_CONNECTORS", "false")
+
+    first = require_principal(_request({
+        "X-Aether-Demo-Session": "123e4567-e89b-42d3-a456-426614174000",
+    }))
+    second = require_principal(_request({
+        "X-Aether-Demo-Session": "123e4567-e89b-42d3-a456-426614174001",
+    }))
+    assert first.auth_mode == "public_demo"
+    assert first.role == "demo"
+    assert first.tenant_id != second.tenant_id
+
+    try:
+        require_principal(_request({"X-Aether-Demo-Session": "not-a-uuid"}))
+    except HTTPException as exc:
+        assert exc.status_code == 400
+    else:
+        raise AssertionError("malformed public demo session identifiers must be rejected")

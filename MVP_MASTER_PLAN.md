@@ -2,7 +2,9 @@
 
 ## Product target
 
-Aether is a Government Operating System / execution layer. The controlled MVP supports one shared execution backbone for citizens, businesses, banks/NBFCs, developers/real-estate, insurers, enterprises and government officers.
+Aether is an Administrative Execution OS: a governed, cross-organisation execution layer. One shared core supports citizens, businesses, banks/NBFCs, developers/real-estate, insurers, enterprises, contractors, education departments and public officers through validated vertical workflow packs. The platform coordinates existing systems rather than assuming it replaces each system of record.
+
+The long-term vision spans education and public administration ministries, local government, public works, regulated financial services and enterprise compliance. The first commercial workflow must be chosen using evidence of pain, budget ownership, reachable buyers, integration permission and measurable ROI—not by adding catalogue breadth.
 
 Core promise:
 
@@ -10,17 +12,17 @@ Objective → understand → discover requirements → create case → build gov
 
 ## Controlled-MVP status
 
-**Controlled/sandbox MVP: COMPLETE.**
+**Controlled/sandbox software: implemented; research-preview CI and smoke checks: passing. Production release gate: NOT COMPLETE.**
 
-The planned controlled-MVP software and deployment gate are complete. Aether can run deterministic, non-authoritative government execution scenarios using the unified Command Center, persistent case/work-graph engine, worker runtime, private document storage, audit trail, RBAC and service marketplace.
+The controlled software path can run deterministic, non-authoritative workflow scenarios through the unified Command Center, case/work-graph engine, worker runtime, document storage, audit trail, RBAC and service marketplace. The public research-preview branch has passing backend tests, frontend build checks, and synthetic-demo smoke tests. These checks do not by themselves verify the production-domain frontend, production Render/Supabase runtime, feedback delivery, rollback readiness, or any live government integration.
 
-This is a release status for the controlled/sandbox product, not a claim of live government authority.
+This status describes the controlled software and its preview checks—not production approval or live government authority.
 
 ## Completed product backbone
 
 - Objective understanding with ranked service candidates and ambiguity stop
 - Requirements discovery with source provenance/authority status
-- 34-service shared registry and marketplace
+- 32-service non-judicial shared registry and marketplace
 - Government ontology
 - Dependency-aware work graphs and parallel task execution
 - Durable queue, retries, idempotency, checkpoints and case leases
@@ -38,41 +40,27 @@ This is a release status for the controlled/sandbox product, not a claim of live
 - Operator analytics
 - Unified Aether Command Center
 - Worker runtime with durable leases and notification dispatch
-- Render deployment with managed-Postgres migration discipline and database-ready worker
-- Vercel frontend deployment and SPA fallback
-- Supabase RLS/security hardening
-- Automated backend/frontend CI and deployed smoke testing
+- Backend/worker deployment architecture with managed-Postgres migration discipline
+- Netlify-hosted public research preview with a separate synthetic-only Render demo backend
+- Supabase RLS/security hardening in the codebase and migration set
+- Automated backend/frontend CI and synthetic-preview smoke tests
 
 ## Deployment validation completed
 
 ### GitHub
-The final release line has passing backend tests, frontend build/typecheck and deployment smoke testing.
+The current `launch/public-research-preview` head (`099d3e558bfa9224fc1fb6115a1a7d2d4b5582ac`) has passing backend tests, frontend build/typecheck, public-launch asset checks, autonomy benchmark, and synthetic public-demo smoke tests. The production-domain deployment and rollback gate are not certified by these preview checks.
 
-### Supabase
-The connected Aether project has the required persistence/operational migrations applied, the private document bucket, RLS enabled on the exposed legacy and internal execution data, explicit server-only runtime policies, and no current security-advisor lints.
+### Production Supabase and Render
+The production Supabase/Render state must be re-verified against the currently intended production project and service before release. Do not infer production health from a successful research-preview build or from the separate public-demo deployment. Confirm migrations, RLS/security-advisor findings, `/health`, `/ready`, database readiness, worker ticks, runtime permissions, and rollback behavior during the production release gate.
 
-The runtime database role has only the access needed by the Aether server/worker and does not require database/schema creation privileges.
-
-### Render
-The Aether backend is live at the configured Render URL.
-
-Verified:
-- Docker release starts successfully
-- `/health` returns HTTP 200
-- `/ready` reports the database ready
-- worker connects to Supabase successfully
-- worker produces successful durable ticks
-- managed PostgreSQL is migration-owned; runtime no longer attempts schema creation
-- worker failure backoff protects the service from connection storms
-
-### Vercel
-The Aether Command Center frontend is deployed successfully through the connected Vercel projects. Netlify is no longer part of the official deployment stack.
+### Netlify and Render — current public research preview
+The current public research preview is hosted on Netlify and uses a separate Render service (`aether-public-demo`) for synthetic-only backend requests. The public preview must not use production credentials or live government connectors. The Netlify production-domain deploy and the separate production Render/Supabase runtime must be verified independently before any production release; a ready deploy preview is not evidence that the production stack is approved or healthy.
 
 ## Controlled-MVP boundaries
 
 The controlled MVP intentionally uses deterministic synthetic government integrations. It does not issue official government decisions/documents and does not represent live government authority.
 
-The 34-service catalog shares a common execution backbone. Some services have deeper domain-specific workflow templates than others; this is a deliberate controlled-MVP scope choice, not a silent claim that every jurisdiction has fully modeled legal procedures.
+The canonical user-facing catalog contains 32 non-judicial synthetic service templates and shares a common execution backbone. Some services have deeper domain-specific workflow templates than others; this is a deliberate controlled-MVP scope choice, not a claim that every jurisdiction has fully modeled legal procedures.
 
 ## Production / scale work after MVP
 
@@ -103,9 +91,14 @@ A legacy file is deleted only when:
 
 ## Next product phase
 
-See `REAL_GOVERNMENT_ACTIVATION.md` for the production activation workflow. The next phase is authorized real-world integration, not more controlled-MVP scaffolding:
-- onboard the first government sandbox/certified connector;
-- load authoritative rule packs;
-- configure production providers;
-- execute security/load validation;
-- then promote the controlled deployment posture toward real production.
+See `docs/MARKET_RESEARCH_AND_PRODUCT_STRATEGY.md` for the evidence-backed market thesis, `docs/ADMINISTRATIVE_WORKFLOW_RESEARCH_REGISTER.md` for candidate workflows and validation criteria, and `REAL_GOVERNMENT_ACTIVATION.md` for live-integration controls.
+
+The immediate next phase is **market validation plus one measurable vertical workflow**, not broad feature expansion:
+1. Build and maintain a source-backed inventory of real administrative workflows across contractor operations, education administration and bank operations.
+2. Verify the current procedure, role, system of record, rules, exception path, buyer, incumbent tools and integration access for each candidate.
+3. Select one workflow only after a named design partner/sponsor, baseline data and permitted test path are plausible.
+4. Measure staff minutes, elapsed time, handoffs, rework, first-pass completeness, correct verified outcomes and exceptions before/after.
+5. Implement a vertical pack on the shared execution core, test failure recovery and authority boundaries, then run an authorised sandbox or controlled pilot.
+6. Activate live connectors only after the production checklist in `REAL_GOVERNMENT_ACTIVATION.md` is satisfied and release approval is explicit.
+
+Do not claim customer demand, time savings, live integrations or profitability before measured evidence exists.

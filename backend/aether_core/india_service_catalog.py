@@ -120,8 +120,6 @@ INDIA_SERVICE_FAMILY_DEFINITIONS = [
     ("rti_first_appeal", "RTI First Appeal", "Information Commission", ["citizen", "business"], ["rti first appeal", "first appeal rti"], None, "rti_appeal"),
     ("government_grievance", "Government Grievance/Complaint", "Grievance", ["citizen", "business"], ["government grievance", "public grievance", "complaint government"], None, "grievance_resolution"),
     ("legal_aid_application", "Legal Aid Application", "Legal Services Authority", ["citizen"], ["legal aid", "free legal aid", "legal services authority"], None, "legal_aid"),
-    ("court_certified_copy", "Court Certified Copy", "Courts", ["citizen", "business"], ["court certified copy", "certified court order", "court document copy"], None, "certified_court_copy"),
-    ("court_case_filing_online", "Online Court Case Filing", "Courts", ["citizen", "business"], ["online court filing", "e filing court", "efile case"], None, "case_filing"),
 
     # Passport, citizenship and travel
     ("passport_renewal", "Passport Renewal", "Passport", ["citizen"], ["passport renewal", "renew passport"], None, "renewed_passport"),
