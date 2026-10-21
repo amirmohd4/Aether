@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 from datetime import date
 from decimal import Decimal, InvalidOperation
-from typing import Any, Iterable, Mapping, Sequence
+from typing import Any, Mapping, Sequence
 
 
 @dataclass(frozen=True)
@@ -51,13 +51,28 @@ def assess_delivery_risks(project: Mapping[str, Any]) -> dict[str, Any]:
     forecast = _decimal(project.get("forecast_cost"))
     contingency = _decimal(project.get("contingency_percent"))
 
+    # Assess the budget baseline and cost forecast independently: one missing
+    # field must not hide the uncertainty in another field.
     if budget is None:
         findings.append(Finding(
             "budget_unknown", "info", "Budget baseline missing",
             "A budget variance cannot be calculated until an approved budget is supplied.",
             ("approved_budget",),
         ))
-    elif forecast is not None and budget > 0:
+    elif budget <= 0:
+        findings.append(Finding(
+            "invalid_budget", "warning", "Budget baseline is invalid",
+            "Budget must be greater than zero before a percentage variance can be calculated.",
+            ("approved_budget",),
+        ))
+
+    if forecast is None:
+        findings.append(Finding(
+            "forecast_unknown", "warning", "Cost-to-complete unknown",
+            "No forecast cost was supplied, so final cost exposure cannot be assessed.",
+            ("cost_to_complete_forecast",),
+        ))
+    elif budget is not None and budget > 0:
         variance = (forecast - budget) / budget * Decimal("100")
         if variance > 0:
             severity = "critical" if variance >= Decimal("10") else "warning"
@@ -73,12 +88,6 @@ def assess_delivery_risks(project: Mapping[str, Any]) -> dict[str, Any]:
                 "Forecast is below the supplied budget; confirm scope and committed costs are complete.",
                 ("latest_cost_report",),
             ))
-    elif forecast is None:
-        findings.append(Finding(
-            "forecast_unknown", "warning", "Cost-to-complete unknown",
-            "No forecast cost was supplied, so final cost exposure cannot be assessed.",
-            ("cost_to_complete_forecast",),
-        ))
 
     if budget is not None and committed is not None and budget > 0 and committed > budget:
         findings.append(Finding(
@@ -171,7 +180,7 @@ def assess_delivery_risks(project: Mapping[str, Any]) -> dict[str, Any]:
         if status not in {"paid", "settled", "rejected", "cancelled"} and claim.get("evidence_complete") is not True:
             findings.append(Finding(
                 "payment_claim_evidence_incomplete", "warning", "Payment claim lacks complete evidence",
-                "Do not infer that a claim is payable. Identify the contractually required evidence and obtain the responsible reviewer’s decision.",
+                "Do not infer that a claim is payable. Identify the contractually required evidence and obtain the responsible reviewer's decision.",
                 ("signed_measurement_or_milestone_record", "invoice", "required_approvals"),
             ))
 
