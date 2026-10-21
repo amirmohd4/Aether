@@ -8,6 +8,9 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
+from sqlalchemy import text
+
+from backend.database import SessionLocal
 
 from .admin_automation import plan_administrative_actions
 from .admin_action_queue import AdminActionQueue
@@ -306,9 +309,26 @@ def assign_administrative_work_item(
     items = _action_queue.list_work_items_for_case(case_id=case_id, tenant_id=tenant_id)
     if not any(item["work_item_id"] == work_item_id for item in items):
         raise HTTPException(status_code=404, detail="Work item not found")
+    assignee = request.assigned_to.strip()
+    if not assignee:
+        raise HTTPException(status_code=422, detail="A non-empty assignee identity is required")
+    if principal.auth_mode != "none":
+        try:
+            with SessionLocal() as db:
+                member = db.execute(
+                    text(
+                        "SELECT user_id FROM public.aether_memberships "
+                        "WHERE user_id = :user_id AND tenant_id = :tenant_id AND status = 'active' LIMIT 1"
+                    ),
+                    {"user_id": assignee, "tenant_id": tenant_id},
+                ).first()
+        except Exception as exc:
+            raise HTTPException(status_code=503, detail="Tenant membership store unavailable") from exc
+        if not member:
+            raise HTTPException(status_code=422, detail="Assignee must be an active member of this tenant")
     try:
         result = _action_queue.assign_work_item(
-            work_item_id=work_item_id, tenant_id=tenant_id, assignee=request.assigned_to.strip()
+            work_item_id=work_item_id, tenant_id=tenant_id, assignee=assignee
         )
         return {"work_item": result}
     except KeyError:
