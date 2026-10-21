@@ -33,6 +33,17 @@ type QueuedAction = {
   outcome?: { verified?: boolean; external_effect?: boolean; next_step?: string } | null;
 };
 
+type WorkItem = {
+  work_item_id: string;
+  title: string;
+  department: string;
+  priority: string;
+  status: string;
+  required_evidence: string[];
+  assigned_to?: string | null;
+  created_at: string;
+};
+
 type DeliveryReport = {
   case_id: string;
   mode: string;
@@ -59,6 +70,7 @@ export const DeliveryOpsConsole: React.FC = () => {
   const [loadingReport, setLoadingReport] = useState(false);
   const [error, setError] = useState('');
   const [queuedActions, setQueuedActions] = useState<QueuedAction[]>([]);
+  const [workItems, setWorkItems] = useState<WorkItem[]>([]);
   const [actionBusy, setActionBusy] = useState('');
   const [actionMessage, setActionMessage] = useState('');
 
@@ -94,8 +106,10 @@ export const DeliveryOpsConsole: React.FC = () => {
       const body = await response.json();
       if (!response.ok) throw new Error(body.detail || `Action list returned ${response.status}`);
       setQueuedActions((body.actions || []) as QueuedAction[]);
+      setWorkItems((body.work_items || []) as WorkItem[]);
     } catch (err) {
       setQueuedActions([]);
+      setWorkItems([]);
       setError(err instanceof Error ? err.message : 'Unable to load administrative work items');
     }
   }, [authRequired, session, headers]);
@@ -170,6 +184,7 @@ export const DeliveryOpsConsole: React.FC = () => {
       void loadQueuedActions(selectedCase);
     } else {
       setQueuedActions([]);
+      setWorkItems([]);
     }
   }, [selectedCase, analyzeCase, loadQueuedActions]);
 
@@ -312,6 +327,26 @@ export const DeliveryOpsConsole: React.FC = () => {
                 ))}
               </div>
             )}
+            <div className="mt-6 border-t border-white/10 pt-5">
+              <h4 className="text-sm font-semibold">Materialized work items ({workItems.length})</h4>
+              <p className="mt-1 text-xs text-slate-500">These records survive worker restarts. A status of open means assigned staff still need to act.</p>
+              {workItems.length === 0 ? (
+                <p className="mt-3 text-xs text-slate-500">No durable work items created yet. Queue an eligible proposal and run the authenticated dispatcher.</p>
+              ) : (
+                <div className="mt-3 space-y-2">
+                  {workItems.map((item) => (
+                    <article key={item.work_item_id} className="rounded-lg border border-emerald-300/10 bg-emerald-300/[0.03] p-3">
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <p className="text-sm font-medium">{item.title}</p>
+                        <span className="rounded-full bg-emerald-300/10 px-2 py-1 text-[10px] uppercase text-emerald-100">{item.status}</span>
+                      </div>
+                      <p className="mt-1 text-xs text-slate-400">{item.department} · {item.priority} priority · {item.work_item_id}</p>
+                      {item.required_evidence.length > 0 && <p className="mt-2 text-[10px] text-slate-500">Evidence requested: {item.required_evidence.join(', ')}</p>}
+                    </article>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </>
       )}
