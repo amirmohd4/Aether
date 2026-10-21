@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
 
+from .admin_automation import plan_administrative_actions
 from .delivery_intelligence import assess_delivery_risks
 from .engine import engine
 from .routes import _authorize_case
@@ -83,7 +84,7 @@ def case_delivery_intelligence(
     case_id: str,
     principal: Principal = Depends(require_scope("cases:read")),
 ):
-    """Summarize project risks and cross-department handoffs for an authorized case."""
+    """Summarize risks, handoffs, and proposed administrative actions for a case."""
     try:
         case = engine.get_case(case_id)
         _authorize_case(case, principal)
@@ -92,8 +93,6 @@ def case_delivery_intelligence(
 
     raw = case.inputs.get("delivery_project")
     project = dict(raw) if isinstance(raw, dict) else {}
-    # Accept only the known advisory input fields; arbitrary case metadata is
-    # never passed into the risk engine as if it were a validated project fact.
     fields = (
         "budget", "committed_cost", "forecast_cost", "contingency_percent",
         "planned_finish", "forecast_finish", "permits", "milestones",
@@ -124,7 +123,6 @@ def case_delivery_intelligence(
         })
 
     completed_values = {"completed", "complete", "accepted", "closed"}
-    waiting_values = {"pending", "ready", "blocked", "exception", "human_review", "running"}
     handoffs = []
     by_id = {row["task_id"]: row for row in task_rows}
     for row in task_rows:
@@ -150,6 +148,11 @@ def case_delivery_intelligence(
         })
 
     risks = assess_delivery_risks(project)
+    admin_plan = plan_administrative_actions(
+        case.case_id,
+        risks["findings"],
+        handoffs,
+    )
     return {
         "case_id": case.case_id,
         "objective": case.objective,
@@ -165,8 +168,10 @@ def case_delivery_intelligence(
             "human_authority_count": sum(1 for row in handoffs if row["human_authority_required"]),
             "handoffs": handoffs,
         },
+        "administrative_action_plan": admin_plan,
         "limitations": [
             "This view uses only case inputs and recorded task state; it does not independently verify official systems.",
+            "Administrative actions are proposals only; they are not queued or executed by this endpoint.",
             "A task marked complete is not proof that an external authority accepted an application unless source-backed evidence confirms it.",
             "Unknown or absent financial and schedule inputs are not treated as safe.",
         ],
