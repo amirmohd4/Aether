@@ -30,6 +30,7 @@ def test_flags_payment_claim_without_evidence():
 
 def test_empty_input_returns_clear_limitations_not_compliance_claim():
     result = assess_delivery_risks({})
-    assert result["summary"]["finding_count"] == 1
-    assert result["findings"][0]["code"] == "budget_unknown"
+    codes = {finding["code"] for finding in result["findings"]}
+    assert "budget_unknown" in codes
+    assert "forecast_unknown" in codes
     assert "not proof" in result["limitations"][-1]
