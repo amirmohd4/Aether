@@ -6,7 +6,7 @@ import pytest
 from backend.database import SessionLocal
 from backend.aether_core.admin_action_queue import AdminActionQueue
 from backend.aether_core.case_store import DatabaseCaseStore
-from backend.aether_core.persistence_models import AetherAdminActionRecord
+from backend.aether_core.persistence_models import AetherAdminActionRecord, AetherAdminWorkItemRecord
 
 
 def _action(requires_human_decision=True):
@@ -51,9 +51,15 @@ def test_admin_action_requires_second_person_and_dispatch_is_verified():
         assert saved["status"] == "dispatched"
         assert saved["outcome"]["verified"] is True
         assert saved["outcome"]["external_effect"] is False
+        assert saved["outcome"]["work_item_id"].startswith("work_")
         assert saved["verified_at"] is not None
+        work_items = queue.list_work_items_for_case(case_id=case_id, tenant_id=tenant)
+        assert len(work_items) == 1
+        assert work_items[0]["status"] == "open"
+        assert work_items[0]["required_evidence"] == ["permit_receipt"]
     finally:
         with SessionLocal() as db:
+            db.query(AetherAdminWorkItemRecord).filter_by(tenant_id=tenant).delete()
             db.query(AetherAdminActionRecord).filter_by(tenant_id=tenant).delete()
             db.commit()
 
