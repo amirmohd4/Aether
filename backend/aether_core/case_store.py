@@ -19,6 +19,8 @@ from .persistence_models import (
     AetherNotificationRecord,
     AetherPaymentRecord,
     AetherApiKeyRecord,
+    AetherAdminActionRecord,
+    AetherAdminWorkItemRecord,
 )
 
 
@@ -59,6 +61,8 @@ class DatabaseCaseStore:
                 AetherNotificationRecord,
                 AetherPaymentRecord,
                 AetherApiKeyRecord,
+                AetherAdminActionRecord,
+                AetherAdminWorkItemRecord,
             ):
                 model.__table__.create(bind=engine, checkfirst=True)
             self._schema_ready = True

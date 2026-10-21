@@ -14,6 +14,7 @@ from backend.api.fraud_routes import router as fraud_router
 from backend.api.water_connection_routes import router as water_router
 from backend.api.aether_routes import router as aether_router
 from backend.aether_core.routes import router as aether_v2_router
+from backend.aether_core.delivery_routes import router as delivery_router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -88,6 +89,7 @@ if legacy_api_enabled:
     app.include_router(aether_router, prefix="/api/aether", tags=["Aether Execution"])
 
 app.include_router(aether_v2_router)
+app.include_router(delivery_router)
 
 
 @app.get("/")
