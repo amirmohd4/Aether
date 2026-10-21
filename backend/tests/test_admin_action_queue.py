@@ -103,3 +103,45 @@ def test_unsupported_external_action_is_rejected():
             action={"action_type": "submit_official_permit", "idempotency_key": "x"},
             requested_by="owner",
         )
+
+
+
+def test_work_item_assignment_and_completion_are_persisted():
+    DatabaseCaseStore().ensure_schema()
+    queue = AdminActionQueue()
+    tenant = "test-" + uuid4().hex
+    case_id = "case-" + uuid4().hex
+    action = {
+        "action_type": "assign_dependency_owner_and_next_action",
+        "priority": "high",
+        "requires_human_decision": False,
+        "idempotency_key": "idem-" + uuid4().hex,
+        "title": "Assign blocked dependency",
+        "department": "planning",
+        "required_evidence": [],
+    }
+    try:
+        queued = queue.enqueue(
+            tenant_id=tenant, case_id=case_id, action=action, requested_by="owner"
+        )
+        queue.dispatch(limit=10)
+        work = queue.list_work_items_for_case(case_id=case_id, tenant_id=tenant)[0]
+        assigned = queue.assign_work_item(
+            work_item_id=work["work_item_id"], tenant_id=tenant, assignee="officer-1"
+        )
+        assert assigned["assigned_to"] == "officer-1"
+        completed = queue.complete_work_item(
+            work_item_id=work["work_item_id"],
+            tenant_id=tenant,
+            actor="officer-1",
+            evidence_document_ids=[],
+            completion_note="Reviewed dependency and recorded next step.",
+        )
+        assert completed["status"] == "completed"
+        assert completed["outcome_verification"]["verified"] is True
+        assert completed["outcome_verification"]["external_acceptance_verified"] is False
+    finally:
+        with SessionLocal() as db:
+            db.query(AetherAdminWorkItemRecord).filter_by(tenant_id=tenant).delete()
+            db.query(AetherAdminActionRecord).filter_by(tenant_id=tenant).delete()
+            db.commit()
