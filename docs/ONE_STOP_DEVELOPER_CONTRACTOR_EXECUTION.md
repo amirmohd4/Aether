@@ -90,11 +90,19 @@ Aether is not merely a directory of services or a document submission portal. It
 
 ## Current implementation slice
 
-The branch adds a deterministic advisory risk engine and a new authenticated API surface:
+The branch adds a deterministic advisory risk engine, developer/contractor control room, and durable internal administrative work-item flow:
 - GET /api/aether/v2/delivery-playbooks
 - GET /api/aether/v2/cases/{case_id}/delivery-intelligence
+- POST /api/aether/v2/cases/{case_id}/administrative-actions/{action_key}/enqueue
+- GET /api/aether/v2/cases/{case_id}/administrative-actions
+- POST /api/aether/v2/cases/{case_id}/administrative-actions/{action_id}/approve
+- POST /api/aether/v2/cases/{case_id}/administrative-work-items/{work_item_id}/assign
+- POST /api/aether/v2/cases/{case_id}/administrative-work-items/{work_item_id}/complete
+- POST /api/aether/v2/admin-actions/dispatch-worker (dedicated worker token required)
 
-The case endpoint composes budget/schedule/permit/payment risk findings with recorded task dependencies and cross-department handoffs. It reads existing case state; it does not mutate official records or claim live authority integration.
+The worker uses durable idempotent records, leases, bounded retry/backoff, expired-lease recovery and a separate work-item table. Dispatch verification checks that the tenant-bound work item was durably created and reloaded. Work-item completion requires a note and validates any evidence document IDs against documents already stored on the same case and tenant; actions that specify required evidence cannot be completed without at least one such document. This verifies Aether's internal workflow state, not an external agency's acceptance.
+
+The scheduled GitHub Actions worker is committed on the build branch. GitHub schedule triggers run only from the repository's default branch, so recurring execution requires integrating the workflow into the default branch or configuring an external scheduler. Before it can dispatch, configure AETHER_AUTOMATION_WORKER_TOKEN in the backend and AETHER_AUTOMATION_WORKER_URL plus the matching token as GitHub repository secrets. The current branch is not a production deployment.
 
 ## Verification and release gates
 
