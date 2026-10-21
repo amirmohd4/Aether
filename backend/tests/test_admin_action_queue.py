@@ -90,6 +90,7 @@ def test_non_sensitive_action_can_queue_and_expired_lease_recovers():
         assert saved["attempts"] == 2
     finally:
         with SessionLocal() as db:
+            db.query(AetherAdminWorkItemRecord).filter_by(tenant_id=tenant).delete()
             db.query(AetherAdminActionRecord).filter_by(tenant_id=tenant).delete()
             db.commit()
 
