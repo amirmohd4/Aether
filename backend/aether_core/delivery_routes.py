@@ -243,11 +243,12 @@ def approve_administrative_action(
     if not tenant_id:
         raise HTTPException(status_code=403, detail="A tenant-bound case is required")
     try:
+        existing = _action_queue.get(action_id=action_id, tenant_id=tenant_id)
+        if existing["case_id"] != case_id:
+            raise HTTPException(status_code=404, detail="Action not found")
         result = _action_queue.approve(
             action_id=action_id, tenant_id=tenant_id, approver=principal.subject
         )
-        if result["case_id"] != case_id:
-            raise HTTPException(status_code=404, detail="Action not found")
         return {"action": result, "external_effect": False}
     except KeyError:
         raise HTTPException(status_code=404, detail="Action not found")
@@ -271,6 +272,7 @@ def list_administrative_actions(
     return {
         "case_id": case_id,
         "actions": _action_queue.list_for_case(case_id=case_id, tenant_id=tenant_id),
+        "work_items": _action_queue.list_work_items_for_case(case_id=case_id, tenant_id=tenant_id),
         "execution_boundary": "internal_work_items_only",
     }
 
