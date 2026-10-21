@@ -16,7 +16,7 @@ from sqlalchemy import or_
 
 from backend.database import SessionLocal
 from .case_store import DatabaseCaseStore
-from .persistence_models import AetherAdminActionRecord
+from .persistence_models import AetherAdminActionRecord, AetherAdminWorkItemRecord
 
 
 LEASE_SECONDS = 60
@@ -170,6 +170,29 @@ class AdminActionQueue:
             ).order_by(AetherAdminActionRecord.created_at.desc()).limit(100).all()
             return [_serialize(row) for row in rows]
 
+    def list_work_items_for_case(self, *, case_id: str, tenant_id: str) -> list[dict[str, Any]]:
+        DatabaseCaseStore().ensure_schema()
+        with self.session_factory() as db:
+            rows = db.query(AetherAdminWorkItemRecord).filter_by(
+                case_id=case_id, tenant_id=tenant_id
+            ).order_by(AetherAdminWorkItemRecord.created_at.desc()).limit(100).all()
+            return [{
+                "work_item_id": row.work_item_id,
+                "case_id": row.case_id,
+                "source_action_id": row.source_action_id,
+                "title": row.title,
+                "department": row.department,
+                "priority": row.priority,
+                "status": row.status,
+                "required_evidence": row.required_evidence or [],
+                "details": row.details or {},
+                "assigned_to": row.assigned_to,
+                "created_at": row.created_at.isoformat(),
+                "updated_at": row.updated_at.isoformat(),
+                "completed_at": row.completed_at.isoformat() if row.completed_at else None,
+                "completion_evidence": row.completion_evidence or [],
+            } for row in rows]
+
     def _claim_one(self, worker_id: str) -> dict[str, Any] | None:
         now = _now()
         DatabaseCaseStore().ensure_schema()
@@ -210,6 +233,7 @@ class AdminActionQueue:
                 "case_id": row.case_id,
                 "action_type": row.action_type,
                 "payload": row.payload or {},
+                "idempotency_key": row.idempotency_key,
                 "attempts": row.attempts,
             }
             db.commit()
@@ -227,16 +251,55 @@ class AdminActionQueue:
             row.lease_until = None
             row.updated_at = now
             if success:
-                # "dispatched" means the internal follow-up was materialized and
-                # verified, not that a department or authority completed it.
+                action_payload = row.payload or {}
+                key = row.idempotency_key
+                work_item = db.query(AetherAdminWorkItemRecord).filter_by(
+                    tenant_id=row.tenant_id, idempotency_key=key
+                ).one_or_none()
+                if work_item is None:
+                    work_item = AetherAdminWorkItemRecord(
+                        work_item_id="work_" + hashlib.sha256(
+                            f"{row.tenant_id}:{key}".encode("utf-8")
+                        ).hexdigest()[:24],
+                        tenant_id=row.tenant_id,
+                        case_id=row.case_id,
+                        source_action_id=row.action_id,
+                        idempotency_key=key,
+                        title=str(action_payload.get("title") or row.action_type.replace("_", " ").title()),
+                        department=str(action_payload.get("department") or "unassigned"),
+                        priority=row.priority,
+                        status="open",
+                        required_evidence=list(action_payload.get("required_evidence") or []),
+                        details={
+                            "action_type": row.action_type,
+                            "source_finding": action_payload.get("source_finding"),
+                            "source_task_id": action_payload.get("source_task_id"),
+                            "blocked_by": list(action_payload.get("blocked_by") or []),
+                            "requested_by": row.requested_by,
+                            "approved_by": row.approved_by,
+                        },
+                        created_at=now,
+                        updated_at=now,
+                    )
+                    db.add(work_item)
+                    db.flush()
+                    work_item = db.query(AetherAdminWorkItemRecord).filter_by(
+                        tenant_id=row.tenant_id, idempotency_key=key
+                    ).one_or_none()
+                if work_item is None or work_item.case_id != row.case_id:
+                    raise RuntimeError("Durable work-item verification failed")
+                # Dispatch is verified only when the actionable internal item
+                # exists durably. It is not a claim that the department finished.
                 row.status = "dispatched"
                 row.outcome = {
                     "kind": "internal_work_item_dispatched",
                     "verified": True,
+                    "work_item_id": work_item.work_item_id,
+                    "work_item_status": work_item.status,
                     "verified_checks": [
                         "tenant_and_case_bound",
                         "action_type_allowlisted",
-                        "durable_queue_record_reloaded",
+                        "durable_work_item_created_and_reloaded",
                     ],
                     "external_effect": False,
                     "next_step": "Assigned staff must complete the work and attach source-backed evidence.",
