@@ -34,8 +34,34 @@ def serialize(case, include_tasks: bool = True):
         case.customer_type,
         case.jurisdiction,
     )
+    task_execution_modes = {
+        task_id: (
+            "configured_external_connector"
+            if engine.workers.production_connector(state.definition.department)
+            else "synthetic"
+        )
+        for task_id, state in case.tasks.items()
+    }
     response = {
         "summary": case.summary(),
+        "execution_provenance": {
+            "case_mode": (
+                "configured_external_connector"
+                if task_execution_modes and all(
+                    mode == "configured_external_connector"
+                    for mode in task_execution_modes.values()
+                )
+                else "mixed"
+                if any(mode == "configured_external_connector" for mode in task_execution_modes.values())
+                else "synthetic"
+            ),
+            "task_modes": task_execution_modes,
+            "official_outcome_verified": False,
+            "note": (
+                "Configured connector presence does not itself prove official acceptance. "
+                "Official outcome verification requires a source-of-truth reconciliation contract."
+            ),
+        },
         "understanding": understanding.as_dict(),
         "requirements": case.requirements,
         "human_actions": case.human_actions,
