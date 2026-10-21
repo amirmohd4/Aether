@@ -266,7 +266,10 @@ class AdminActionQueue:
                     "checks": [
                         "tenant_and_case_bound",
                         "completion_note_present",
-                        "evidence_document_references_exist_on_case",
+                        *(
+                            ["evidence_document_references_exist_on_case"]
+                            if supplied else ["no_external_evidence_claimed"]
+                        ),
                     ],
                     "external_acceptance_verified": False,
                 },
