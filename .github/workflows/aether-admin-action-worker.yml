@@ -1,6 +1,8 @@
 name: Aether Administrative Action Worker
 
 on:
+  push:
+    branches: ["aether-mvp-build"]
   schedule:
     - cron: "*/5 * * * *"
   workflow_dispatch:
