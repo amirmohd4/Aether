@@ -193,6 +193,86 @@ class AdminActionQueue:
                 "completion_evidence": row.completion_evidence or [],
             } for row in rows]
 
+    def assign_work_item(
+        self, *, work_item_id: str, tenant_id: str, assignee: str
+    ) -> dict[str, Any]:
+        DatabaseCaseStore().ensure_schema()
+        with self.session_factory() as db:
+            row = db.query(AetherAdminWorkItemRecord).filter_by(
+                work_item_id=work_item_id, tenant_id=tenant_id
+            ).with_for_update().one_or_none()
+            if row is None:
+                raise KeyError(work_item_id)
+            if row.status != "open":
+                raise ValueError(f"Work item cannot be assigned from status {row.status}")
+            row.assigned_to = assignee
+            row.updated_at = _now()
+            db.commit()
+            db.refresh(row)
+            return {
+                "work_item_id": row.work_item_id, "case_id": row.case_id,
+                "assigned_to": row.assigned_to, "status": row.status,
+                "updated_at": row.updated_at.isoformat(),
+            }
+
+    def complete_work_item(
+        self, *, work_item_id: str, tenant_id: str, actor: str,
+        evidence_document_ids: list[str], completion_note: str,
+    ) -> dict[str, Any]:
+        DatabaseCaseStore().ensure_schema()
+        with self.session_factory() as db:
+            row = db.query(AetherAdminWorkItemRecord).filter_by(
+                work_item_id=work_item_id, tenant_id=tenant_id
+            ).with_for_update().one_or_none()
+            if row is None:
+                raise KeyError(work_item_id)
+            if row.status != "open":
+                raise ValueError(f"Work item cannot be completed from status {row.status}")
+            valid_docs = {
+                item["document_id"]
+                for item in DatabaseCaseStore().documents_for(row.case_id, tenant_id)
+            }
+            supplied = list(dict.fromkeys(evidence_document_ids))
+            if any(doc_id not in valid_docs for doc_id in supplied):
+                raise ValueError("Evidence must reference documents stored on this same case and tenant")
+            if row.required_evidence and not supplied:
+                raise ValueError("This work item requires at least one case document as completion evidence")
+            if not completion_note.strip():
+                raise ValueError("A completion note is required")
+            now = _now()
+            row.status = "completed"
+            row.completion_evidence = supplied
+            row.details = {
+                **(row.details or {}),
+                "completion_note": completion_note.strip()[:2000],
+                "completed_by": actor,
+                "evidence_document_count": len(supplied),
+                "evidence_verified_against_case_documents": True,
+            }
+            row.completed_at = now
+            row.updated_at = now
+            db.commit()
+            db.refresh(row)
+            # This verifies evidence references and case/tenant binding. It does
+            # not independently prove an official department accepted the work.
+            return {
+                "work_item_id": row.work_item_id,
+                "case_id": row.case_id,
+                "status": row.status,
+                "completed_by": actor,
+                "completion_evidence": row.completion_evidence or [],
+                "outcome_verification": {
+                    "verified": True,
+                    "checks": [
+                        "tenant_and_case_bound",
+                        "completion_note_present",
+                        "evidence_document_references_exist_on_case",
+                    ],
+                    "external_acceptance_verified": False,
+                },
+                "completed_at": row.completed_at.isoformat() if row.completed_at else None,
+            }
+
     def _claim_one(self, worker_id: str) -> dict[str, Any] | None:
         now = _now()
         DatabaseCaseStore().ensure_schema()
