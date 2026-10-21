@@ -7,6 +7,7 @@ represents synthetic connector output as an official result.
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from pydantic import BaseModel, Field
 
 from .admin_automation import plan_administrative_actions
 from .admin_action_queue import AdminActionQueue
@@ -14,6 +15,16 @@ from .delivery_intelligence import assess_delivery_risks
 from .engine import engine
 from .routes import _authorize_case
 from .security import Principal, require_role, require_scope
+
+
+class WorkItemAssignRequest(BaseModel):
+    assigned_to: str
+
+
+class WorkItemCompleteRequest(BaseModel):
+    evidence_document_ids: list[str] = Field(default_factory=list)
+    completion_note: str
+
 
 router = APIRouter(prefix="/api/aether/v2", tags=["Delivery Intelligence"])
 
@@ -275,6 +286,71 @@ def list_administrative_actions(
         "work_items": _action_queue.list_work_items_for_case(case_id=case_id, tenant_id=tenant_id),
         "execution_boundary": "internal_work_items_only",
     }
+
+
+@router.post("/cases/{case_id}/administrative-work-items/{work_item_id}/assign")
+def assign_administrative_work_item(
+    case_id: str,
+    work_item_id: str,
+    request: WorkItemAssignRequest,
+    principal: Principal = Depends(require_role("department_admin", "admin")),
+):
+    try:
+        case = engine.get_case(case_id)
+        _authorize_case(case, principal)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Case not found")
+    tenant_id = case.tenant_id or principal.tenant_id
+    if not tenant_id:
+        raise HTTPException(status_code=403, detail="A tenant-bound case is required")
+    items = _action_queue.list_work_items_for_case(case_id=case_id, tenant_id=tenant_id)
+    if not any(item["work_item_id"] == work_item_id for item in items):
+        raise HTTPException(status_code=404, detail="Work item not found")
+    try:
+        result = _action_queue.assign_work_item(
+            work_item_id=work_item_id, tenant_id=tenant_id, assignee=request.assigned_to.strip()
+        )
+        return {"work_item": result}
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Work item not found")
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+
+
+@router.post("/cases/{case_id}/administrative-work-items/{work_item_id}/complete")
+def complete_administrative_work_item(
+    case_id: str,
+    work_item_id: str,
+    request: WorkItemCompleteRequest,
+    principal: Principal = Depends(require_role("officer", "department_admin", "admin")),
+):
+    try:
+        case = engine.get_case(case_id)
+        _authorize_case(case, principal)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Case not found")
+    tenant_id = case.tenant_id or principal.tenant_id
+    if not tenant_id:
+        raise HTTPException(status_code=403, detail="A tenant-bound case is required")
+    items = _action_queue.list_work_items_for_case(case_id=case_id, tenant_id=tenant_id)
+    item = next((row for row in items if row["work_item_id"] == work_item_id), None)
+    if item is None:
+        raise HTTPException(status_code=404, detail="Work item not found")
+    if principal.role.lower() not in {"admin", "department_admin"} and item.get("assigned_to") != principal.subject:
+        raise HTTPException(status_code=403, detail="Work item must be assigned to you before completion")
+    try:
+        result = _action_queue.complete_work_item(
+            work_item_id=work_item_id,
+            tenant_id=tenant_id,
+            actor=principal.subject,
+            evidence_document_ids=request.evidence_document_ids,
+            completion_note=request.completion_note,
+        )
+        return {"work_item": result}
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Work item not found")
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
 
 
 @router.post("/admin-actions/dispatch-worker")
