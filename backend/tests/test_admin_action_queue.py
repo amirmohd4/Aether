@@ -57,6 +57,14 @@ def test_admin_action_requires_second_person_and_dispatch_is_verified():
         assert len(work_items) == 1
         assert work_items[0]["status"] == "open"
         assert work_items[0]["required_evidence"] == ["permit_receipt"]
+        with pytest.raises(ValueError, match="requires at least one case document"):
+            queue.complete_work_item(
+                work_item_id=work_items[0]["work_item_id"],
+                tenant_id=tenant,
+                actor="reviewer",
+                evidence_document_ids=[],
+                completion_note="Attempted completion without required evidence.",
+            )
     finally:
         with SessionLocal() as db:
             db.query(AetherAdminWorkItemRecord).filter_by(tenant_id=tenant).delete()
