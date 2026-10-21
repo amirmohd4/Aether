@@ -21,6 +21,18 @@ type ActionItem = {
   requires_human_decision: boolean;
 };
 
+type QueuedAction = {
+  action_id: string;
+  case_id: string;
+  status: string;
+  priority: string;
+  action_type: string;
+  payload: { idempotency_key?: string; title?: string; requires_human_decision?: boolean };
+  requested_by: string;
+  approved_by?: string | null;
+  outcome?: { verified?: boolean; external_effect?: boolean; next_step?: string } | null;
+};
+
 type DeliveryReport = {
   case_id: string;
   mode: string;
@@ -46,6 +58,9 @@ export const DeliveryOpsConsole: React.FC = () => {
   const [loadingCases, setLoadingCases] = useState(false);
   const [loadingReport, setLoadingReport] = useState(false);
   const [error, setError] = useState('');
+  const [queuedActions, setQueuedActions] = useState<QueuedAction[]>([]);
+  const [actionBusy, setActionBusy] = useState('');
+  const [actionMessage, setActionMessage] = useState('');
 
   const headers = useCallback(() => (
     session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}
@@ -68,6 +83,62 @@ export const DeliveryOpsConsole: React.FC = () => {
       setLoadingCases(false);
     }
   }, [authRequired, session, headers]);
+
+  const loadQueuedActions = useCallback(async (caseId: string) => {
+    if (!caseId || (authRequired && !session)) return;
+    try {
+      const response = await fetch(
+        `${API_BASE}/api/aether/v2/cases/${encodeURIComponent(caseId)}/administrative-actions`,
+        { headers: headers() }
+      );
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.detail || `Action list returned ${response.status}`);
+      setQueuedActions((body.actions || []) as QueuedAction[]);
+    } catch (err) {
+      setQueuedActions([]);
+      setError(err instanceof Error ? err.message : 'Unable to load administrative work items');
+    }
+  }, [authRequired, session, headers]);
+
+  const enqueueAction = useCallback(async (action: ActionItem) => {
+    if (!selectedCase) return;
+    setActionBusy(action.idempotency_key);
+    setActionMessage('');
+    try {
+      const response = await fetch(
+        `${API_BASE}/api/aether/v2/cases/${encodeURIComponent(selectedCase)}/administrative-actions/${encodeURIComponent(action.idempotency_key)}/enqueue`,
+        { method: 'POST', headers: headers() }
+      );
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.detail || `Queue request returned ${response.status}`);
+      setActionMessage(body.message || 'Internal work item recorded');
+      await loadQueuedActions(selectedCase);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to queue action');
+    } finally {
+      setActionBusy('');
+    }
+  }, [selectedCase, headers, loadQueuedActions]);
+
+  const approveAction = useCallback(async (action: QueuedAction) => {
+    if (!selectedCase) return;
+    setActionBusy(action.action_id);
+    setActionMessage('');
+    try {
+      const response = await fetch(
+        `${API_BASE}/api/aether/v2/cases/${encodeURIComponent(selectedCase)}/administrative-actions/${encodeURIComponent(action.action_id)}/approve`,
+        { method: 'POST', headers: headers() }
+      );
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.detail || `Approval returned ${response.status}`);
+      setActionMessage('Approved for internal work-item dispatch. No external or statutory action was taken.');
+      await loadQueuedActions(selectedCase);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to approve work item');
+    } finally {
+      setActionBusy('');
+    }
+  }, [selectedCase, headers, loadQueuedActions]);
 
   const analyzeCase = useCallback(async (caseId: string) => {
     if (!caseId) return;
@@ -94,8 +165,13 @@ export const DeliveryOpsConsole: React.FC = () => {
   }, [loadCases]);
 
   useEffect(() => {
-    if (selectedCase) void analyzeCase(selectedCase);
-  }, [selectedCase, analyzeCase]);
+    if (selectedCase) {
+      void analyzeCase(selectedCase);
+      void loadQueuedActions(selectedCase);
+    } else {
+      setQueuedActions([]);
+    }
+  }, [selectedCase, analyzeCase, loadQueuedActions]);
 
   if (authLoading || (authRequired && !session)) return null;
 
@@ -177,7 +253,14 @@ export const DeliveryOpsConsole: React.FC = () => {
                       </div>
                       <p className="mt-1 text-xs text-slate-400">Department: {action.department}</p>
                       {action.required_evidence.length > 0 && <p className="mt-2 text-[10px] text-slate-500">Required evidence: {action.required_evidence.join(', ')}</p>}
-                      <p className="mt-2 text-[10px] text-violet-200">{action.requires_human_decision ? 'Human decision boundary applies' : 'Administrative preparation candidate'} · Not yet queued</p>
+                      <p className="mt-2 text-[10px] text-violet-200">{action.requires_human_decision ? 'Second-person review required' : 'Internal administrative work item'} · No external action</p>
+                      <button
+                        onClick={() => void enqueueAction(action)}
+                        disabled={Boolean(actionBusy) || queuedActions.some((item) => item.payload?.idempotency_key === action.idempotency_key)}
+                        className="mt-3 rounded-lg border border-cyan-300/20 px-3 py-2 text-xs font-semibold text-cyan-100 hover:bg-cyan-300/10 disabled:opacity-50"
+                      >
+                        {actionBusy === action.idempotency_key ? 'Queueing…' : queuedActions.some((item) => item.payload?.idempotency_key === action.idempotency_key) ? 'Already queued' : 'Create work item'}
+                      </button>
                     </article>
                   ))}
                 </div>
@@ -203,9 +286,36 @@ export const DeliveryOpsConsole: React.FC = () => {
               </div>
             )}
           </div>
+
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+            <div className="flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-emerald-300" /><h3 className="font-semibold">Durable administrative work queue</h3></div>
+            <p className="mt-2 text-xs leading-5 text-slate-500">Idempotent records, second-person approval for sensitive follow-up, retryable worker dispatch, and persisted dispatch verification. Dispatch does not mean the assigned department completed the task.</p>
+            {actionMessage && <p role="status" className="mt-3 rounded-lg border border-emerald-300/20 bg-emerald-300/5 p-3 text-xs text-emerald-100">{actionMessage}</p>}
+            {queuedActions.length === 0 ? (
+              <p className="mt-4 text-sm text-slate-400">No work items have been queued for this case yet.</p>
+            ) : (
+              <div className="mt-4 space-y-3">
+                {queuedActions.map((item) => (
+                  <article key={item.action_id} className="rounded-xl border border-white/5 bg-black/10 p-3">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <h4 className="text-sm font-semibold">{item.payload?.title || item.action_type.replaceAll('_', ' ')}</h4>
+                      <span className="rounded-full bg-slate-300/10 px-2 py-1 text-[10px] uppercase text-slate-200">{item.status.replaceAll('_', ' ')}</span>
+                    </div>
+                    <p className="mt-2 text-xs text-slate-400">Requested by {item.requested_by}{item.approved_by ? ` · Approved by ${item.approved_by}` : ''}</p>
+                    {item.status === 'awaiting_approval' && (
+                      <button onClick={() => void approveAction(item)} disabled={Boolean(actionBusy)} className="mt-3 rounded-lg border border-amber-300/20 px-3 py-2 text-xs font-semibold text-amber-100 hover:bg-amber-300/10 disabled:opacity-50">
+                        {actionBusy === item.action_id ? 'Approving…' : 'Approve internal follow-up'}
+                      </button>
+                    )}
+                    {item.outcome && <p className="mt-2 text-xs text-emerald-100">{item.outcome.verified ? 'Dispatch verified' : 'Awaiting verification'} · {item.outcome.next_step || 'Awaiting assigned staff action'}</p>}
+                  </article>
+                ))}
+              </div>
+            )}
+          </div>
         </>
       )}
-      <p className="text-[10px] leading-5 text-slate-600">Advisory and controlled-MVP view. It does not independently verify official systems, submit statutory filings, approve construction, or release payments.</p>
+      <p className="text-[10px] leading-5 text-slate-600">Advisory and controlled-MVP view. It does not independently verify official systems, submit statutory filings, approve construction, or release payments. Human approvals authorize only internal follow-up dispatch.</p>
     </section>
   );
 };
