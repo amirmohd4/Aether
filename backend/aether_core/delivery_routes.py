@@ -6,13 +6,14 @@ represents synthetic connector output as an official result.
 """
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from .admin_automation import plan_administrative_actions
+from .admin_action_queue import AdminActionQueue
 from .delivery_intelligence import assess_delivery_risks
 from .engine import engine
 from .routes import _authorize_case
-from .security import Principal, require_scope
+from .security import Principal, require_role, require_scope
 
 router = APIRouter(prefix="/api/aether/v2", tags=["Delivery Intelligence"])
 
@@ -176,3 +177,114 @@ def case_delivery_intelligence(
             "Unknown or absent financial and schedule inputs are not treated as safe.",
         ],
     }
+
+
+
+_action_queue = AdminActionQueue()
+
+
+@router.post("/cases/{case_id}/administrative-actions/{action_key}/enqueue")
+def enqueue_administrative_action(
+    case_id: str,
+    action_key: str,
+    principal: Principal = Depends(require_scope("cases:write")),
+):
+    """Persist a safe internal work item; sensitive actions wait for a second reviewer."""
+    try:
+        case = engine.get_case(case_id)
+        _authorize_case(case, principal)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Case not found")
+
+    intelligence = case_delivery_intelligence(case_id, principal)
+    action = next(
+        (item for item in intelligence["administrative_action_plan"]["actions"]
+         if item.get("idempotency_key") == action_key),
+        None,
+    )
+    if action is None:
+        raise HTTPException(status_code=404, detail="Action proposal not found or no longer current")
+    tenant_id = case.tenant_id or principal.tenant_id
+    if not tenant_id:
+        raise HTTPException(status_code=403, detail="A tenant-bound case is required")
+    try:
+        result = _action_queue.enqueue(
+            tenant_id=tenant_id,
+            case_id=case_id,
+            action=action,
+            requested_by=principal.subject,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    return {
+        "action": result,
+        "message": (
+            "Queued for internal dispatch"
+            if result["status"] == "queued"
+            else "Awaiting approval by a different authorized reviewer"
+        ),
+        "external_effect": False,
+    }
+
+
+@router.post("/cases/{case_id}/administrative-actions/{action_id}/approve")
+def approve_administrative_action(
+    case_id: str,
+    action_id: str,
+    principal: Principal = Depends(require_role("officer", "department_admin", "admin")),
+):
+    """Second-person approval releases only an internal work item, never a statutory decision."""
+    try:
+        case = engine.get_case(case_id)
+        _authorize_case(case, principal)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Case not found")
+    tenant_id = case.tenant_id or principal.tenant_id
+    if not tenant_id:
+        raise HTTPException(status_code=403, detail="A tenant-bound case is required")
+    try:
+        result = _action_queue.approve(
+            action_id=action_id, tenant_id=tenant_id, approver=principal.subject
+        )
+        if result["case_id"] != case_id:
+            raise HTTPException(status_code=404, detail="Action not found")
+        return {"action": result, "external_effect": False}
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Action not found")
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+
+
+@router.get("/cases/{case_id}/administrative-actions")
+def list_administrative_actions(
+    case_id: str,
+    principal: Principal = Depends(require_scope("cases:read")),
+):
+    try:
+        case = engine.get_case(case_id)
+        _authorize_case(case, principal)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Case not found")
+    tenant_id = case.tenant_id or principal.tenant_id
+    if not tenant_id:
+        raise HTTPException(status_code=403, detail="A tenant-bound case is required")
+    return {
+        "case_id": case_id,
+        "actions": _action_queue.list_for_case(case_id=case_id, tenant_id=tenant_id),
+        "execution_boundary": "internal_work_items_only",
+    }
+
+
+@router.post("/admin-actions/dispatch-worker")
+def dispatch_administrative_actions(request: Request, limit: int = 20):
+    """Scheduler/worker endpoint protected by a dedicated secret, not user auth."""
+    import hmac
+    import os
+
+    expected = os.getenv("AETHER_AUTOMATION_WORKER_TOKEN", "")
+    supplied = request.headers.get("X-Aether-Automation-Token", "")
+    if not expected:
+        raise HTTPException(status_code=503, detail="Administrative automation worker is not configured")
+    if not supplied or not hmac.compare_digest(supplied, expected):
+        raise HTTPException(status_code=401, detail="Invalid worker credential")
+    return _action_queue.dispatch(limit=limit)
