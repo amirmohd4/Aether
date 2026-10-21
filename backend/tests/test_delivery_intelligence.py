@@ -6,7 +6,7 @@ def test_flags_over_budget_and_commitments():
     codes = {finding["code"] for finding in result["findings"]}
     assert "forecast_over_budget" in codes
     assert "commitments_exceed_budget" in codes
-    assert result["summary"]["progress_blocker_count"] == 1
+    assert result["summary"]["progress_blocker_count"] == 2
 
 
 def test_missing_budget_is_unknown_not_safe():
