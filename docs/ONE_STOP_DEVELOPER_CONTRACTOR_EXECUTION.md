@@ -88,6 +88,10 @@ Aether is not merely a directory of services or a document submission portal. It
 - Portfolio analytics for recurring bottlenecks and duplicate evidence requests.
 - Developer SDK, webhook replay tools and observability portal.
 
+## Process-profile revision handling
+
+When multiple records exist for the same service and jurisdiction, resolution selects the most jurisdiction-specific profile and then the latest effective/verified revision. Open cases retain their captured fingerprint so a later authoritative profile change can be detected and assessed instead of silently replacing the original process snapshot.
+
 ## Current implementation slice
 
 The branch adds a deterministic advisory risk engine, developer/contractor control room, and durable internal administrative work-item flow:
