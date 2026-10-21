@@ -94,5 +94,5 @@ def plan_administrative_actions(
         "count": len(actions),
         "actions": actions,
         "mode": "recommend_only",
-        "note": "Actions are proposed, not queued or executed. Enqueue only after tenant authorization, policy checks, ownership assignment, and any required human approval.",
+        "note": "Planning is advisory and does not enqueue automatically. Eligible internal work items may be queued through the authorized endpoint; sensitive follow-up requires a different authorized reviewer. External filings, approvals, certifications, and payments are not enabled.",
     }
