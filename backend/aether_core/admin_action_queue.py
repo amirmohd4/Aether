@@ -229,7 +229,7 @@ class AdminActionQueue:
             if row.status != "open":
                 raise ValueError(f"Work item cannot be completed from status {row.status}")
             valid_docs = {
-                item["document_id"]
+                item["document_id"]: item["document_type"]
                 for item in DatabaseCaseStore().documents_for(row.case_id, tenant_id)
             }
             supplied = list(dict.fromkeys(evidence_document_ids))
@@ -237,6 +237,14 @@ class AdminActionQueue:
                 raise ValueError("Evidence must reference documents stored on this same case and tenant")
             if row.required_evidence and not supplied:
                 raise ValueError("This work item requires at least one case document as completion evidence")
+            if row.required_evidence:
+                supplied_types = {valid_docs[doc_id] for doc_id in supplied}
+                missing_types = sorted(set(row.required_evidence) - supplied_types)
+                if missing_types:
+                    raise ValueError(
+                        "Completion evidence is missing required document types: "
+                        + ", ".join(missing_types)
+                    )
             if not completion_note.strip():
                 raise ValueError("A completion note is required")
             now = _now()
@@ -267,8 +275,15 @@ class AdminActionQueue:
                         "tenant_and_case_bound",
                         "completion_note_present",
                         *(
-                            ["evidence_document_references_exist_on_case"]
-                            if supplied else ["no_external_evidence_claimed"]
+                            [
+                                "evidence_document_references_exist_on_case",
+                                "required_evidence_types_matched",
+                            ]
+                            if supplied and row.required_evidence
+                            else (
+                                ["evidence_document_references_exist_on_case"]
+                                if supplied else ["no_external_evidence_claimed"]
+                            )
                         ),
                     ],
                     "external_acceptance_verified": False,
