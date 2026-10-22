@@ -1,0 +1,49 @@
+name: Aether Administrative Action Worker
+
+on:
+  push:
+    branches: ["aether-mvp-build"]
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aether-admin-action-worker
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Validate worker configuration
+        id: config
+        env:
+          WORKER_URL: ${{ secrets.AETHER_AUTOMATION_WORKER_URL }}
+          WORKER_TOKEN: ${{ secrets.AETHER_AUTOMATION_WORKER_TOKEN }}
+        run: |
+          if [ -z "$WORKER_URL" ] || [ -z "$WORKER_TOKEN" ]; then
+            echo "::warning::Set AETHER_AUTOMATION_WORKER_URL and AETHER_AUTOMATION_WORKER_TOKEN repository secrets before scheduled dispatch can run."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          case "$WORKER_URL" in
+            https://*) ;;
+            *) echo "::error::Worker URL must use HTTPS"; exit 1 ;;
+          esac
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+      - name: Dispatch durable internal work items
+        if: steps.config.outputs.ready == 'true'
+        env:
+          WORKER_URL: ${{ secrets.AETHER_AUTOMATION_WORKER_URL }}
+          WORKER_TOKEN: ${{ secrets.AETHER_AUTOMATION_WORKER_TOKEN }}
+        run: |
+          set -euo pipefail
+          curl --fail-with-body --silent --show-error \
+            --max-time 45 \
+            -X POST "${WORKER_URL%/}/api/aether/v2/admin-actions/dispatch-worker?limit=50" \
+            -H "X-Aether-Automation-Token: ${WORKER_TOKEN}" \
+            -H "Accept: application/json"

@@ -46,6 +46,9 @@ def test_start_case_exposes_service_identity_and_execution_state():
     assert body["summary"]["case_id"].startswith("A-")
     assert body["summary"]["service_id"] == "food_business_license"
     assert body["summary"]["service_department"] == "Food Safety"
+    assert body["execution_provenance"]["case_mode"] == "synthetic"
+    assert body["execution_provenance"]["official_outcome_verified"] is False
+    assert body["execution_provenance"]["task_modes"]["identity_check"] == "synthetic"
     assert body["requirements"]
     assert "identity_check" in body["tasks"]
     assert body["tasks"]["identity_check"]["status"] == "completed"
