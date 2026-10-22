@@ -83,6 +83,8 @@ class AdminActionQueue:
         key = str(action.get("idempotency_key") or "")
         if not key:
             raise ValueError("An idempotency key is required")
+        if action.get("requires_human_decision") and approved_by == requested_by:
+            raise ValueError("A different authorized reviewer must approve this action")
         if action.get("requires_human_decision") and not approved_by:
             initial_status = "awaiting_approval"
         else:
