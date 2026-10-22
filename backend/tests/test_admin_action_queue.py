@@ -154,3 +154,15 @@ def test_work_item_assignment_and_completion_are_persisted():
             db.query(AetherAdminWorkItemRecord).filter_by(tenant_id=tenant).delete()
             db.query(AetherAdminActionRecord).filter_by(tenant_id=tenant).delete()
             db.commit()
+
+
+def test_sensitive_action_cannot_be_preapproved_by_requester():
+    queue = AdminActionQueue()
+    with pytest.raises(ValueError, match="different authorized reviewer"):
+        queue.enqueue(
+            tenant_id="tenant",
+            case_id="case",
+            action=_action(requires_human_decision=True),
+            requested_by="same-person",
+            approved_by="same-person",
+        )
