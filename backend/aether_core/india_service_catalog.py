@@ -73,6 +73,7 @@ INDIA_SERVICE_FAMILY_DEFINITIONS = [
     ("tax_demand_response", "Tax Demand/Notice Response", "Tax", ["citizen", "business"], ["tax notice", "tax demand", "income tax notice", "demand response"], None, "tax_demand_response"),
     ("pan_services", "PAN Application/Correction", "Tax", ["citizen", "business"], ["pan card", "pan application", "pan correction"], None, "pan"),
     ("tan_services", "TAN Application/Correction", "Tax", ["business"], ["tan application", "tan correction"], None, "tan"),
+    ("udyam_registration", "MSME/Udyam Registration", "MSME", ["business"], ["udyam registration", "msme registration", "udyam certificate", "udyam"], None, "udyam_registration"),
 
     # Transport
     ("learner_driving_license", "Learner Driving Licence", "Transport", ["citizen"], ["learner license", "learner licence", "learning license", "llr"], None, "learner_license"),
