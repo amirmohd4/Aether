@@ -18,7 +18,7 @@ The active development branch is `aether-mvp-build`. Pull request #11 targets `m
 
 ## Environment blockers
 
-1. **Supabase:** the connected project `aether` (`lekudqjewxxunqjuqayi`) reports `INACTIVE`. Listing migrations timed out. Database readiness, auth, RLS, private document storage, and migrations therefore cannot currently be re-verified against the live project.
+1. **Supabase:** rechecked on 2026-10-26; the project now reports `ACTIVE_HEALTHY`, and migration listing succeeds (10 recorded migrations). A read-only SQL check confirms 10 `aether_internal` tables with RLS enabled, 24 database policies, the `aether-documents` storage bucket marked private, and the `aether_runtime` role is non-superuser with no database-creation or role-creation privileges. The Supabase security advisor returned no lints. This is a meaningful recovery, but does not by itself verify the deployed Render backend can authenticate and complete an end-to-end request.
 2. **Render:** service status and configuration have not been verified in this session because the Render connector requires explicit workspace selection. Do not infer that the backend is healthy from repository CI.
 3. **Production Vercel status:** the latest recorded status for the `main` commit reports deployment rate-limited. A new preview deployment is not a substitute for a verified production deployment.
 4. **Worker scheduling:** the worker workflow needs backend `AETHER_AUTOMATION_WORKER_TOKEN` and GitHub secrets `AETHER_AUTOMATION_WORKER_URL` plus matching `AETHER_AUTOMATION_WORKER_TOKEN`. GitHub scheduled workflows run only from the default branch, so a schedule defined only on the build branch is not an active recurring production scheduler.
