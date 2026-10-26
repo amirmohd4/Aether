@@ -55,7 +55,7 @@ def test_api_workflow_runs_from_objective_to_authorized_decision_and_audit(monke
 
     assert case["execution_provenance"]["case_mode"] == "synthetic"
     assert case["execution_provenance"]["official_outcome_verified"] is False
-    assert case["status"] == "waiting_for_human"
+    assert case["summary"]["status"] == "waiting_for_human"
     assert case["tasks"]["inspection"]["status"] == "human_review"
     assert case["tasks"]["final_approval"]["status"] in {"pending", "blocked"}
 
@@ -71,7 +71,7 @@ def test_api_workflow_runs_from_objective_to_authorized_decision_and_audit(monke
     assert inspection_response.status_code == 200
     after_inspection = inspection_response.json()
     assert after_inspection["tasks"]["inspection"]["status"] == "completed"
-    assert after_inspection["status"] == "waiting_for_human"
+    assert after_inspection["summary"]["status"] == "waiting_for_human"
     assert after_inspection["tasks"]["final_approval"]["status"] == "human_review"
 
     approval_response = client.post(
@@ -81,7 +81,7 @@ def test_api_workflow_runs_from_objective_to_authorized_decision_and_audit(monke
     assert approval_response.status_code == 200
     completed = approval_response.json()
 
-    assert completed["status"] == "completed"
+    assert completed["summary"]["status"] == "completed"
     assert completed["tasks"]["record_update"]["status"] == "completed"
     assert completed["tasks"]["certificate"]["status"] == "completed"
     # Even a simulated human action must never be represented as an official
