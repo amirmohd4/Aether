@@ -19,8 +19,8 @@ These are desk-research assets, not validated live process maps or proof of cust
 
 ## Public research preview
 
-- **[Open the interactive synthetic preview](https://deploy-preview-10--aether-govos.netlify.app/)**
-- [Share feedback](https://deploy-preview-10--aether-govos.netlify.app/feedback.html)
+- **[Open the interactive synthetic preview](https://deploy-preview-14--aether-govos.netlify.app/research-preview.html)**
+- [Share feedback](https://deploy-preview-14--aether-govos.netlify.app/feedback.html)
 - [Launch-readiness checklist](docs/launch-readiness-checklist.md)
 - [Global mock-preview plan](docs/global-mock-preview-plan.md)
 
