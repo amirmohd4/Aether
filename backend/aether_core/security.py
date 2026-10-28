@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 import hashlib
 import hmac
 import os
+import re
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -174,7 +175,27 @@ def _supabase_principal(request: Request) -> Principal:
 
 def require_principal(request: Request) -> Principal:
     mode = auth_mode()
-    if os.getenv("AETHER_ENV", "development").strip().lower() == "production" and mode == "none":
+    environment = os.getenv("AETHER_ENV", "development").strip().lower()
+    public_demo = os.getenv("AETHER_PUBLIC_DEMO", "false").strip().lower() == "true"
+
+    if public_demo:
+        # Anonymous demo mode is permitted only outside production and with
+        # real government connectors explicitly disabled.
+        connectors_enabled = os.getenv("AETHER_ENABLE_PRODUCTION_CONNECTORS", "false").strip().lower() == "true"
+        if environment == "production" or connectors_enabled:
+            raise HTTPException(status_code=500, detail="Public demo safety configuration is invalid")
+        session_token = request.headers.get("X-Aether-Demo-Session", "").strip().lower()
+        if not re.fullmatch(r"[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}", session_token):
+            raise HTTPException(status_code=400, detail="A valid public demo session is required")
+        session_hash = hashlib.sha256(session_token.encode("utf-8")).hexdigest()[:32]
+        return Principal(
+            subject=f"public-demo:{session_hash}",
+            role="demo",
+            tenant_id=f"public-demo:{session_hash}",
+            auth_mode="public_demo",
+        )
+
+    if environment == "production" and mode == "none":
         raise HTTPException(status_code=500, detail="Production authentication is not configured")
     if mode == "none":
         return Principal(
@@ -209,3 +230,16 @@ def require_role(*allowed_roles: str):
         return principal
 
     return dependency
+
+
+def require_human_authority(principal: Principal = Depends(require_principal)) -> Principal:
+    """Require authority for real users; public demo approvals are synthetic only."""
+    if principal.auth_mode == "none":
+        return principal
+    if principal.auth_mode == "public_demo":
+        return principal
+    if principal.role.lower() not in {"officer", "department_admin", "admin"}:
+        raise HTTPException(status_code=403, detail="Insufficient Aether role")
+    if principal.auth_mode == "api_key" and "*" not in principal.scopes and "human:decide" not in principal.scopes:
+        raise HTTPException(status_code=403, detail="Missing Aether API scope: human:decide")
+    return principal

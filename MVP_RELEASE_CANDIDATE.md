@@ -2,7 +2,7 @@
 
 ## Verdict
 
-The repository is a release candidate for a controlled/sandbox Aether GovOS MVP. The software path from real-world objective to executable, auditable government workflow is implemented across the shared 34-service catalog.
+The repository is a release candidate for a controlled/sandbox Aether GovOS MVP. The software path from real-world objective to executable, auditable government workflow is implemented across the shared 32-service registry. The separate public research studio also exposes 32 non-judicial synthetic service templates.
 
 This is not a declaration of live government authority.
 
@@ -10,7 +10,7 @@ This is not a declaration of live government authority.
 
 - Objective understanding with ranked candidates and clarification stop
 - Requirement discovery with source provenance and an explicit authority-status distinction
-- 34-service shared registry with customer eligibility and reusable process graphs
+- 32-service shared registry with customer eligibility and reusable process graphs
 - Government ontology and dependency-aware work graph
 - Parallel task execution with stable idempotency keys and bounded retries
 - Durable task queue, task checkpoints and restart recovery
@@ -56,6 +56,6 @@ Production cannot be honestly declared complete until the environment has extern
 
 ## Release discipline
 
-Development remains on aether-mvp-build. The release branch is main.
+The public research-preview work is on `launch/public-research-preview` and is proposed in PR #10; `main` remains the release branch. The PR is intentionally not merged as part of this preview-validation work.
 
 Do not enable live connectors or bypass the production fail-closed checks just to make a demo appear production-ready.

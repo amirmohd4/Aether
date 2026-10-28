@@ -1,13 +1,41 @@
 # Aether GovOS
 
-Aether is a government execution layer. It takes a real-world objective, understands the requested service, discovers requirements, builds a cross-department work graph, executes independent digital work in parallel, verifies results, stops at legally required human actions, and resumes until the outcome is complete.
+Aether GovOS is an early-stage government-workflow orchestration prototype. It explores how an outcome-first interface could map requirements, coordinate permitted digital tasks, recover from exceptions, verify results, and stop at legally required human actions. The public research preview uses synthetic systems only.
 
-**Core product:** Aether automates the work between a government application and the government decision/outcome.
+**Product thesis:** Aether is an Administrative Execution OS: a governed, cross-organisation execution layer that coordinates permitted work across systems, employees and departments, then verifies the outcome while preserving the authority of each system of record.
+
+**Long-term scope:** the same core can support public administration, education departments, public works, contractors, banks, insurers, developers, MSMEs and system integrators through validated vertical workflow packs.
+
+## Research and strategy
+
+- [Market research and product strategy](docs/MARKET_RESEARCH_AND_PRODUCT_STRATEGY.md)
+- [CEO/CTO execution roadmap](docs/CEO_CTO_EXECUTION_ROADMAP.md) — phased plan to validate the first paid workflow, launch a controlled contractor pilot, measure ROI, and expand into education/public administration
+- [India administrative service atlas](docs/INDIA_ADMINISTRATIVE_SERVICE_ATLAS.md) — service families, current systems to investigate, workflows, buyer hypotheses, automation boundaries and official sources
+- [Administrative workflow research register](docs/ADMINISTRATIVE_WORKFLOW_RESEARCH_REGISTER.md) — discovery hypotheses, disconfirmation questions and pilot gates
+- [Education scholarship workflow dossier](docs/workflow-dossiers/EDU-01-scholarship-case.md) — application, verification, sanction, payment and exception handling
+- [Contractor tender-to-payment workflow dossier](docs/workflow-dossiers/GOV-03-contractor-tender-to-payment.md) — tender, contract execution, bill readiness and payment reconciliation
+
+These are desk-research assets, not validated live process maps or proof of customer demand. Every production workflow must be checked against current rules, the exact jurisdiction, the system of record and authorised access.
+
+## Public research preview
+
+- **[Open the interactive synthetic preview](https://deploy-preview-14--aether-govos.netlify.app/research-preview.html)**
+- [Share feedback](https://deploy-preview-14--aether-govos.netlify.app/feedback.html)
+- [Launch-readiness checklist](docs/launch-readiness-checklist.md)
+- [Global mock-preview plan](docs/global-mock-preview-plan.md)
+
+Use fictional values only. The preview demonstrates workflow patterns; it does not contact government systems, submit official applications, issue records, or make legal decisions. Feedback submissions are registered by Netlify Forms, but end-to-end delivery has not yet been verified.
+
+## Product strategy
+
+The platform is designed around an outcome-to-work compiler, versioned administrative process graph, evidence provenance, authorised connector/action fabric, durable execution and recovery, role-aware workbench, outcome verification, and measured operations analytics. The research strategy deliberately starts with a narrow paid workflow while preserving a cross-administration architecture. Education administration is a first-class long-term vertical, not a separate unrelated product.
+
+See [Market Research and Product Strategy](docs/MARKET_RESEARCH_AND_PRODUCT_STRATEGY.md) for the source-backed market thesis, education workflows, vertical comparisons, autonomy policy, commercial model and 90-day research plan. Use the [Administrative Workflow Research Register](docs/ADMINISTRATIVE_WORKFLOW_RESEARCH_REGISTER.md) to track candidate workflows, buyer hypotheses, evidence strength, disconfirmation questions and pilot gates.
 
 ## Current MVP
 
-- 34 services in the shared service registry
-- Objective understanding with ranked service candidates
+- 32 public mock services in the user-facing service catalogue
+- Objective understanding with ranked candidates
 - Requirement discovery with jurisdiction/source provenance
 - Reusable cross-department work graphs
 - Parallel dependency-aware execution
@@ -21,7 +49,7 @@ Aether is a government execution layer. It takes a real-world objective, underst
 - Server-controlled tenant membership and role boundaries
 - Private usage metering for case/outcome billing foundations
 - Opt-in authorized REST connectors for real integrations
-- Unified Aether Command Center with guided document intake, document upload/hash ledger and role-aware officer authority queue
+- Unified Aether Command Center with guided intake, document upload/hash ledger and role-aware officer authority queue
 - Backend and frontend CI workflows
 - Production security headers/readiness endpoint and legacy API quarantine
 - Standalone resumable worker runtime with durable case leases and notification outbox dispatch
@@ -87,30 +115,10 @@ Use SQLite locally unless DATABASE_URL is explicitly set.
 ## Release configuration
 
 ```env
-AETHER_ENV=production
+AETHER_ENV=staging
 AETHER_AUTH_MODE=supabase
-DATABASE_URL=<server-side database URL>
-SUPABASE_URL=<server-side Supabase URL>
-SUPABASE_SERVICE_ROLE_KEY=<server-side only>
-VITE_API_URL=<public Render backend URL>
-VITE_REQUIRE_AUTH=true
+AETHER_ENABLE_LEGACY_API=false
 AETHER_ENABLE_PRODUCTION_CONNECTORS=false
 ```
 
-Production authentication fails closed when authentication is not configured.
-
-Real government connectors are enabled only by explicit server-side configuration. Credentials must never be placed in frontend code.
-Document storage uses Supabase Storage when configured with the server-only service-role key; otherwise it uses a local development store. Extracted document text is encrypted at rest when AETHER_ENCRYPTION_KEY is configured. OCR can be connected through AETHER_OCR_BASE_URL/AETHER_OCR_TOKEN.
-
-## Deployment policy
-
-During MVP construction, development work stays on aether-mvp-build and main is release-only.
-
-Do not deploy every small change. Before release, run the complete test/security/persistence gate. Then merge the final MVP to main, apply Supabase migrations, deploy the Render backend, publish the final Netlify frontend, run smoke tests, and keep a rollback path.
-
-See MVP_MASTER_PLAN.md and SECURITY_RELEASE_PLAN.md for the release gate.
-
-## Truthful MVP status
-
-The software MVP is release-candidate complete for controlled/sandbox operation. Production government execution remains fail-closed until authorized live connectors, authoritative effective-dated rules, certified statutory signature/issuance integrations, provider credentials and deployed Supabase/Render/Netlify security validation are in place.
-
+Do not enable live connectors or use real citizen data in the public research preview. Production release requires authorised integrations, verified rule packs, deployed security checks, and rollback validation.

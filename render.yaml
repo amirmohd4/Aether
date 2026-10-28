@@ -5,7 +5,7 @@ services:
     plan: free
     dockerContext: .
     dockerfilePath: ./backend/Dockerfile
-    healthCheckPath: /health
+    healthCheckPath: /ready
     envVars:
       - key: DATABASE_URL
         sync: false

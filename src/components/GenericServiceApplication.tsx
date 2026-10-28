@@ -15,6 +15,7 @@ export const GenericServiceApplication: React.FC<Props> = ({
 }) => {
   const [objective, setObjective] = useState(title);
   const [customerType, setCustomerType] = useState(defaultCustomerType);
+  const [demoContext, setDemoContext] = useState('Global demo');
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<string>('');
 
@@ -33,7 +34,7 @@ export const GenericServiceApplication: React.FC<Props> = ({
         body: JSON.stringify({
           objective,
           customer_type: customerType,
-          jurisdiction: { country: 'India' },
+          jurisdiction: { country: demoContext, mode: 'synthetic' },
         }),
       });
       const body = await response.json().catch(() => ({}));
@@ -43,7 +44,7 @@ export const GenericServiceApplication: React.FC<Props> = ({
       const matched = body.service_name || body.service_id;
       setResult(
         matched
-          ? `Aether matched this request to ${matched}. Continue in the secure Command Center to submit the case and complete required documents.`
+          ? `SIMULATED PREVIEW — Aether matched this request to ${matched}. No government system was contacted and no official application was submitted. This step validates service understanding only.`
           : 'Aether needs more context before starting this service.'
       );
     } catch (error) {
@@ -72,6 +73,20 @@ export const GenericServiceApplication: React.FC<Props> = ({
         onChange={(event) => setObjective(event.target.value)}
         className="mt-2 h-28 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-900 outline-none focus:border-emerald-500"
       />
+
+      <label className="mt-4 block text-xs font-semibold text-slate-700">Demo context (simulation only)</label>
+      <select
+        value={demoContext}
+        onChange={(event) => setDemoContext(event.target.value)}
+        className="mt-2 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900"
+      >
+        <option value="Global demo">Global mock environment</option>
+        <option value="India">India (synthetic only)</option>
+        <option value="United States">United States (synthetic only)</option>
+        <option value="United Kingdom">United Kingdom (synthetic only)</option>
+        <option value="Other jurisdiction">Other jurisdiction (synthetic only)</option>
+      </select>
+      <p className="mt-1 text-[11px] text-slate-500">This selection labels the simulation; it does not load or certify official local rules.</p>
 
       <label className="mt-4 block text-xs font-semibold text-slate-700">Applicant type</label>
       <select

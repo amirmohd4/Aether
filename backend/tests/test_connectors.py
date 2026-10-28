@@ -61,6 +61,7 @@ def test_configured_http_connector_uses_stable_request_contract(monkeypatch):
         "Revenue",
         "https://gov.example.test/api",
         bearer_token="server-secret",
+        allowed_operations={"land_record"},
     )
     result = connector.execute("land_record", {"parcel_id": "P-9"}, "case-1:land")
 
@@ -71,3 +72,30 @@ def test_configured_http_connector_uses_stable_request_contract(monkeypatch):
     assert calls[0][3]["Authorization"] == "Bearer server-secret"
     assert calls[0][3]["Idempotency-Key"] == "case-1:land"
     assert calls[1][1].endswith("/requests/GOV-123")
+
+
+
+def test_live_connector_fails_closed_without_an_explicit_operation_allowlist(monkeypatch):
+    connector = ConfiguredHTTPConnector(
+        "Revenue",
+        "https://gov.example.test/api",
+        bearer_token="server-secret",
+    )
+    assert connector.configuration_valid() is False
+
+    import pytest
+    with pytest.raises(RuntimeError, match="not authorised"):
+        connector.execute("land_record", {"parcel_id": "P-10"}, "case-2:land")
+
+
+def test_live_connector_rejects_operations_outside_the_allowlist(monkeypatch):
+    import pytest
+
+    connector = ConfiguredHTTPConnector(
+        "Revenue",
+        "https://gov.example.test/api",
+        bearer_token="server-secret",
+        allowed_operations={"land_record"},
+    )
+    with pytest.raises(RuntimeError, match="not authorised"):
+        connector.execute("property_transfer", {"parcel_id": "P-11"}, "case-3:transfer")

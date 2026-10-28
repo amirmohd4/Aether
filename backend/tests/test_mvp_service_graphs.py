@@ -25,7 +25,7 @@ def _assert_acyclic(task_map):
 def test_every_mvp_service_has_an_executable_baseline_graph():
     registry = ServiceRegistry()
 
-    assert len(registry.all()) >= 34
+    assert len(registry.all()) == 32
 
     for service in registry.all():
         tasks = generic_tasks(service)

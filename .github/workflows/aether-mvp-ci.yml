@@ -32,6 +32,16 @@ jobs:
           PYTHONPATH: .:..
         run: pytest -q
 
+  autonomy-benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Test autonomy benchmark and release gates
+        run: python -m unittest tools.test_autonomy_benchmark -v
+
   frontend:
     runs-on: ubuntu-latest
     steps:
@@ -42,7 +52,49 @@ jobs:
           cache: npm
       - name: Install frontend dependencies
         run: npm ci
+      - name: Report dependency audit findings
+        shell: bash
+        run: |
+          npm audit --json > /tmp/npm-audit.json || true
+          node - <<'NODE'
+          const report = require('/tmp/npm-audit.json');
+          const counts = report.metadata?.vulnerabilities || {};
+          console.log('npm audit counts:', JSON.stringify(counts));
+          for (const [name, item] of Object.entries(report.vulnerabilities || {})) {
+            console.log(`AUDIT ${item.severity}: ${name} range=${item.range} fixAvailable=${JSON.stringify(item.fixAvailable)}`);
+            for (const advisory of item.via || []) {
+              if (typeof advisory === 'object') console.log(`  - ${advisory.title}: ${advisory.url}`);
+            }
+          }
+          NODE
+      - name: Fail on known dependency vulnerabilities
+        run: npm audit --audit-level=moderate
       - name: Typecheck
         run: npm run lint
       - name: Build frontend
         run: npm run build
+
+  public-demo-smoke:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'launch/public-research-preview'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Smoke-test the live public synthetic sandbox
+        env:
+          AETHER_PUBLIC_DEMO_URL: https://aether-public-demo.onrender.com
+          AETHER_PREVIEW_ORIGIN: https://deploy-preview-10--aether-govos.netlify.app
+        run: python tools/smoke_public_demo.py
+
+  public-launch-assets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Test public feedback form and research preview
+        run: python -m unittest tools.test_public_feedback_form -v

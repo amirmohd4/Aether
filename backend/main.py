@@ -39,15 +39,43 @@ _rate_windows = defaultdict(deque)
 @app.middleware("http")
 async def platform_hardening(request, call_next):
     request_id = request.headers.get("X-Request-ID") or uuid4().hex
-    production = os.getenv("AETHER_ENV", "development").strip().lower() == "production"
+    environment = os.getenv("AETHER_ENV", "development").strip().lower()
+    production = environment == "production"
+    public_demo = os.getenv("AETHER_PUBLIC_DEMO", "false").strip().lower() == "true"
+    rate_limit_enabled = environment in {"staging", "production"} or public_demo
+
+    if public_demo:
+        try:
+            content_length = int(request.headers.get("content-length", "0"))
+        except ValueError:
+            content_length = 0
+        if content_length > 1_048_576:
+            return JSONResponse(
+                status_code=413,
+                content={"detail": "Public demo request body exceeds 1 MiB", "request_id": request_id},
+                headers={"X-Request-ID": request_id},
+            )
 
     limit = max(30, int(os.getenv("AETHER_RATE_LIMIT_PER_MINUTE", "300")))
     client_host = request.client.host if request.client else "unknown"
     now = time.monotonic()
+    if client_host not in _rate_windows and len(_rate_windows) >= 5000:
+        stale_hosts = [
+            host for host, window in _rate_windows.items()
+            if not window or now - window[-1] >= 60
+        ]
+        for host in stale_hosts:
+            _rate_windows.pop(host, None)
+        if len(_rate_windows) >= 5000:
+            return JSONResponse(
+                status_code=429,
+                content={"detail": "Rate limit capacity reached", "request_id": request_id},
+                headers={"Retry-After": "60", "X-Request-ID": request_id},
+            )
     bucket = _rate_windows[client_host]
     while bucket and now - bucket[0] >= 60:
         bucket.popleft()
-    if production and len(bucket) >= limit:
+    if rate_limit_enabled and len(bucket) >= limit:
         return JSONResponse(
             status_code=429,
             content={"detail": "Rate limit exceeded", "request_id": request_id},
@@ -90,7 +118,7 @@ if legacy_api_enabled:
 app.include_router(aether_v2_router)
 
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 async def root():
     return {
         "service": "Aether GovOS",
