@@ -133,9 +133,9 @@
             draft.applicant ? 'Applicant type: ' + draft.applicant : '',
             draft.reference ? 'Synthetic reference: ' + draft.reference : '',
             draft.templateScope ? 'Template scope: ' + draft.templateScope : ''
-          ].filter(Boolean).join('\\n');
+          ].filter(Boolean).join('\n');
           if (demoFeedbackField && draft.feedback && !demoFeedbackField.value) demoFeedbackField.value = draft.feedback;
-          if (contextField && details) contextField.value = [contextField.value, details].filter(Boolean).join('\\n');
+          if (contextField && details) contextField.value = [contextField.value, details].filter(Boolean).join('\n');
           window.sessionStorage.removeItem('aether.feedback-draft');
         }
       } catch {
