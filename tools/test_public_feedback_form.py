@@ -30,6 +30,10 @@ class PublicFeedbackFormTests(unittest.TestCase):
         self.assertIn('action="/feedback-thanks.html"', html)
         self.assertIn('name="demo_feedback"', html)
         self.assertIn("sessionStorage", html)
+        self.assertIn('name="demo_feedback"', html)
+        self.assertIn("demoFeedbackField.setCustomValidity", html)
+        self.assertNotIn('name="observed_example" maxlength="3000" required', html)
+        self.assertNotIn('name="friction" maxlength="2000" required', html)
         self.assertTrue(THANKS.is_file())
         self.assertIn('netlify-honeypot="bot-field"', html)
 
