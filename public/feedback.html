@@ -65,6 +65,11 @@
         <span class="hint">This is context about a synthetic test, not an official case or application.</span>
       </div>
       <div class="field">
+        <label for="demo_feedback">What did you think of the Aether demo?</label>
+        <textarea id="demo_feedback" name="demo_feedback" maxlength="3000" placeholder="What worked, confused you, felt missing, or would make this useful?"></textarea>
+        <span class="hint">Your notes from the mock studio may be filled in here. Review them before submitting.</span>
+      </div>
+      <div class="field">
         <label for="example">What happened in a recent real example you observed?</label>
         <textarea id="example" name="observed_example" maxlength="3000" required placeholder="Describe the process, not the person or case. Please omit names, IDs, and confidential details."></textarea>
         <span class="hint">Separate what you directly observed from what you suspect.</span>
@@ -116,6 +121,26 @@
       const contextField = document.getElementById('mock_context');
       if (workflowField && workflow && !workflowField.value) workflowField.value = workflow;
       if (contextField && context && !contextField.value) contextField.value = context;
+
+      // Carry the user's demo notes across pages in this tab only; do not put free text in the URL.
+      try {
+        const rawDraft = window.sessionStorage.getItem('aether.feedback-draft');
+        if (rawDraft) {
+          const draft = JSON.parse(rawDraft);
+          const demoFeedbackField = document.getElementById('demo_feedback');
+          const details = [
+            draft.objective ? 'Objective tested: ' + draft.objective : '',
+            draft.applicant ? 'Applicant type: ' + draft.applicant : '',
+            draft.reference ? 'Synthetic reference: ' + draft.reference : '',
+            draft.templateScope ? 'Template scope: ' + draft.templateScope : ''
+          ].filter(Boolean).join('\\n');
+          if (demoFeedbackField && draft.feedback && !demoFeedbackField.value) demoFeedbackField.value = draft.feedback;
+          if (contextField && details) contextField.value = [contextField.value, details].filter(Boolean).join('\\n');
+          window.sessionStorage.removeItem('aether.feedback-draft');
+        }
+      } catch {
+        // Manual entry remains available if storage is unavailable or invalid.
+      }
     })();
   </script>
   </main>
