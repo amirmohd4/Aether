@@ -27,7 +27,9 @@ class PublicFeedbackFormTests(unittest.TestCase):
         self.assertIn('data-netlify="true"', html)
         self.assertIn('name="form-name" value="aether-feedback"', html)
         self.assertIn('method="POST"', html)
-        self.assertIn('action="/feedback-thanks"', html)
+        self.assertIn('action="/feedback-thanks.html"', html)
+        self.assertIn('name="demo_feedback"', html)
+        self.assertIn("sessionStorage", html)
         self.assertTrue(THANKS.is_file())
         self.assertIn('netlify-honeypot="bot-field"', html)
 
