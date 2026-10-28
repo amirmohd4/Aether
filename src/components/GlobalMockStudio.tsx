@@ -162,6 +162,32 @@ export const GlobalMockStudio: React.FC = () => {
     }
   }
 
+  function openFeedbackForm() {
+    const draft = {
+      workflow: service?.label || serviceId,
+      jurisdiction,
+      scenario: scenarioLabels[scenario],
+      rating,
+      objective: objective.trim(),
+      applicant,
+      feedback: feedback.trim(),
+      reference,
+      templateScope: service ? getServiceJurisdictionScope(service.id) : 'Unknown',
+    };
+    try {
+      window.sessionStorage.setItem('aether.feedback-draft', JSON.stringify(draft));
+    } catch {
+      // The form remains usable if browser storage is unavailable.
+    }
+    const params = new URLSearchParams({
+      workflow: draft.workflow,
+      jurisdiction: draft.jurisdiction,
+      scenario: draft.scenario,
+      rating: draft.rating,
+    });
+    window.location.href = '/feedback.html?' + params.toString();
+  }
+
   return (
     <section className="mb-8 rounded-3xl border border-cyan-300/20 bg-gradient-to-br from-cyan-300/[0.08] via-white/[0.025] to-violet-300/[0.06] p-5 md:p-7">
       <div className="flex flex-col gap-3 border-b border-white/10 pb-5 md:flex-row md:items-start md:justify-between">
@@ -232,7 +258,7 @@ export const GlobalMockStudio: React.FC = () => {
           <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
             <h3 className="text-sm font-semibold text-white">4. Share feedback</h3>
             <p className="mt-1 text-xs text-slate-400">Tell us what was confusing, missing, or worth automating. Feedback is not sent automatically from this mock screen.</p>
-            <a href={`/feedback.html?workflow=${encodeURIComponent(service?.label || serviceId)}&jurisdiction=${encodeURIComponent(jurisdiction)}&scenario=${encodeURIComponent(scenarioLabels[scenario])}&rating=${encodeURIComponent(rating)}`} className="mt-2 inline-flex text-xs font-semibold text-cyan-200 underline underline-offset-4">Open feedback form with this test pre-filled</a>
+            <button type="button" onClick={openFeedbackForm} className="mt-2 inline-flex text-xs font-semibold text-cyan-200 underline underline-offset-4">Open feedback form with this test pre-filled</button>
             <div className="mt-3 grid gap-3 sm:grid-cols-[120px_1fr]">
               <label className="text-xs text-slate-300">Rating
                 <select value={rating} onChange={e => setRating(e.target.value)} className="mt-2 w-full rounded-lg border border-white/10 bg-slate-900 p-2 text-sm text-white">{['5','4','3','2','1'].map(x => <option key={x} value={x}>{x} / 5</option>)}</select>
