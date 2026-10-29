@@ -33,6 +33,13 @@ cors_origins = [
     if origin.strip()
 ]
 
+# Public Netlify deploy previews have a new numbered origin per pull request.
+# Allow only the exact Aether site's HTTPS deploy-preview hostname, and only
+# when this isolated service is explicitly running in public-demo mode.
+cors_origin_regex = os.getenv("AETHER_CORS_ORIGIN_REGEX", "").strip()
+if not cors_origin_regex and os.getenv("AETHER_PUBLIC_DEMO", "false").strip().lower() == "true":
+    cors_origin_regex = r"^https://deploy-preview-[0-9]+--aether-govos\.netlify\.app$"
+
 _rate_windows = defaultdict(deque)
 
 
@@ -97,6 +104,7 @@ async def platform_hardening(request, call_next):
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
+    allow_origin_regex=cors_origin_regex or None,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

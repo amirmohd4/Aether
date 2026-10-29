@@ -6,10 +6,12 @@ on:
       - aether-mvp-build
       - aether-mvp-final-hardening
       - aether-integration-foundation
+      - launch/public-research-preview
       - main
   pull_request:
     branches:
       - aether-mvp-build
+      - launch/public-research-preview
       - main
 
 jobs:
