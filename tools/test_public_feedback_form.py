@@ -27,7 +27,13 @@ class PublicFeedbackFormTests(unittest.TestCase):
         self.assertIn('data-netlify="true"', html)
         self.assertIn('name="form-name" value="aether-feedback"', html)
         self.assertIn('method="POST"', html)
-        self.assertIn('action="/feedback-thanks"', html)
+        self.assertIn('action="/feedback-thanks.html"', html)
+        self.assertIn('name="demo_feedback"', html)
+        self.assertIn("sessionStorage", html)
+        self.assertIn('name="demo_feedback"', html)
+        self.assertIn("demoFeedbackField.setCustomValidity", html)
+        self.assertNotIn('name="observed_example" maxlength="3000" required', html)
+        self.assertNotIn('name="friction" maxlength="2000" required', html)
         self.assertTrue(THANKS.is_file())
         self.assertIn('netlify-honeypot="bot-field"', html)
 
@@ -60,6 +66,19 @@ class PublicFeedbackFormTests(unittest.TestCase):
         self.assertIn('href="/feedback.html"', html)
         self.assertIn("No government endorsement claimed", html)
 
+
+    def test_research_preview_explains_the_full_vision_and_failure_modes(self):
+        html = PREVIEW.read_text(encoding="utf-8")
+        self.assertIn("administrative execution layer", html)
+        self.assertIn("Build a dependency-aware plan", html)
+        self.assertIn("Routine path", html)
+        self.assertIn("Missing evidence", html)
+        self.assertIn("System failure", html)
+        self.assertIn("Human review", html)
+        self.assertIn("Evidence conflict", html)
+        self.assertIn("Aether does not approve, reject, inspect or certify", html)
+        self.assertIn("No real-world time or cost savings have been proven", html)
+        self.assertIn('aria-live="polite"', html)
 
     def test_preview_links_to_safe_interactive_demo(self):
         preview = PREVIEW.read_text(encoding="utf-8").lower()
