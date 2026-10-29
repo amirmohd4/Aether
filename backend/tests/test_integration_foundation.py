@@ -136,6 +136,7 @@ def test_configured_http_connector_configuration_validation():
         department="Land Records",
         base_url="https://sandbox.gov.example",
         bearer_token="sandbox-token",
+        allowed_operations={"land_record_lookup"},
     )
     assert valid.configuration_valid() is True
     assert valid.authenticate()["credential_present"] is True
@@ -144,6 +145,7 @@ def test_configured_http_connector_configuration_validation():
         department="Land Records",
         base_url="http://sandbox.gov.example",
         bearer_token="sandbox-token",
+        allowed_operations={"land_record_lookup"},
     )
     assert invalid_scheme.configuration_valid() is False
 
@@ -151,5 +153,34 @@ def test_configured_http_connector_configuration_validation():
         department="Land Records",
         base_url="https://sandbox.gov.example",
         bearer_token=None,
+        allowed_operations={"land_record_lookup"},
     )
     assert invalid_credential.configuration_valid() is False
+
+
+
+def test_production_connector_requires_an_explicit_operation_allowlist(monkeypatch):
+    monkeypatch.setenv("AETHER_ENABLE_PRODUCTION_CONNECTORS", "true")
+    monkeypatch.setenv(
+        "AETHER_PRODUCTION_CONNECTORS",
+        '{"Land Records": {"base_url": "https://sandbox.gov.example", "bearer_token": "test-token"}}',
+    )
+    with pytest.raises(RuntimeError, match="allowed_operations"):
+        ConnectorRegistry()
+
+
+def test_configured_http_connector_requires_operation_allowlist():
+    missing_allowlist = ConfiguredHTTPConnector(
+        department="Land Records",
+        base_url="https://sandbox.gov.example",
+        bearer_token="sandbox-token",
+    )
+    assert missing_allowlist.configuration_valid() is False
+
+    allowed = ConfiguredHTTPConnector(
+        department="Land Records",
+        base_url="https://sandbox.gov.example",
+        bearer_token="sandbox-token",
+        allowed_operations={"land_record_lookup"},
+    )
+    assert allowed.configuration_valid() is True

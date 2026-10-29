@@ -820,18 +820,26 @@ class AetherExecutionEngine:
                 else None
             )
             if not self.audit.for_case(case.case_id):
-                self.audit.seed_case(case.case_id, previous_hash)
+                previous_sequence = (
+                    case.execution_events[-1].get("sequence", 0)
+                    if case.execution_events
+                    else 0
+                )
+                self.audit.seed_case(case.case_id, previous_hash, sequence=previous_sequence)
 
+            audit_entry = self.audit.record(action, actor, case.case_id, data)
+            # The stored event must hash the exact canonical sequence/timestamp
+            # used by AuditTrail.record; independently generating these fields
+            # creates a ledger whose hashes cannot verify after persistence.
             entry = {
-                "sequence": len(case.execution_events) + 1,
-                "timestamp": now_iso(),
+                "sequence": audit_entry["sequence"],
+                "timestamp": audit_entry["timestamp"],
                 "action": action,
                 "actor": actor,
                 "data": data or {},
+                "previous_hash": audit_entry.get("previous_hash"),
+                "event_hash": audit_entry.get("event_hash"),
             }
-            audit_entry = self.audit.record(action, actor, case.case_id, data)
-            entry["previous_hash"] = audit_entry.get("previous_hash")
-            entry["event_hash"] = audit_entry.get("event_hash")
             case.execution_events.append(entry)
             self.store.append_event(
                 case.case_id,
@@ -841,6 +849,7 @@ class AetherExecutionEngine:
                 previous_hash=audit_entry.get("previous_hash"),
                 event_hash=audit_entry.get("event_hash"),
                 sequence=entry["sequence"],
+                timestamp=audit_entry["timestamp"],
             )
             return entry
 

@@ -161,6 +161,7 @@ class ConfiguredHTTPConnector(GovernmentConnector):
         return (
             self.base_url.startswith("https://")
             and bool(self.bearer_token)
+            and bool(self.allowed_operations)
         )
 
     def authenticate(self) -> Dict[str, Any]:
@@ -180,7 +181,7 @@ class ConfiguredHTTPConnector(GovernmentConnector):
         payload: Dict[str, Any],
         idempotency_key: str | None = None,
     ) -> Dict[str, Any]:
-        if self.allowed_operations and operation not in self.allowed_operations:
+        if operation not in self.allowed_operations:
             raise RuntimeError(
                 f"Government connector operation not authorised for {self.department}: {operation}"
             )

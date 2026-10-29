@@ -8,7 +8,21 @@
   VITE_SUPABASE_ANON_KEY = "sb_publishable_1zr-O35OIeQVgBfnAVnXaQ_AewTZBqI"
   VITE_REQUIRE_AUTH = "true"
 
+[context.deploy-preview.environment]
+  VITE_API_URL = "https://aether-public-demo.onrender.com"
+  VITE_REQUIRE_AUTH = "false"
+  VITE_PUBLIC_DEMO = "true"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "no-referrer"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Strict-Transport-Security = "max-age=31536000"

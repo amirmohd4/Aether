@@ -25,7 +25,7 @@ def test_owner_can_access_own_case():
 
 
 def test_same_tenant_officer_can_access_case():
-    _authorize_case(_case(), Principal("officer-1", "officer", "tenant-1", "supabase"))
+    _authorize_case(_case(), Principal("officer-1", "officer", "tenant-1", "supabase", "Revenue", {"country": "India", "state": "Jammu and Kashmir"}))
 
 
 def test_cross_tenant_user_cannot_access_case():
@@ -37,8 +37,17 @@ def test_cross_tenant_user_cannot_access_case():
         raise AssertionError("cross-tenant access should be rejected")
 
 
-def test_admin_can_access_case():
-    _authorize_case(_case(), Principal("admin-1", "admin", "tenant-x", "supabase"))
+def test_admin_can_access_case_within_own_tenant():
+    _authorize_case(_case(), Principal("admin-1", "admin", "tenant-1", "supabase"))
+
+
+def test_admin_cannot_access_case_in_another_tenant():
+    try:
+        _authorize_case(_case(), Principal("admin-1", "admin", "tenant-x", "supabase"))
+    except HTTPException as exc:
+        assert exc.status_code == 404
+    else:
+        raise AssertionError("tenant admin must not access another tenant's case")
 
 
 def test_officer_cannot_access_case_outside_authorized_department():
@@ -57,7 +66,7 @@ def test_officer_cannot_access_case_outside_authorized_jurisdiction():
     try:
         _authorize_case(
             _case(),
-            Principal("officer-3", "officer", "tenant-1", "supabase", "business", {"country": "India", "state": "Maharashtra"}),
+            Principal("officer-3", "officer", "tenant-1", "supabase", "Revenue", {"country": "India", "state": "Maharashtra"}),
         )
     except HTTPException as exc:
         assert exc.status_code == 404
@@ -111,3 +120,182 @@ def test_officer_case_listing_filters_department_and_jurisdiction(monkeypatch):
     )
 
     assert [item["case_id"] for item in visible] == [allowed.case_id]
+
+
+
+def test_officer_without_department_is_denied():
+    try:
+        _authorize_case(_case(), Principal("officer-1", "officer", "tenant-1", "supabase"))
+    except HTTPException as exc:
+        assert exc.status_code == 404
+    else:
+        raise AssertionError("officer without a department assignment must be denied")
+
+
+def test_officer_without_required_jurisdiction_is_denied():
+    try:
+        _authorize_case(
+            _case(),
+            Principal("officer-1", "officer", "tenant-1", "supabase", "Revenue", {"state": "Jammu and Kashmir", "district": "Srinagar"}),
+        )
+    except HTTPException as exc:
+        assert exc.status_code == 404
+    else:
+        raise AssertionError("case outside the assigned jurisdiction must be denied")
+
+
+def test_api_key_human_decision_requires_explicit_scope():
+    from aether_core.security import require_human_authority
+
+    principal = Principal("api-key:test", "officer", "tenant-1", "api_key", scopes=frozenset({"cases:read", "cases:write"}))
+    try:
+        require_human_authority(principal)
+    except HTTPException as exc:
+        assert exc.status_code == 403
+    else:
+        raise AssertionError("API key must have human:decide scope")
+
+
+def test_api_key_human_decision_allows_explicit_scope():
+    from aether_core.security import require_human_authority
+
+    principal = Principal("api-key:test", "officer", "tenant-1", "api_key", scopes=frozenset({"human:decide"}))
+    assert require_human_authority(principal) == principal
+
+
+
+def test_admin_case_listing_is_tenant_scoped(monkeypatch):
+    from aether_core.routes import _list_visible_cases
+
+    monkeypatch.setattr(
+        "aether_core.routes.engine.store.list",
+        lambda **kwargs: kwargs,
+    )
+    result = _list_visible_cases(
+        Principal("admin-1", "admin", "tenant-1", "supabase"),
+        status="waiting_for_human",
+        limit=10,
+    )
+    assert result["tenant_id"] == "tenant-1"
+    assert result["status"] == "waiting_for_human"
+    assert result["limit"] == 10
+
+
+
+def _request(headers=None):
+    from starlette.requests import Request
+
+    return Request({
+        "type": "http",
+        "method": "GET",
+        "path": "/",
+        "headers": headers or [],
+        "client": ("127.0.0.1", 1234),
+        "server": ("testserver", 80),
+        "scheme": "http",
+        "query_string": b"",
+    })
+
+
+def test_public_demo_requires_explicit_safe_configuration(monkeypatch):
+    from aether_core.security import require_principal
+
+    monkeypatch.setenv("AETHER_ENV", "staging")
+    monkeypatch.setenv("AETHER_AUTH_MODE", "supabase")
+    monkeypatch.setenv("AETHER_PUBLIC_DEMO", "true")
+    monkeypatch.setenv("AETHER_ENABLE_PRODUCTION_CONNECTORS", "false")
+
+    principal = require_principal(_request([(b"x-aether-demo-session", b"550e8400-e29b-41d4-a716-446655440000")]))
+    assert principal.auth_mode == "public_demo"
+    assert principal.tenant_id.startswith("public-demo:")
+    assert principal.role == "demo"
+
+
+def test_public_demo_rejects_production_environment(monkeypatch):
+    from aether_core.security import require_principal
+
+    monkeypatch.setenv("AETHER_ENV", "production")
+    monkeypatch.setenv("AETHER_AUTH_MODE", "none")
+    monkeypatch.setenv("AETHER_PUBLIC_DEMO", "true")
+    monkeypatch.setenv("AETHER_ENABLE_PRODUCTION_CONNECTORS", "false")
+
+    try:
+        require_principal(_request())
+    except HTTPException as exc:
+        assert exc.status_code == 500
+    else:
+        raise AssertionError("public demo must never run in production")
+
+
+def test_public_demo_rejects_enabled_government_connectors(monkeypatch):
+    from aether_core.security import require_principal
+
+    monkeypatch.setenv("AETHER_ENV", "staging")
+    monkeypatch.setenv("AETHER_AUTH_MODE", "none")
+    monkeypatch.setenv("AETHER_PUBLIC_DEMO", "true")
+    monkeypatch.setenv("AETHER_ENABLE_PRODUCTION_CONNECTORS", "true")
+
+    try:
+        require_principal(_request())
+    except HTTPException as exc:
+        assert exc.status_code == 500
+    else:
+        raise AssertionError("public demo must reject live connector configuration")
+
+
+
+def test_public_demo_rejects_missing_session(monkeypatch):
+    from aether_core.security import require_principal
+
+    monkeypatch.setenv("AETHER_ENV", "staging")
+    monkeypatch.setenv("AETHER_AUTH_MODE", "none")
+    monkeypatch.setenv("AETHER_PUBLIC_DEMO", "true")
+    monkeypatch.setenv("AETHER_ENABLE_PRODUCTION_CONNECTORS", "false")
+
+    try:
+        require_principal(_request())
+    except HTTPException as exc:
+        assert exc.status_code == 400
+    else:
+        raise AssertionError("public demo must require a session identifier")
+
+
+
+def test_public_demo_sessions_are_isolated(monkeypatch):
+    from aether_core.security import require_principal
+
+    monkeypatch.setenv("AETHER_ENV", "staging")
+    monkeypatch.setenv("AETHER_AUTH_MODE", "none")
+    monkeypatch.setenv("AETHER_PUBLIC_DEMO", "true")
+    monkeypatch.setenv("AETHER_ENABLE_PRODUCTION_CONNECTORS", "false")
+
+    first = require_principal(_request([(b"x-aether-demo-session", b"550e8400-e29b-41d4-a716-446655440000")]))
+    second = require_principal(_request([(b"x-aether-demo-session", b"550e8400-e29b-41d4-a716-446655440001")]))
+    assert first.tenant_id != second.tenant_id
+    assert first.subject != second.subject
+
+
+
+def test_public_demo_blocks_real_document_upload():
+    from aether_core.routes import upload_case_document
+
+    principal = Principal("public-demo:session", "demo", "public-demo:session", "public_demo")
+    try:
+        upload_case_document("A-TEST", "identity_document", None, principal)
+    except HTTPException as exc:
+        assert exc.status_code == 403
+    else:
+        raise AssertionError("public demo must disable real document uploads")
+
+
+def test_public_demo_blocks_api_key_management():
+    from aether_core.routes import list_api_keys, revoke_api_key
+
+    principal = Principal("public-demo:session", "demo", "public-demo:session", "public_demo")
+    for action in (lambda: list_api_keys(principal), lambda: revoke_api_key("prefix", principal)):
+        try:
+            action()
+        except HTTPException as exc:
+            assert exc.status_code == 403
+        else:
+            raise AssertionError("public demo must disable API-key management")
