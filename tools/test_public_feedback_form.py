@@ -67,6 +67,19 @@ class PublicFeedbackFormTests(unittest.TestCase):
         self.assertIn("No government endorsement claimed", html)
 
 
+    def test_research_preview_explains_the_full_vision_and_failure_modes(self):
+        html = PREVIEW.read_text(encoding="utf-8")
+        self.assertIn("administrative execution layer", html)
+        self.assertIn("Build a dependency-aware plan", html)
+        self.assertIn("Routine path", html)
+        self.assertIn("Missing evidence", html)
+        self.assertIn("System failure", html)
+        self.assertIn("Human review", html)
+        self.assertIn("Evidence conflict", html)
+        self.assertIn("Aether does not approve, reject, inspect or certify", html)
+        self.assertIn("No real-world time or cost savings have been proven", html)
+        self.assertIn('aria-live="polite"', html)
+
     def test_preview_links_to_safe_interactive_demo(self):
         preview = PREVIEW.read_text(encoding="utf-8").lower()
         netlify = NETLIFY.read_text(encoding="utf-8")
