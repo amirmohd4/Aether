@@ -70,13 +70,13 @@
         <span class="hint">Your notes from the mock studio may be filled in here. Review them before submitting.</span>
       </div>
       <div class="field">
-        <label for="example">What happened in a recent real example you observed?</label>
-        <textarea id="example" name="observed_example" maxlength="3000" required placeholder="Describe the process, not the person or case. Please omit names, IDs, and confidential details."></textarea>
-        <span class="hint">Separate what you directly observed from what you suspect.</span>
+        <label for="example">Real-world example you observed (optional)</label>
+        <textarea id="example" name="observed_example" maxlength="3000" placeholder="If you have one, describe the process—not the person or case. Leave blank if you only tested the demo."></textarea>
+        <span class="hint">Optional. Separate what you directly observed from what you suspect.</span>
       </div>
       <div class="field">
-        <label for="friction">Where did work repeat, stall, or require follow-up?</label>
-        <textarea id="friction" name="friction" maxlength="2000" required placeholder="Repeated documents, re-keying, handoffs, unclear status, rework—or no significant problem."></textarea>
+        <label for="friction">Where did work repeat, stall, or require follow-up? (optional)</label>
+        <textarea id="friction" name="friction" maxlength="2000" placeholder="Repeated documents, re-keying, handoffs, unclear status, rework—or no significant problem."></textarea>
       </div>
       <div class="field">
         <label for="frequency">How often does this happen?</label>
@@ -119,8 +119,27 @@
       ].filter(Boolean).join(' · ');
       const workflowField = document.getElementById('workflow');
       const contextField = document.getElementById('mock_context');
+      const demoFeedbackField = document.getElementById('demo_feedback');
+      const observedExampleField = document.getElementById('example');
+      const frictionField = document.getElementById('friction');
+      const feedbackForm = document.querySelector('form[name="aether-feedback"]');
       if (workflowField && workflow && !workflowField.value) workflowField.value = workflow;
       if (contextField && context && !contextField.value) contextField.value = context;
+
+      // Accept demo-only feedback; require at least one substantive feedback field.
+      if (feedbackForm) feedbackForm.addEventListener('submit', function (event) {
+        const hasFeedback = [demoFeedbackField, observedExampleField, frictionField]
+          .some(field => field && field.value.trim().length > 0);
+        if (!hasFeedback) {
+          event.preventDefault();
+          if (demoFeedbackField) {
+            demoFeedbackField.setCustomValidity('Please share demo feedback or a real-world workflow example.');
+            demoFeedbackField.reportValidity();
+          }
+        } else if (demoFeedbackField) {
+          demoFeedbackField.setCustomValidity('');
+        }
+      });
 
       // Carry the user's demo notes across pages in this tab only; do not put free text in the URL.
       try {
