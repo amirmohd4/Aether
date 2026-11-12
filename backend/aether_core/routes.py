@@ -25,6 +25,7 @@ from .preflight_simulator import simulate_submission
 from .document_reuse import build_document_reuse_candidates
 from .workload_intelligence import build_workload_snapshot
 from .rule_change_impact import diff_process_profiles
+from .administrative_intelligence import AdministrativeIntelligence
 from backend.database import SessionLocal
 from sqlalchemy import text
 
@@ -109,6 +110,35 @@ def serialize(case, include_tasks: bool = True):
             for task_id, state in case.tasks.items()
         }
     return response
+
+
+admin_intelligence = AdministrativeIntelligence()
+
+
+@router.get("/admin-intelligence/overview")
+def admin_intelligence_overview(principal: Principal = Depends(require_scope("cases:read"))):
+    """India-wide discovery overview; seed counts are not legal coverage claims."""
+    return admin_intelligence.overview()
+
+
+@router.get("/admin-intelligence/departments")
+def admin_intelligence_departments(principal: Principal = Depends(require_scope("cases:read"))):
+    """Department taxonomy with services matched from the shared India registry."""
+    return {"departments": admin_intelligence.departments()}
+
+
+@router.get("/admin-intelligence/journeys")
+def admin_intelligence_journeys(principal: Principal = Depends(require_scope("cases:read"))):
+    """Illustrative cross-department journey templates, never statutory checklists."""
+    return {"journeys": admin_intelligence.journeys()}
+
+
+@router.get("/admin-intelligence/journeys/{journey_id}")
+def admin_intelligence_journey(journey_id: str, principal: Principal = Depends(require_scope("cases:read"))):
+    journey = next((item for item in admin_intelligence.journeys() if item["id"] == journey_id), None)
+    if journey is None:
+        raise HTTPException(status_code=404, detail="Journey template not found")
+    return journey
 
 
 @router.post("/process/rule-impact")
