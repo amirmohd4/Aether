@@ -42,7 +42,7 @@ SOURCE_BACKED_RULES = [
     ),
     RuleRecord(
         rule_id="JK-FIRE-001",
-        service_id="food_business_license",
+        service_id="fire_noc",
         title="Fire provisional NOC inputs",
         jurisdiction={"country": "India", "state": "Jammu and Kashmir"},
         requirement="fire_safety_details",
