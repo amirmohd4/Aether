@@ -7,6 +7,7 @@ backed by effective-dated official sources before live execution.
 from __future__ import annotations
 
 from typing import Any
+import re
 
 from .service_registry import ServiceRegistry
 
@@ -106,8 +107,18 @@ class AdministrativeIntelligence:
 
     @staticmethod
     def _matches(profile: dict[str, Any], department: str) -> bool:
-        value = department.strip().lower()
-        return any(alias in value or value in alias for alias in profile["aliases"])
+        def normalize(value: str) -> str:
+            return re.sub(r"[^a-z0-9]+", " ", value.lower()).strip()
+
+        value = normalize(department)
+        if not value:
+            return False
+        padded_value = f" {value} "
+        for alias in profile["aliases"]:
+            normalized_alias = normalize(alias)
+            if normalized_alias and f" {normalized_alias} " in padded_value:
+                return True
+        return False
 
     def departments(self) -> list[dict[str, Any]]:
         result = []
