@@ -1,115 +1,95 @@
-# Aether GovOS — Render Deployment
+# Aether GovOS — Render Deployment and Controlled Staging
 
-This repository deploys the Aether backend as a Render Docker web service and a separate durable worker. Supabase provides the production database/auth/storage boundary, and Netlify serves the frontend.
+Aether's controlled MVP uses the existing Supabase project for persistence, Auth and private document storage; Render for the FastAPI execution API; and Netlify for the React Command Center.
 
-## Controlled MVP
+## Deployment boundary
 
-Use the staging posture until live government integrations are explicitly authorized:
+- Keep `main` release-only. Do not merge PR #11 until the staging gates pass.
+- Use `aether-mvp-build` as the release-candidate source for staging.
+- Keep government connectors disabled. The first release is a synthetic/sandbox GovOS, not a live government filing or approval service.
+- Do not create a paid Render resource for the MVP. The current blueprint uses one Free web service with an embedded worker thread; do not create a separate background worker service.
+- The Render Free plan may suspend idle services and is not a guarantee of always-on background processing. Clearly disclose that limitation in a controlled demo.
 
-```env
-AETHER_ENV=staging
-AETHER_AUTH_MODE=supabase
-AETHER_ENABLE_LEGACY_API=false
-AETHER_ENABLE_PRODUCTION_CONNECTORS=false
-DATABASE_URL=<Supabase/Postgres connection string>
-SUPABASE_URL=<Supabase project URL>
-SUPABASE_ANON_KEY=<server-side Supabase publishable/anon key>
-SUPABASE_SERVICE_ROLE_KEY=<server-only service role key>
-AETHER_ENCRYPTION_KEY=<Fernet key generated for this environment>
-AETHER_DOCUMENT_BUCKET=aether-documents
-```
+## Render web service
 
-The web service starts from `backend/Dockerfile`. The worker uses:
+Use the existing Aether backend Docker configuration:
 
-```
-python backend/worker.py
-```
+- Runtime: Docker
+- Dockerfile: `backend/Dockerfile`
+- Health check: `/health`
+- Port: `8081`
+- Embedded worker: `AETHER_EMBED_WORKER=true`
+- Worker interval: `AETHER_WORKER_INTERVAL_SECONDS=5`
+- Worker startup delay: `AETHER_WORKER_STARTUP_DELAY_SECONDS=8`
 
-The worker is responsible for durable case recovery and notification-outbox dispatch. Never run a second worker against the same production database without the durable case-lease mechanism enabled.
+The embedded worker is deliberately selected to avoid requiring another Render service. It runs alongside the API process and processes durable cases/notification outbox work when the Free web instance is awake.
 
-## Render services
+## Required server-side environment
 
-Create two services from the repository:
+Set these in Render's environment settings. Never copy server secrets into Netlify or browser assets.
 
-1. Web service: Docker, `backend/Dockerfile`
-2. Background worker: Docker, `backend/Dockerfile`, command `python backend/worker.py`
+| Variable | Value / purpose |
+|---|---|
+| `AETHER_ENV` | `staging` |
+| `AETHER_AUTH_MODE` | `supabase` |
+| `AETHER_ENABLE_LEGACY_API` | `false` |
+| `AETHER_ENABLE_PRODUCTION_CONNECTORS` | `false` |
+| `AETHER_EMBED_WORKER` | `true` |
+| `AETHER_WORKER_INTERVAL_SECONDS` | `5` |
+| `AETHER_WORKER_STARTUP_DELAY_SECONDS` | `8` |
+| `AETHER_DATABASE_ROLE_OVERRIDE` | `aether_runtime` |
+| `AETHER_DATABASE_EXPECTED_ROLE` | `aether_runtime` |
+| `AETHER_DATABASE_PASSWORD` | Secret password assigned to the Supabase `aether_runtime` role |
+| `DATABASE_URL` | PostgreSQL pooler URL for the existing Supabase project; retain the correct pooler port and database name |
+| `AETHER_DATABASE_HOST_OVERRIDE` | Existing project's Supabase pooler host in `ap-northeast-1` |
+| `SUPABASE_URL` | Existing Supabase project URL |
+| `SUPABASE_ANON_KEY` | Supabase publishable/anon key, server-side for Auth validation |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-only Supabase service-role key |
+| `AETHER_ENCRYPTION_KEY` | Valid Fernet key, unique to this environment |
+| `AETHER_DOCUMENT_BUCKET` | `aether-documents` |
+| `AETHER_CORS_ORIGINS` | Exact staging frontend origin |
+| `PORT` | `8081` |
 
-The included `render.yaml` contains the intended service definitions. Keep the backend and worker in the same region as the Supabase/Postgres endpoint where practical.
+### Database least-privilege setup
 
-## Required environment
+The existing Supabase migrations create the login role `aether_runtime`; the role password is intentionally not committed to Git.
 
-The web service and worker both need the server-side database and Supabase credentials. Never expose `SUPABASE_SERVICE_ROLE_KEY` or `AETHER_ENCRYPTION_KEY` to the frontend.
+1. In the Supabase SQL editor, assign a strong unique password to the role using your password manager:
+   `ALTER ROLE aether_runtime WITH PASSWORD '<your-strong-unique-password>';`
+2. Store that same password as the Render secret `AETHER_DATABASE_PASSWORD`.
+3. Keep `AETHER_DATABASE_ROLE_OVERRIDE=aether_runtime` and `AETHER_DATABASE_EXPECTED_ROLE=aether_runtime`.
+4. Set `DATABASE_URL` to the project's Supabase PostgreSQL pooler endpoint and correct pooler port. The application applies the configured host, role and password overrides.
+5. Verify the deployed `/ready` response. It must return HTTP 200 and `database_role_valid: true`.
 
-For notifications, configure an approved delivery adapter such as:
+The readiness endpoint now rejects a staging/production database connection using the wrong database role. Do not use the Supabase postgres superuser as the Aether application's runtime identity.
 
-```env
-AETHER_NOTIFICATION_WEBHOOK_URL=<approved webhook endpoint>
-AETHER_NOTIFICATION_WEBHOOK_SECRET=<signing secret>
-```
+## Netlify frontend
 
-For live external payments, configure:
+Build the React frontend from the same release candidate branch and set:
 
-```env
-AETHER_PAYMENT_PROVIDER_URL=<approved payment adapter>
-AETHER_PAYMENT_PROVIDER_TOKEN=<server-only token>
-```
+- `VITE_API_URL`: matching staging Render API base URL.
+- `VITE_SUPABASE_URL`: existing Supabase project URL.
+- `VITE_SUPABASE_ANON_KEY`: Supabase publishable/anon key only.
+- `VITE_REQUIRE_AUTH=true`.
 
-For OCR beyond native text/PDF extraction:
+The current `netlify.toml` values point at the existing public backend and must be changed for a separate staging deployment. A publishable/anon key may be public; service-role keys, database passwords and encryption keys must never be in frontend variables.
 
-```env
-AETHER_OCR_BASE_URL=<approved OCR endpoint>
-AETHER_OCR_TOKEN=<server-only token>
-```
+## Release verification
 
-## Supabase release sequence
+1. Confirm `/health` returns HTTP 200.
+2. Confirm `/ready` returns HTTP 200, database is ready, and the expected least-privilege role is valid.
+3. Confirm the authenticated `/api/aether/v2/release/readiness` response reports `ready_for_controlled_mvp=true`.
+4. Confirm connector mode is synthetic and legacy APIs are quarantined.
+5. Create a read-only Aether API key with the required `cases:read` scope and store it as the GitHub Actions secret `AETHER_STAGING_API_KEY`.
+6. Run GitHub Actions → **Aether Staging Release Smoke** on branch `aether-mvp-build`. Supply the staging API and frontend URLs.
+7. The workflow checks API health/readiness, frontend response, service catalog, marketplace, connector catalog, rule readiness, India department/journey endpoints and controlled-MVP release readiness.
 
-Apply the ordered SQL files under `supabase/migrations/`. The latest migrations are idempotent and include:
-
-- private execution persistence;
-- task checkpoints and durable case leases;
-- encrypted-document metadata boundary;
-- notification/payment/API-key ledgers;
-- deny-by-default browser access to private execution tables;
-- server-controlled tenant membership;
-- legacy public-table browser lockdown.
-
-After migration, verify the `aether-documents` storage bucket is private.
-
-## Verification
-
-After Render is live:
-
-```bash
-AETHER_API_URL=https://<render-host> python scripts/release_smoke_test.py
-```
-
-With Supabase authentication:
-
-```bash
-AETHER_API_URL=https://<render-host> \
-AETHER_API_TOKEN=<short-lived-supabase-access-token> \
-python scripts/release_smoke_test.py
-```
-
-The smoke test covers health, readiness, service catalog, marketplace, connector catalog, rule readiness and release readiness.
-
-## Production transition
-
-Do not switch `AETHER_ENV=production` merely because Render is healthy. Production execution is intentionally fail-closed until:
-
-- authorized government connector credentials and endpoint contracts exist;
-- authoritative, effective-dated rules cover the intended launch jurisdictions/services;
-- legally valid human-signature/certificate integration is certified where required;
-- production OCR/notification/payment providers are configured;
-- Supabase RLS/security checks pass;
-- the final Netlify frontend points at the final Render backend.
-
-The synthetic government environment remains available for controlled demonstrations only.
+If `AETHER_STAGING_API_KEY` is absent, authenticated product/release checks are skipped and the workflow emits a warning. That run is not final launch approval.
 
 ## Rollback
 
-Rollback the application to the previous known-good commit, leave already-applied compatible database migrations in place, verify schema compatibility, then rerun `/health`, `/ready` and the smoke test before reopening traffic.
+Before any public cutover, record the currently live Render and Netlify commits. Roll back the backend and frontend to the known-good pair if smoke checks fail. Keep already-applied backward-compatible Supabase migrations in place; never roll back the database schema blindly.
 
-## What not to do
+## Production government integrations
 
-Do not use the old mock-data deployment commands or treat synthetic connectors as real government connectivity. Do not place production secrets in frontend code. Do not claim Aether itself has statutory authority to issue government decisions.
+Do not switch to production mode or enable real connectors merely because the application is healthy. Each live service separately requires written authority, approved endpoints/credentials, authoritative effective-dated rules, sandbox certification, human/statutory approval boundaries and reconciliation against the government's system of record.
