@@ -27,3 +27,12 @@ def test_journey_steps_reference_registered_services_only():
     for journey in intelligence.journeys():
         for step in journey["steps"]:
             assert step["service_id"] in intelligence.by_id
+
+
+def test_department_matching_uses_word_boundaries_and_rejects_empty_labels():
+    from backend.aether_core.administrative_intelligence import DEPARTMENT_PROFILES
+
+    revenue = next(item for item in DEPARTMENT_PROFILES if item["id"] == "revenue")
+    assert AdministrativeIntelligence._matches(revenue, "Revenue Department")
+    assert not AdministrativeIntelligence._matches(revenue, "")
+    assert not AdministrativeIntelligence._matches(revenue, "PreRevenue Services")
