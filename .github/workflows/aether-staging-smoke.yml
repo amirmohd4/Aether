@@ -1,0 +1,67 @@
+name: Aether Staging Release Smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      api_url:
+        description: "Staging Aether API base URL (for example https://staging-api.example.com)"
+        required: true
+        type: string
+      frontend_url:
+        description: "Staging Aether frontend URL"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  staging-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      AETHER_API_URL: ${{ inputs.api_url }}
+      AETHER_FRONTEND_URL: ${{ inputs.frontend_url }}
+      AETHER_API_KEY: ${{ secrets.AETHER_STAGING_API_KEY }}
+    steps:
+      - name: Check out release candidate
+        uses: actions/checkout@v4
+
+      - name: Wait for API and frontend to become healthy
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in {1..18}; do
+            health="$(curl -sS -o /tmp/health.json -w '%{http_code}' "$AETHER_API_URL/health" || true)"
+            ready="$(curl -sS -o /tmp/ready.json -w '%{http_code}' "$AETHER_API_URL/ready" || true)"
+            root="$(curl -sS -o /tmp/root.json -w '%{http_code}' "$AETHER_API_URL/" || true)"
+            frontend="$(curl -sS -L -o /tmp/frontend.html -w '%{http_code}' "$AETHER_FRONTEND_URL/" || true)"
+            echo "attempt=$attempt health=$health ready=$ready root=$root frontend=$frontend"
+            if [ "$health" = "200" ] && [ "$ready" = "200" ] && [ "$root" = "200" ] && [ "$frontend" = "200" ]; then
+              break
+            fi
+            sleep 10
+          done
+          test "$health" = "200"
+          test "$ready" = "200"
+          test "$root" = "200"
+          test "$frontend" = "200"
+          jq -e '.status == "healthy"' /tmp/health.json
+          jq -e '.status == "ready" and .database == "ready"' /tmp/ready.json
+          jq -e '.service == "Aether GovOS" and .status == "running"' /tmp/root.json
+          grep -Eqi '<html|<title' /tmp/frontend.html
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run authenticated Aether product smoke
+        run: |
+          python -m pip install --disable-pip-version-check httpx
+          python scripts/release_smoke_test.py
+
+      - name: Report authentication coverage
+        if: env.AETHER_API_KEY == ''
+        run: |
+          echo "::warning::AETHER_STAGING_API_KEY is not configured. Public health checks ran, but authenticated catalog, tenant and controlled-release checks were skipped. Do not treat this run as final launch approval."
