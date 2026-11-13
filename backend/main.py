@@ -110,10 +110,32 @@ async def health_check():
 @app.get("/ready")
 async def readiness_check():
     from backend.database import engine
+    expected_role = os.getenv("AETHER_DATABASE_EXPECTED_ROLE", "").strip()
     try:
         with engine.connect() as connection:
             connection.exec_driver_sql("SELECT 1")
-        return {"status": "ready", "database": "ready", "aether_core": "ready"}
+            database_role = connection.exec_driver_sql("SELECT current_user").scalar()
+        if expected_role and database_role != expected_role:
+            logger.error(
+                "Aether database role mismatch: expected=%s actual=%s",
+                expected_role,
+                database_role,
+            )
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "status": "not_ready",
+                    "database": "wrong_runtime_role",
+                    "database_role_valid": False,
+                    "aether_core": "ready",
+                },
+            )
+        return {
+            "status": "ready",
+            "database": "ready",
+            "database_role_valid": True if expected_role else None,
+            "aether_core": "ready",
+        }
     except Exception as exc:
         logger.warning("Aether readiness check failed: %s", type(exc).__name__)
         return JSONResponse(
