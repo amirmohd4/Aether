@@ -1,15 +1,21 @@
 name: Aether Staging Release Smoke
 
 on:
+  push:
+    branches:
+      - aether-mvp-build
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       api_url:
-        description: "Staging Aether API base URL (for example https://staging-api.example.com)"
-        required: true
+        description: "Staging Aether API base URL"
+        required: false
         type: string
       frontend_url:
         description: "Staging Aether frontend URL"
-        required: true
+        required: false
         type: string
 
 permissions:
@@ -17,11 +23,12 @@ permissions:
 
 jobs:
   staging-smoke:
+    if: ${{ (inputs.api_url != '' || vars.AETHER_STAGING_API_URL != '') && (inputs.frontend_url != '' || vars.AETHER_STAGING_FRONTEND_URL != '') }}
     runs-on: ubuntu-latest
     timeout-minutes: 12
     env:
-      AETHER_API_URL: ${{ inputs.api_url }}
-      AETHER_FRONTEND_URL: ${{ inputs.frontend_url }}
+      AETHER_API_URL: ${{ inputs.api_url || vars.AETHER_STAGING_API_URL }}
+      AETHER_FRONTEND_URL: ${{ inputs.frontend_url || vars.AETHER_STAGING_FRONTEND_URL }}
       AETHER_API_KEY: ${{ secrets.AETHER_STAGING_API_KEY }}
     steps:
       - name: Check out release candidate
@@ -47,7 +54,7 @@ jobs:
           test "$root" = "200"
           test "$frontend" = "200"
           jq -e '.status == "healthy"' /tmp/health.json
-          jq -e '.status == "ready" and .database == "ready"' /tmp/ready.json
+          jq -e '.status == "ready" and .database == "ready" and .database_role_valid == true' /tmp/ready.json
           jq -e '.service == "Aether GovOS" and .status == "running"' /tmp/root.json
           grep -Eqi '<html|<title' /tmp/frontend.html
 
@@ -64,4 +71,12 @@ jobs:
       - name: Report authentication coverage
         if: env.AETHER_API_KEY == ''
         run: |
-          echo "::warning::AETHER_STAGING_API_KEY is not configured. Public health checks ran, but authenticated catalog, tenant and controlled-release checks were skipped. Do not treat this run as final launch approval."
+          echo "::warning::AETHER_STAGING_API_KEY is not configured. Public health checks ran, but authenticated catalog and controlled-release checks were skipped. Do not treat this run as final launch approval."
+
+  staging-not-configured:
+    if: ${{ (inputs.api_url == '' && vars.AETHER_STAGING_API_URL == '') || (inputs.frontend_url == '' && vars.AETHER_STAGING_FRONTEND_URL == '') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Explain required staging variables
+        run: |
+          echo "::notice::Set repository variables AETHER_STAGING_API_URL and AETHER_STAGING_FRONTEND_URL to enable automatic staging smoke checks. Set secret AETHER_STAGING_API_KEY for authenticated product/release checks."
