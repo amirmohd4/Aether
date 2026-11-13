@@ -3,12 +3,14 @@ import { LanguageProvider } from './contexts/LanguageContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { AetherCommandCenter } from './pages/AetherCommandCenter';
 import { DeliveryOpsConsole } from './components/DeliveryOpsConsole';
+import { IndiaAdminIntelligence } from './components/IndiaAdminIntelligence';
 
 function MainAppContent() {
   return (
     <>
       <AetherCommandCenter />
       <DeliveryOpsConsole />
+      <IndiaAdminIntelligence />
     </>
   );
 }

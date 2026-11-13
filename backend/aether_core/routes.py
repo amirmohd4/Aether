@@ -25,6 +25,7 @@ from .preflight_simulator import simulate_submission
 from .document_reuse import build_document_reuse_candidates
 from .workload_intelligence import build_workload_snapshot
 from .rule_change_impact import diff_process_profiles
+from .administrative_intelligence import AdministrativeIntelligence
 from backend.database import SessionLocal
 from sqlalchemy import text
 
@@ -109,6 +110,35 @@ def serialize(case, include_tasks: bool = True):
             for task_id, state in case.tasks.items()
         }
     return response
+
+
+admin_intelligence = AdministrativeIntelligence()
+
+
+@router.get("/admin-intelligence/overview")
+def admin_intelligence_overview(principal: Principal = Depends(require_scope("cases:read"))):
+    """India-wide discovery overview; seed counts are not legal coverage claims."""
+    return admin_intelligence.overview()
+
+
+@router.get("/admin-intelligence/departments")
+def admin_intelligence_departments(principal: Principal = Depends(require_scope("cases:read"))):
+    """Department taxonomy with services matched from the shared India registry."""
+    return {"departments": admin_intelligence.departments()}
+
+
+@router.get("/admin-intelligence/journeys")
+def admin_intelligence_journeys(principal: Principal = Depends(require_scope("cases:read"))):
+    """Illustrative cross-department journey templates, never statutory checklists."""
+    return {"journeys": admin_intelligence.journeys()}
+
+
+@router.get("/admin-intelligence/journeys/{journey_id}")
+def admin_intelligence_journey(journey_id: str, principal: Principal = Depends(require_scope("cases:read"))):
+    journey = next((item for item in admin_intelligence.journeys() if item["id"] == journey_id), None)
+    if journey is None:
+        raise HTTPException(status_code=404, detail="Journey template not found")
+    return journey
 
 
 @router.post("/process/rule-impact")
@@ -199,6 +229,25 @@ def release_readiness():
         "legacy_api_quarantined": os.getenv("AETHER_ENABLE_LEGACY_API", "true").strip().lower() == "false",
         "synthetic_mode": not engine.workers.production_connectors_configured(),
     }
+    controlled_blockers = []
+    for check, message in [
+        ("database_url", "DATABASE_URL is not configured"),
+        ("supabase_auth", "AETHER_AUTH_MODE must be supabase"),
+        ("encryption_key", "AETHER_ENCRYPTION_KEY is not configured"),
+        ("private_document_storage", "Private document storage is not configured"),
+        ("legacy_api_quarantined", "Legacy API routes are not quarantined"),
+        ("worker_command_configured", "Durable worker command is not configured"),
+        ("synthetic_mode", "Controlled beta must use synthetic government systems"),
+    ]:
+        if not checks[check]:
+            controlled_blockers.append(message)
+    if os.getenv("AETHER_WORKER_DISABLED", "").strip().lower() == "true":
+        controlled_blockers.append("Durable worker runtime is disabled")
+    if checks["encryption_key"]:
+        from .document_crypto import encryption_key_ready
+        if not encryption_key_ready():
+            controlled_blockers.append("AETHER_ENCRYPTION_KEY is invalid")
+
     blockers = []
     if production and not checks["database_url"]:
         blockers.append("DATABASE_URL is not configured")
@@ -225,11 +274,12 @@ def release_readiness():
 
     return {
         "mode": "production" if production else "development_or_staging",
-        "ready_for_controlled_mvp": True,
+        "ready_for_controlled_mvp": not controlled_blockers,
+        "controlled_mvp_blockers": controlled_blockers,
         "ready_for_production": production and not blockers,
         "checks": checks,
         "blockers": blockers,
-        "note": "Controlled MVP can run against deterministic synthetic government systems. Production readiness requires authorized live connectors and authoritative rule coverage."
+        "note": "Controlled MVP readiness requires authentication, encrypted private storage, a durable worker and quarantined legacy routes; it uses synthetic government systems. Production readiness additionally requires authorized live connectors and authoritative effective-dated rule coverage."
     }
 
 
