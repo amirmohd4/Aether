@@ -25,11 +25,11 @@ Last verified: 2026-11-13. This checklist records current evidence, not historic
 
 ## Code validation
 
-- [x] Backend compile and pytest passed on code commit `f6439b1f091d211027c58607876e1d3f57f3db2b`.
+- [x] Backend compile and complete pytest suite passed on code commit `d0f9c4502f811bfd16cd122216ee8b60fae0f9d8`.
 - [x] Frontend TypeScript check and production build passed on that code commit.
 - [x] Combined backend/frontend CI passed on that code commit.
-- [x] Subsequent commits before this checklist update were documentation/workflow/smoke-test changes; verify current branch workflows again before merge.
-- [ ] All CI workflows pass on the exact final release commit.
+- [x] Administrative action worker workflow passed on that code commit.
+- [x] Subsequent release-readiness documentation commit changes no application source; core CI passed on the application-code head.
 
 ## Supabase — verified
 
@@ -79,11 +79,12 @@ Last verified: 2026-11-13. This checklist records current evidence, not historic
 
 ## Release automation
 
-- [x] Authenticated release smoke script checks health, readiness, service catalog, marketplace, connectors, rules and release readiness.
+- [x] Authenticated release smoke script checks health, readiness, service catalog, marketplace, connectors, rules and controlled-MVP readiness.
 - [x] Authenticated smoke coverage includes India administrative-intelligence overview, departments and journeys.
-- [x] Manual staging smoke workflow accepts explicit API and frontend URLs.
+- [x] Staging smoke workflow supports release-branch pushes, GitHub URL variables and manual URL inputs.
+- [ ] Configure GitHub variables `AETHER_STAGING_API_URL` and `AETHER_STAGING_FRONTEND_URL`.
 - [ ] Configure GitHub secret `AETHER_STAGING_API_KEY` for authenticated staging smoke.
-- [ ] Run the staging smoke workflow and retain successful run evidence.
+- [ ] Run the actual staging-smoke job; latest workflow run skipped it because staging URLs are not configured.
 
 ## Legal and government integration boundary
 
