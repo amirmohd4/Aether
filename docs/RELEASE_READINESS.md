@@ -4,7 +4,7 @@ Last checked: 2026-11-13 10:45 UTC
 
 ## Current decision
 
-<no-go> **NOT READY for public launch or production government deployment.** The repository contains a substantial sandbox MVP and a new India administrative-intelligence increment, but the live environment currently has a critical dependency blocker and the new increment is not merged or deployed.
+**NO-GO — NOT READY for public launch or production government deployment.** The repository contains a substantial sandbox MVP and a new India administrative-intelligence increment, but the live environment currently has a critical dependency blocker and the new increment is not merged or deployed.
 
 Aether must be described as a synthetic/sandbox workflow platform unless and until a specific government connector is authorized, source-backed, tested and reconciled against the authority's system of record. Internal task completion is not an official government outcome.
 
