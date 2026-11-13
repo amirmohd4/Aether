@@ -1,8 +1,8 @@
-from backend.aether_core.rule_registry import RuleRegistry
+from backend.aether_core.rule_registry import RuleRegistry, SOURCE_BACKED_RULES
 
 
 def test_jk_fire_rule_maps_to_fire_noc_service():
-    registry = RuleRegistry(records=None)
+    registry = RuleRegistry(records=list(SOURCE_BACKED_RULES))
     fire_rules = [rule for rule in registry.for_jurisdiction({"country": "India", "state": "Jammu and Kashmir"}) if rule.rule_id == "JK-FIRE-001"]
     assert len(fire_rules) == 1
     assert fire_rules[0].service_id == "fire_noc"
