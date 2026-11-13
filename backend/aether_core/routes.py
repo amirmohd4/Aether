@@ -208,11 +208,9 @@ def release_readiness():
         "database_url": bool(os.getenv("DATABASE_URL")),
         "supabase_auth": os.getenv("AETHER_AUTH_MODE", "none").strip().lower() == "supabase",
         "encryption_key": bool(os.getenv("AETHER_ENCRYPTION_KEY")),
-        "private_document_storage": (
-            document_store.storage_ready()
-            if production
-            else bool(os.getenv("SUPABASE_URL") and os.getenv("SUPABASE_SERVICE_ROLE_KEY"))
-        ),
+        # Verify the actual private bucket in every controlled/production environment.
+        # Presence of credentials alone does not prove that the bucket exists or is private.
+        "private_document_storage": document_store.storage_ready(),
         "production_connectors": engine.workers.production_connectors_configured(),
         "authoritative_rule_coverage": (
             {record["service_id"] for record in authoritative_rules}
@@ -225,7 +223,11 @@ def release_readiness():
             or os.getenv("AETHER_NOTIFICATION_SMS_URL")
         ),
         "payment_provider": bool(os.getenv("AETHER_PAYMENT_PROVIDER_URL")),
-        "worker_command_configured": bool(os.getenv("AETHER_WORKER_INTERVAL_SECONDS", "5")),
+        # A default polling interval is not proof that a worker process is configured.
+        "worker_command_configured": (
+            os.getenv("AETHER_EMBED_WORKER", "false").strip().lower() == "true"
+            or bool(os.getenv("AETHER_WORKER_COMMAND", "").strip())
+        ),
         "legacy_api_quarantined": os.getenv("AETHER_ENABLE_LEGACY_API", "true").strip().lower() == "false",
         "synthetic_mode": not engine.workers.production_connectors_configured(),
     }
