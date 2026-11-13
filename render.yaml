@@ -9,6 +9,12 @@ services:
     envVars:
       - key: DATABASE_URL
         sync: false
+      - key: AETHER_DATABASE_PASSWORD
+        sync: false
+      - key: AETHER_DATABASE_ROLE_OVERRIDE
+        value: aether_runtime
+      - key: AETHER_DATABASE_EXPECTED_ROLE
+        value: aether_runtime
       - key: PORT
         value: 8081
       - key: SUPABASE_URL
@@ -52,6 +58,12 @@ services:
     envVars:
       - key: DATABASE_URL
         sync: false
+      - key: AETHER_DATABASE_PASSWORD
+        sync: false
+      - key: AETHER_DATABASE_ROLE_OVERRIDE
+        value: aether_runtime
+      - key: AETHER_DATABASE_EXPECTED_ROLE
+        value: aether_runtime
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_ANON_KEY
