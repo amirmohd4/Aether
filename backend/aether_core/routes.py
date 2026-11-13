@@ -229,6 +229,25 @@ def release_readiness():
         "legacy_api_quarantined": os.getenv("AETHER_ENABLE_LEGACY_API", "true").strip().lower() == "false",
         "synthetic_mode": not engine.workers.production_connectors_configured(),
     }
+    controlled_blockers = []
+    for check, message in [
+        ("database_url", "DATABASE_URL is not configured"),
+        ("supabase_auth", "AETHER_AUTH_MODE must be supabase"),
+        ("encryption_key", "AETHER_ENCRYPTION_KEY is not configured"),
+        ("private_document_storage", "Private document storage is not configured"),
+        ("legacy_api_quarantined", "Legacy API routes are not quarantined"),
+        ("worker_command_configured", "Durable worker command is not configured"),
+        ("synthetic_mode", "Controlled beta must use synthetic government systems"),
+    ]:
+        if not checks[check]:
+            controlled_blockers.append(message)
+    if os.getenv("AETHER_WORKER_DISABLED", "").strip().lower() == "true":
+        controlled_blockers.append("Durable worker runtime is disabled")
+    if checks["encryption_key"]:
+        from .document_crypto import encryption_key_ready
+        if not encryption_key_ready():
+            controlled_blockers.append("AETHER_ENCRYPTION_KEY is invalid")
+
     blockers = []
     if production and not checks["database_url"]:
         blockers.append("DATABASE_URL is not configured")
@@ -255,11 +274,12 @@ def release_readiness():
 
     return {
         "mode": "production" if production else "development_or_staging",
-        "ready_for_controlled_mvp": True,
+        "ready_for_controlled_mvp": not controlled_blockers,
+        "controlled_mvp_blockers": controlled_blockers,
         "ready_for_production": production and not blockers,
         "checks": checks,
         "blockers": blockers,
-        "note": "Controlled MVP can run against deterministic synthetic government systems. Production readiness requires authorized live connectors and authoritative rule coverage."
+        "note": "Controlled MVP readiness requires authentication, encrypted private storage, a durable worker and quarantined legacy routes; it uses synthetic government systems. Production readiness additionally requires authorized live connectors and authoritative effective-dated rule coverage."
     }
 
 
