@@ -80,9 +80,9 @@ The current `netlify.toml` values point at the existing public backend and must 
 2. Confirm `/ready` returns HTTP 200, database is ready, and the expected least-privilege role is valid.
 3. Confirm the authenticated `/api/aether/v2/release/readiness` response reports `ready_for_controlled_mvp=true`.
 4. Confirm connector mode is synthetic and legacy APIs are quarantined.
-5. Create a read-only Aether API key with the required `cases:read` scope and store it as the GitHub Actions secret `AETHER_STAGING_API_KEY`.
-6. Run GitHub Actions → **Aether Staging Release Smoke** on branch `aether-mvp-build`. Supply the staging API and frontend URLs.
-7. The workflow checks API health/readiness, frontend response, service catalog, marketplace, connector catalog, rule readiness, India department/journey endpoints and controlled-MVP release readiness.
+5. Set GitHub repository variables `AETHER_STAGING_API_URL` and `AETHER_STAGING_FRONTEND_URL` to the two staging origins. Pushes to `aether-mvp-build` will then run the staging smoke workflow automatically.
+6. Create a read-only Aether API key with the required `cases:read` scope and store it as the GitHub Actions secret `AETHER_STAGING_API_KEY`.
+7. The workflow checks API health/readiness (including the expected runtime DB role), frontend response, service catalog, marketplace, connector catalog, rule readiness, India department/journey endpoints and controlled-MVP release readiness.
 
 If `AETHER_STAGING_API_KEY` is absent, authenticated product/release checks are skipped and the workflow emits a warning. That run is not final launch approval.
 
