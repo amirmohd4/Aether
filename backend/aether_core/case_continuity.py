@@ -34,6 +34,17 @@ def build_continuity_review(
         return {
             "status": "unavailable",
             "reason": "A tenant or owner scope is required before prior-case continuity can be considered.",
+            "related_case_count": 0,
+            "prior_cases": [],
+            "reusable_verified_fields": {},
+            "preflight_warnings": [],
+            "policy": {
+                "auto_copy": False,
+                "document_auto_transfer": False,
+                "explicit_user_confirmation_required": True,
+                "tenant_and_owner_scope_required": True,
+            },
+            "current_input_fields": sorted((current_inputs or {}).keys()),
         }
 
     store = DatabaseCaseStore()

@@ -25,6 +25,7 @@ from .preflight_simulator import simulate_submission
 from .document_reuse import build_document_reuse_candidates
 from .workload_intelligence import build_workload_snapshot
 from .rule_change_impact import diff_process_profiles
+from .administrative_intelligence import AdministrativeIntelligence
 from backend.database import SessionLocal
 from sqlalchemy import text
 
@@ -46,8 +47,34 @@ def serialize(case, include_tasks: bool = True):
         case.customer_type,
         case.jurisdiction,
     )
+    task_execution_modes = {
+        task_id: (
+            "configured_external_connector"
+            if engine.workers.production_connector(state.definition.department)
+            else "synthetic"
+        )
+        for task_id, state in case.tasks.items()
+    }
     response = {
         "summary": case.summary(),
+        "execution_provenance": {
+            "case_mode": (
+                "configured_external_connector"
+                if task_execution_modes and all(
+                    mode == "configured_external_connector"
+                    for mode in task_execution_modes.values()
+                )
+                else "mixed"
+                if any(mode == "configured_external_connector" for mode in task_execution_modes.values())
+                else "synthetic"
+            ),
+            "task_modes": task_execution_modes,
+            "official_outcome_verified": False,
+            "note": (
+                "Configured connector presence does not itself prove official acceptance. "
+                "Official outcome verification requires a source-of-truth reconciliation contract."
+            ),
+        },
         "understanding": understanding.as_dict(),
         "requirements": case.requirements,
         "human_actions": case.human_actions,
@@ -83,6 +110,35 @@ def serialize(case, include_tasks: bool = True):
             for task_id, state in case.tasks.items()
         }
     return response
+
+
+admin_intelligence = AdministrativeIntelligence()
+
+
+@router.get("/admin-intelligence/overview")
+def admin_intelligence_overview(principal: Principal = Depends(require_scope("cases:read"))):
+    """India-wide discovery overview; seed counts are not legal coverage claims."""
+    return admin_intelligence.overview()
+
+
+@router.get("/admin-intelligence/departments")
+def admin_intelligence_departments(principal: Principal = Depends(require_scope("cases:read"))):
+    """Department taxonomy with services matched from the shared India registry."""
+    return {"departments": admin_intelligence.departments()}
+
+
+@router.get("/admin-intelligence/journeys")
+def admin_intelligence_journeys(principal: Principal = Depends(require_scope("cases:read"))):
+    """Illustrative cross-department journey templates, never statutory checklists."""
+    return {"journeys": admin_intelligence.journeys()}
+
+
+@router.get("/admin-intelligence/journeys/{journey_id}")
+def admin_intelligence_journey(journey_id: str, principal: Principal = Depends(require_scope("cases:read"))):
+    journey = next((item for item in admin_intelligence.journeys() if item["id"] == journey_id), None)
+    if journey is None:
+        raise HTTPException(status_code=404, detail="Journey template not found")
+    return journey
 
 
 @router.post("/process/rule-impact")
@@ -152,11 +208,9 @@ def release_readiness():
         "database_url": bool(os.getenv("DATABASE_URL")),
         "supabase_auth": os.getenv("AETHER_AUTH_MODE", "none").strip().lower() == "supabase",
         "encryption_key": bool(os.getenv("AETHER_ENCRYPTION_KEY")),
-        "private_document_storage": (
-            document_store.storage_ready()
-            if production
-            else bool(os.getenv("SUPABASE_URL") and os.getenv("SUPABASE_SERVICE_ROLE_KEY"))
-        ),
+        # Verify the actual private bucket in every controlled/production environment.
+        # Presence of credentials alone does not prove that the bucket exists or is private.
+        "private_document_storage": document_store.storage_ready(),
         "production_connectors": engine.workers.production_connectors_configured(),
         "authoritative_rule_coverage": (
             {record["service_id"] for record in authoritative_rules}
@@ -169,10 +223,33 @@ def release_readiness():
             or os.getenv("AETHER_NOTIFICATION_SMS_URL")
         ),
         "payment_provider": bool(os.getenv("AETHER_PAYMENT_PROVIDER_URL")),
-        "worker_command_configured": bool(os.getenv("AETHER_WORKER_INTERVAL_SECONDS", "5")),
+        # A default polling interval is not proof that a worker process is configured.
+        "worker_command_configured": (
+            os.getenv("AETHER_EMBED_WORKER", "false").strip().lower() == "true"
+            or bool(os.getenv("AETHER_WORKER_COMMAND", "").strip())
+        ),
         "legacy_api_quarantined": os.getenv("AETHER_ENABLE_LEGACY_API", "true").strip().lower() == "false",
         "synthetic_mode": not engine.workers.production_connectors_configured(),
     }
+    controlled_blockers = []
+    for check, message in [
+        ("database_url", "DATABASE_URL is not configured"),
+        ("supabase_auth", "AETHER_AUTH_MODE must be supabase"),
+        ("encryption_key", "AETHER_ENCRYPTION_KEY is not configured"),
+        ("private_document_storage", "Private document storage is not configured"),
+        ("legacy_api_quarantined", "Legacy API routes are not quarantined"),
+        ("worker_command_configured", "Durable worker command is not configured"),
+        ("synthetic_mode", "Controlled beta must use synthetic government systems"),
+    ]:
+        if not checks[check]:
+            controlled_blockers.append(message)
+    if os.getenv("AETHER_WORKER_DISABLED", "").strip().lower() == "true":
+        controlled_blockers.append("Durable worker runtime is disabled")
+    if checks["encryption_key"]:
+        from .document_crypto import encryption_key_ready
+        if not encryption_key_ready():
+            controlled_blockers.append("AETHER_ENCRYPTION_KEY is invalid")
+
     blockers = []
     if production and not checks["database_url"]:
         blockers.append("DATABASE_URL is not configured")
@@ -199,11 +276,12 @@ def release_readiness():
 
     return {
         "mode": "production" if production else "development_or_staging",
-        "ready_for_controlled_mvp": True,
+        "ready_for_controlled_mvp": not controlled_blockers,
+        "controlled_mvp_blockers": controlled_blockers,
         "ready_for_production": production and not blockers,
         "checks": checks,
         "blockers": blockers,
-        "note": "Controlled MVP can run against deterministic synthetic government systems. Production readiness requires authorized live connectors and authoritative rule coverage."
+        "note": "Controlled MVP readiness requires authentication, encrypted private storage, a durable worker and quarantined legacy routes; it uses synthetic government systems. Production readiness additionally requires authorized live connectors and authoritative effective-dated rule coverage."
     }
 
 

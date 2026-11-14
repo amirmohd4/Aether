@@ -19,6 +19,8 @@ from .persistence_models import (
     AetherNotificationRecord,
     AetherPaymentRecord,
     AetherApiKeyRecord,
+    AetherAdminActionRecord,
+    AetherAdminWorkItemRecord,
 )
 
 
@@ -59,6 +61,8 @@ class DatabaseCaseStore:
                 AetherNotificationRecord,
                 AetherPaymentRecord,
                 AetherApiKeyRecord,
+                AetherAdminActionRecord,
+                AetherAdminWorkItemRecord,
             ):
                 model.__table__.create(bind=engine, checkfirst=True)
             self._schema_ready = True
@@ -408,10 +412,16 @@ class DatabaseCaseStore:
         previous_hash: str | None = None,
         sequence: int | None = None,
         event_hash: str | None = None,
+        timestamp: str | None = None,
     ) -> Dict[str, Any]:
         self._ensure_schema()
+        audit_timestamp = timestamp or datetime.now(timezone.utc).isoformat()
+        event_data = dict(data or {})
+        # Preserve the exact timestamp string used by the hash without requiring
+        # a schema migration; remove this private field when reading the ledger.
+        event_data["_aether_audit_timestamp"] = audit_timestamp
         entry = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": audit_timestamp,
             "action": action,
             "actor": actor,
             "case_id": case_id,
@@ -427,7 +437,7 @@ class DatabaseCaseStore:
                 actor=actor,
                 tenant_id=self._case_tenant(case_id),
                 created_at=datetime.utcnow(),
-                data=entry["data"],
+                data=event_data,
                 previous_hash=previous_hash,
                 event_hash=event_hash or "",
             )
@@ -443,19 +453,21 @@ class DatabaseCaseStore:
             rows = db.query(AetherExecutionEventRecord).filter(
                 AetherExecutionEventRecord.case_id == case_id
             ).order_by(AetherExecutionEventRecord.id.asc()).all()
-            return [
-                {
+            events = []
+            for row in rows:
+                stored_data = dict(row.data or {})
+                audit_timestamp = stored_data.pop("_aether_audit_timestamp", None)
+                events.append({
                     "sequence": row.sequence if row.sequence is not None else row.id,
-                    "timestamp": row.created_at.isoformat() if row.created_at else None,
+                    "timestamp": audit_timestamp or (row.created_at.isoformat() if row.created_at else None),
                     "action": row.action,
                     "actor": row.actor,
                     "case_id": row.case_id,
-                    "data": row.data or {},
+                    "data": stored_data,
                     "previous_hash": row.previous_hash,
                     "event_hash": row.event_hash,
-                }
-                for row in rows
-            ]
+                })
+            return events
 
     def _case_tenant(self, case_id: str) -> str | None:
         try:

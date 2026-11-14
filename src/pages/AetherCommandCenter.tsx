@@ -114,6 +114,12 @@ type OperatorBrief = {
 };
 
 type CaseResponse = {
+  execution_provenance?: {
+    case_mode: string;
+    task_modes: Record<string, string>;
+    official_outcome_verified: boolean;
+    note: string;
+  };
   summary: {
     case_id: string;
     objective: string;
@@ -898,7 +904,7 @@ export const AetherCommandCenter: React.FC = () => {
             <div className="mt-3 rounded-xl border border-cyan-300/10 bg-cyan-300/5 p-3 text-[11px] text-cyan-100">
               {useDemoEvidence
                 ? 'Demo mode supplies synthetic document types so the execution graph can be exercised end-to-end.'
-                : 'Guided intake mode creates the real case first and lets you record required document types before Aether executes.'}
+                : 'Guided intake creates an Aether workspace case only; it does not submit anything to a government authority.'}
             </div>
 
             <button
@@ -1125,6 +1131,23 @@ export const AetherCommandCenter: React.FC = () => {
                   </div>
                 </div>
 
+                {caseData.execution_provenance && (
+                  <div className="rounded-2xl border border-amber-300/20 bg-amber-300/5 p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-amber-200">
+                        {caseData.execution_provenance.case_mode === 'synthetic' ? 'Synthetic sandbox execution' : 'Execution provenance'}
+                      </p>
+                      <span className="rounded-full border border-amber-300/20 px-2 py-1 text-[10px] text-amber-100">
+                        {caseData.execution_provenance.official_outcome_verified ? 'Authority verified' : 'Not government-verified'}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-xs leading-5 text-amber-100/90">
+                      This case runs against simulated government systems and fictional demo records. A completed task or outcome demonstrates Aether workflow behavior only; it does not submit an application, change an official record, or create a government approval.
+                    </p>
+                    <p className="mt-2 text-[10px] text-amber-100/70">{caseData.execution_provenance.note}</p>
+                  </div>
+                )}
+
                 {caseData.operator?.friction?.bottleneck && (
                   <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                     <p className="text-[10px] uppercase tracking-[0.18em] text-slate-500">What happens next</p>
@@ -1306,7 +1329,7 @@ export const AetherCommandCenter: React.FC = () => {
                       <div>
                         <h3 className="font-semibold">Guided document intake</h3>
                         <p className="mt-1 text-xs text-slate-400">
-                          Select the document types you have supplied. Aether records intake metadata, supports real file upload, and uses extracted text in the document worker when available.
+                          Select sample document types to exercise Aether's intake and validation workflow. This is a sandbox case, not a government filing.
                         </p>
                       </div>
                       <span className="text-xs text-amber-200">{missingDocuments.length} missing</span>
@@ -1339,14 +1362,14 @@ export const AetherCommandCenter: React.FC = () => {
                     </button>
 
                     <div className="mt-4 rounded-xl border border-white/10 bg-slate-950/40 p-3">
-                      <p className="text-[11px] font-semibold text-slate-200">Upload actual document</p>
+                      <p className="text-[11px] font-semibold text-slate-200">Upload a sample document</p>
                       <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
                         <select
                           value={uploadDocumentType}
                           onChange={(e) => setUploadDocumentType(e.target.value)}
                           className="rounded-lg border border-white/10 bg-slate-900 p-2 text-xs"
                         >
-                          <option value="">Choose required type</option>
+                          <option value="">Choose sample type</option>
                           {missingDocuments.map((document) => (
                             <option key={document} value={document}>{document}</option>
                           ))}
@@ -1356,6 +1379,7 @@ export const AetherCommandCenter: React.FC = () => {
                           onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
                           className="rounded-lg border border-white/10 bg-slate-900 p-2 text-xs text-slate-300"
                         />
+                        <p className="mt-2 text-[10px] leading-4 text-amber-200/80">Public demo safety: use fictional/sample files only. Do not upload Aadhaar, PAN, bank, health, tax, land, or other personal or confidential records.</p>
                         <button
                           onClick={uploadDocument}
                           disabled={loading || !uploadDocumentType || !uploadFile}
@@ -1409,7 +1433,10 @@ export const AetherCommandCenter: React.FC = () => {
                   <div className="rounded-2xl border border-violet-300/20 bg-violet-300/5 p-5">
                     <div className="flex items-center gap-2">
                       <UserRound className="h-5 w-5 text-violet-300" />
-                      <h3 className="font-semibold">Human authority boundary</h3>
+                      <h3 className="font-semibold">Simulated human-review checkpoint</h3>
+                      <p className="mt-2 text-xs text-violet-100/80">
+                        These controls record a demo decision inside Aether only. They do not represent a real government officer, statutory approval, or official rejection.
+                      </p>
                     </div>
                     {caseData.human_actions.map((action) => (
                       <div key={action.task_id} className="mt-4 flex flex-col gap-3 rounded-xl bg-black/20 p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -1437,14 +1464,14 @@ export const AetherCommandCenter: React.FC = () => {
                                 disabled={loading}
                                 className="rounded-lg bg-violet-300 px-4 py-2 text-xs font-bold text-slate-950 disabled:opacity-50"
                               >
-                                Approve / continue
+                                Record simulated approval
                               </button>
                               <button
                                 onClick={() => continueHumanTask(action.task_id, false)}
                                 disabled={loading}
                                 className="rounded-lg border border-red-300/20 bg-red-300/10 px-4 py-2 text-xs font-bold text-red-100 disabled:opacity-50"
                               >
-                                Reject
+                                Record simulated rejection
                               </button>
                             </div>
                           </div>
