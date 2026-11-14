@@ -4,10 +4,12 @@ import { AuthProvider } from './contexts/AuthContext';
 import { AetherCommandCenter } from './pages/AetherCommandCenter';
 import { DeliveryOpsConsole } from './components/DeliveryOpsConsole';
 import { IndiaAdminIntelligence } from './components/IndiaAdminIntelligence';
+import { PublicMvpNotice } from './components/PublicMvpNotice';
 
 function MainAppContent() {
   return (
     <>
+      <PublicMvpNotice />
       <AetherCommandCenter />
       <DeliveryOpsConsole />
       <IndiaAdminIntelligence />
