@@ -13,7 +13,7 @@ The public MVP may let citizens, businesses, developers, and invited officers:
 - Describe a goal and receive an indicative process plan.
 - Discover departments, services, and publicly available requirements.
 - View cross-department dependencies and indicative timelines.
-- Upload optional sample or user-provided documents for extraction and completeness checks, subject to privacy controls.
+- Use synthetic document fixtures and fictional identities for the public demo; real user documents are disabled from the public demo path until privacy, retention, deletion, and security controls have passed review.
 - Create tasks, evidence records, reminders, and progress views within Aether.
 - Experience simulated citizen, business, operator, and officer journeys using synthetic identities and records.
 - Use developer documentation and sandbox APIs that do not connect to protected government systems.
@@ -49,9 +49,9 @@ Never blur these modes.
 
 ## Data and privacy controls for public MVP
 
-- Prefer synthetic data and avoid collecting personal data unless it is necessary for a defined feature.
+- Public demo default: use only fictional identities, synthetic business records, generated sample documents, and simulated acknowledgements. Do not invite public users to upload real personal or confidential records.
 - Do not ask for Aadhaar, PAN, bank credentials, health records, or other sensitive/high-risk documents merely to demonstrate the product.
-- Provide a clear privacy notice, purpose, data categories, retention period, deletion/contact route, and consent flow appropriate to the data and feature.
+- Before accepting real user documents in any controlled pilot, provide a clear privacy notice, purpose, data categories, retention period, deletion/contact route, and consent flow appropriate to the data and feature.
 - Use private storage, encryption, tenant isolation, least-privilege access, audit logs, and tested deletion/retention controls.
 - Do not use customer documents to train models unless a separate, explicit, legally reviewed opt-in supports that use.
 - Keep demo/test data segregated from any production data.
