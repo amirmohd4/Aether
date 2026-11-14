@@ -904,7 +904,7 @@ export const AetherCommandCenter: React.FC = () => {
             <div className="mt-3 rounded-xl border border-cyan-300/10 bg-cyan-300/5 p-3 text-[11px] text-cyan-100">
               {useDemoEvidence
                 ? 'Demo mode supplies synthetic document types so the execution graph can be exercised end-to-end.'
-                : 'Guided intake mode creates the real case first and lets you record required document types before Aether executes.'}
+                : 'Guided intake creates an Aether workspace case only; it does not submit anything to a government authority.'}
             </div>
 
             <button
@@ -1329,7 +1329,7 @@ export const AetherCommandCenter: React.FC = () => {
                       <div>
                         <h3 className="font-semibold">Guided document intake</h3>
                         <p className="mt-1 text-xs text-slate-400">
-                          Select the document types you have supplied. Aether records intake metadata, supports real file upload, and uses extracted text in the document worker when available.
+                          Select sample document types to exercise Aether's intake and validation workflow. This is a sandbox case, not a government filing.
                         </p>
                       </div>
                       <span className="text-xs text-amber-200">{missingDocuments.length} missing</span>
@@ -1362,14 +1362,14 @@ export const AetherCommandCenter: React.FC = () => {
                     </button>
 
                     <div className="mt-4 rounded-xl border border-white/10 bg-slate-950/40 p-3">
-                      <p className="text-[11px] font-semibold text-slate-200">Upload actual document</p>
+                      <p className="text-[11px] font-semibold text-slate-200">Upload a sample document</p>
                       <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
                         <select
                           value={uploadDocumentType}
                           onChange={(e) => setUploadDocumentType(e.target.value)}
                           className="rounded-lg border border-white/10 bg-slate-900 p-2 text-xs"
                         >
-                          <option value="">Choose required type</option>
+                          <option value="">Choose sample type</option>
                           {missingDocuments.map((document) => (
                             <option key={document} value={document}>{document}</option>
                           ))}
@@ -1379,6 +1379,7 @@ export const AetherCommandCenter: React.FC = () => {
                           onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
                           className="rounded-lg border border-white/10 bg-slate-900 p-2 text-xs text-slate-300"
                         />
+                        <p className="mt-2 text-[10px] leading-4 text-amber-200/80">Public demo safety: use fictional/sample files only. Do not upload Aadhaar, PAN, bank, health, tax, land, or other personal or confidential records.</p>
                         <button
                           onClick={uploadDocument}
                           disabled={loading || !uploadDocumentType || !uploadFile}
