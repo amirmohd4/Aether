@@ -71,6 +71,8 @@ Environment:
 
 ```env
 VITE_API_URL=http://localhost:8081
+VITE_SUPABASE_URL=https://<project-ref>.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=<browser-safe-publishable-key>
 VITE_REQUIRE_AUTH=false
 ```
 
@@ -97,7 +99,7 @@ VITE_REQUIRE_AUTH=true
 AETHER_ENABLE_PRODUCTION_CONNECTORS=false
 ```
 
-Production authentication fails closed when authentication is not configured.
+Production authentication fails closed when authentication is not configured. The browser may use only a Supabase publishable/legacy anon key protected by appropriate RLS; never use the service-role key in frontend variables or source.
 
 Real government connectors are enabled only by explicit server-side configuration. Credentials must never be placed in frontend code.
 Document storage uses Supabase Storage when configured with the server-only service-role key; otherwise it uses a local development store. Extracted document text is encrypted at rest when AETHER_ENCRYPTION_KEY is configured. OCR can be connected through AETHER_OCR_BASE_URL/AETHER_OCR_TOKEN.
@@ -112,5 +114,9 @@ See MVP_MASTER_PLAN.md and SECURITY_RELEASE_PLAN.md for the release gate.
 
 ## Truthful MVP status
 
-The software MVP is release-candidate complete for controlled/sandbox operation. Production government execution remains fail-closed until authorized live connectors, authoritative effective-dated rules, certified statutory signature/issuance integrations, provider credentials and deployed Supabase/Render/Netlify security validation are in place.
+The codebase has a controlled/sandbox MVP candidate, but this does not mean the current branch is deployed or cleared for public beta. The published Netlify site is stale relative to the candidate branch; the current feedback route, auth configuration, and hosted end-to-end journey must be verified on an exact deployment before a public beta announcement. Production government execution remains fail-closed until authorized live connectors, authoritative effective-dated rules, certified statutory signature/issuance integrations, provider credentials and deployed Supabase/Render/Netlify security validation are in place.
+
+## Launch readiness
+
+See [the 15 October launch-readiness checkpoint](docs/LAUNCH_READINESS_2026-10-15.md) for verified hosting facts, remaining release gates, and the safe public-communication boundary. The current candidate branch includes a research-preview page at `/research-preview.html` and a no-file-upload feedback form at `/feedback.html`; neither route should be advertised as live until the branch is deployed and the form is verified in Netlify Forms.
 

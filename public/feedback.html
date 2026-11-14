@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Give Aether concrete feedback on cross-department workflows, safety boundaries, and the synthetic GovOS prototype.">
+  <meta name="theme-color" content="#07111f">
+  <title>Give feedback · Aether GovOS</title>
+  <style>
+    :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background:#07111f; color:#e7eef8; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:radial-gradient(ellipse at top,#132b43 0,#07111f 55%); min-height:100vh; line-height:1.55; }
+    main { width:min(760px,100% - 32px); margin:0 auto; padding:42px 0 64px; }
+    a { color:#7dd3fc; }
+    .eyebrow { color:#7dd3fc; text-transform:uppercase; letter-spacing:.14em; font-size:.75rem; font-weight:700; }
+    h1 { font-size:clamp(2rem,6vw,3rem); letter-spacing:-.04em; line-height:1.1; margin:.6rem 0 1rem; }
+    .lead { color:#b9c8da; font-size:1.05rem; }
+    .notice { border:1px solid #d9a44166; background:#d9a44112; border-radius:14px; padding:16px; margin:24px 0; color:#f7dfaa; }
+    form, .card { border:1px solid #ffffff1c; background:#0c1a2b; border-radius:18px; padding:clamp(18px,4vw,28px); }
+    .field { margin:0 0 20px; }
+    label, legend { display:block; font-weight:650; margin-bottom:7px; }
+    .hint { display:block; color:#9eb0c6; font-size:.88rem; margin-top:4px; }
+    input, select, textarea { width:100%; border:1px solid #52647a; background:#07111f; color:#f5f8fc; border-radius:10px; padding:12px; font:inherit; }
+    textarea { min-height:105px; resize:vertical; }
+    input:focus, select:focus, textarea:focus { outline:2px solid #7dd3fc; outline-offset:2px; }
+    .check { display:flex; align-items:flex-start; gap:10px; font-weight:400; }
+    .check input { width:auto; margin-top:6px; }
+    button { border:0; border-radius:11px; background:#7dd3fc; color:#07111f; padding:13px 18px; font:inherit; font-weight:800; cursor:pointer; }
+    button:hover { background:#bae6fd; }
+    footer { color:#8ea1b8; font-size:.85rem; margin-top:22px; }
+    .bot-field { position:absolute; left:-5000px; width:1px; height:1px; overflow:hidden; }
+  </style>
+</head>
+<body>
+  <main>
+    <a href="/" aria-label="Aether home">← Aether GovOS</a>
+    <p class="eyebrow">Prototype feedback</p>
+    <h1>Tell us where real workflows break.</h1>
+    <p class="lead">We are testing whether an execution layer can safely coordinate the work that happens after a request is submitted. Concrete examples and critical feedback are more useful than general praise.</p>
+    <div class="notice"><strong>Important:</strong> Aether is an early prototype. The current government environment is simulated. Do not submit real applications, identity documents, Aadhaar/PAN numbers, bank details, case IDs, confidential records, or sensitive personal information. This form has no file-upload field.</div>
+    <form name="aether-feedback" method="POST" action="/feedback-thanks" data-netlify="true" netlify-honeypot="bot-field">
+      <input type="hidden" name="form-name" value="aether-feedback">
+      <p class="bot-field"><label>Leave this field empty <input name="bot-field" tabindex="-1" autocomplete="off"></label></p>
+      <div class="field">
+        <label for="role">Which best describes you?</label>
+        <select id="role" name="role" required>
+          <option value="">Choose one</option>
+          <option>Developer / systems integrator</option>
+          <option>Applicant / business owner</option>
+          <option>Service-centre operator</option>
+          <option>Current or former public-sector employee</option>
+          <option>Government IT / digital transformation</option>
+          <option>Researcher / civic-tech practitioner</option>
+          <option>Investor / potential institutional partner</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="workflow">Which workflow or service are you commenting on?</label>
+        <input id="workflow" name="workflow" maxlength="240" required placeholder="e.g. business licence renewal across departments">
+      </div>
+      <div class="field">
+        <label for="example">What happened in a recent real example you observed?</label>
+        <textarea id="example" name="observed_example" maxlength="3000" required placeholder="Describe the process, not the person or case. Please omit names, IDs, and confidential details."></textarea>
+        <span class="hint">Separate what you directly observed from what you suspect.</span>
+      </div>
+      <div class="field">
+        <label for="friction">Where did work repeat, stall, or require follow-up?</label>
+        <textarea id="friction" name="friction" maxlength="2000" required placeholder="Repeated documents, re-keying, handoffs, unclear status, rework—or no significant problem."></textarea>
+      </div>
+      <div class="field">
+        <label for="frequency">How often does this happen?</label>
+        <select id="frequency" name="frequency">
+          <option value="">Not sure</option>
+          <option>Daily</option><option>Weekly</option><option>Monthly</option><option>Less often</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="human_boundary">What must remain under authorised human control?</label>
+        <textarea id="human_boundary" name="human_boundary" maxlength="2000" placeholder="Inspections, statutory decisions, disputed evidence, consent, or other boundaries."></textarea>
+      </div>
+      <div class="field">
+        <label for="risk">What is the biggest reason this product could be unsafe, unnecessary, or fail?</label>
+        <textarea id="risk" name="risk" maxlength="2000" placeholder="Be direct. What would make you reject it?"></textarea>
+      </div>
+      <div class="field">
+        <label for="evidence">What evidence would you need before trusting or sponsoring a pilot?</label>
+        <textarea id="evidence" name="evidence" maxlength="2000"></textarea>
+      </div>
+      <div class="field">
+        <label for="contact">Contact email (optional)</label>
+        <input id="contact" name="contact_email" type="email" maxlength="254" autocomplete="email" placeholder="Only if you want a follow-up">
+        <span class="hint">Do not include sensitive information. Contact details are optional.</span>
+      </div>
+      <div class="field">
+        <label class="check"><input type="checkbox" name="follow_up_consent" value="yes"> I agree that the Aether team may contact me about this feedback.</label>
+      </div>
+      <button type="submit">Send feedback</button>
+    </form>
+    <footer>Submitting this form sends your response to the Aether project maintainers through Netlify Forms for product research and follow-up if you opt in. Do not include personal identifiers, confidential comments, or information you are not authorised to share. Responses may be used to improve the prototype; do not assume anonymity if you voluntarily provide contact details. Feedback does not imply government endorsement. <a href="https://github.com/amirmohd4/Aether">Review the project on GitHub</a>.</footer>
+  </main>
+</body>
+</html>

@@ -28,6 +28,11 @@ class SyntheticGovernmentSystem:
         self._idempotency: Dict[str, str] = {}
         self._failure_once_seen: set[str] = set()
 
+    @property
+    def request_count(self) -> int:
+        """Number of unique synthetic requests currently recorded."""
+        return len(self._requests)
+
     def submit(
         self,
         department: str,
