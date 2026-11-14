@@ -5,11 +5,13 @@ import { AetherCommandCenter } from './pages/AetherCommandCenter';
 import { DeliveryOpsConsole } from './components/DeliveryOpsConsole';
 import { IndiaAdminIntelligence } from './components/IndiaAdminIntelligence';
 import { PublicMvpNotice } from './components/PublicMvpNotice';
+import { GlobalMockStudio } from './components/GlobalMockStudio';
 
 function MainAppContent() {
   return (
     <>
       <PublicMvpNotice />
+      <GlobalMockStudio />
       <AetherCommandCenter />
       <DeliveryOpsConsole />
       <IndiaAdminIntelligence />
