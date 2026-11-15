@@ -30,7 +30,7 @@ These are implementation claims and product scope, not proof that every journey 
 - Frontend CI passed: dependency install, TypeScript check and Vite build.
 - Combined MVP CI passed: backend tests and frontend checks/build.
 - MVP test workflow passed: Python compilation and backend pytest suite.
-- The staging workflow did **not** run its staging-smoke job. The `staging-not-configured` notice job succeeded while `staging-smoke` was skipped. This is not a staging pass.
+- The staging workflow did **not** run its staging-smoke job. The `staging-not-configured` notice job succeeded while `staging-smoke` was skipped. This was incorrectly reported as an overall workflow success; the workflow has now been changed to fail closed when staging is unconfigured. This is not a staging pass.
 - Netlify deploy preview for PR #20 is marked ready at [deploy-preview-20](https://deploy-preview-20--aether-govos.netlify.app/), built from the candidate commit. A ready static deployment is not proof of successful API, auth, upload, or workflow journeys.
 - Netlify feedback form `aether-feedback` is present with zero recorded submissions. Form submission and feedback processing have not been verified.
 - Netlify deploy configuration now adds baseline browser security headers (nosniff, frame denial, referrer policy, permissions policy and HSTS); no Content Security Policy is set because the app's external resource requirements have not been fully audited.
@@ -73,7 +73,7 @@ Required GitHub repository variables:
 Required GitHub Actions secret:
 - `AETHER_STAGING_API_KEY` — a read-only Aether API key with the required `cases:read` scope.
 
-The workflow verifies API `/health`, `/ready` (including `database_role_valid=true`), root API response, frontend response and authenticated product/release smoke checks. The latest candidate run skipped the actual staging job because the staging URLs are not configured. Do not describe that run as a passing smoke test.
+The workflow verifies API `/health`, `/ready` (including `database_role_valid=true`), root API response, frontend response and authenticated product/release smoke checks. The latest candidate run skipped the actual staging job because the staging URLs are not configured. The workflow is now changed to fail when these values are absent, preventing a skipped staging gate from appearing green. Do not describe the previous run as a passing smoke test.
 
 ## Go/no-go checklist
 
