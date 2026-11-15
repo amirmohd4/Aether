@@ -6,7 +6,7 @@ Last checked: 2026-11-15
 
 **NO-GO for a production GovOS launch.** The current candidate is suitable for continued controlled synthetic-preview validation, but it is not yet proven as a fully operational end-to-end release.
 
-The active candidate is PR [#20](https://github.com/amirmohd4/Aether/pull/20), branch `integration-check/public-preview-into-hardened`, head commit `552ca35e48db859b178e61eb5c1c9ea44b7a1e53`. It remains an open draft and must not be merged until the release gates below pass.
+The active candidate is PR [#20](https://github.com/amirmohd4/Aether/pull/20), branch `integration-check/public-preview-into-hardened`, head commit `1e5c332a92cebd6cde66603185c3e8cde19fb437`. It remains an open draft and must not be merged until the release gates below pass.
 
 Aether's first public experience must remain an independent synthetic research preview. It does not submit official government applications, access private government records, issue certificates, or make statutory decisions. Live integrations require written authorization, approved credentials/endpoints, authoritative effective-dated rules, certification, and system-of-record reconciliation.
 
@@ -25,7 +25,7 @@ These are implementation claims and product scope, not proof that every journey 
 
 - Repository: `amirmohd4/Aether`.
 - Candidate PR: [#20](https://github.com/amirmohd4/Aether/pull/20), open, draft, unmerged.
-- Candidate head: `552ca35e48db859b178e61eb5c1c9ea44b7a1e53`.
+- Candidate head: `1e5c332a92cebd6cde66603185c3e8cde19fb437`.
 - Base `main` head at PR creation: `f64148aad10a5f8f586efde0cefe7a817fe6d996`.
 - Frontend CI passed: dependency install, TypeScript check and Vite build.
 - Combined MVP CI passed: backend tests and frontend checks/build.
@@ -33,6 +33,8 @@ These are implementation claims and product scope, not proof that every journey 
 - The staging workflow did **not** run its staging-smoke job. The `staging-not-configured` notice job succeeded while `staging-smoke` was skipped. This is not a staging pass.
 - Netlify deploy preview for PR #20 is marked ready at [deploy-preview-20](https://deploy-preview-20--aether-govos.netlify.app/), built from the candidate commit. A ready static deployment is not proof of successful API, auth, upload, or workflow journeys.
 - Netlify feedback form `aether-feedback` is present with zero recorded submissions. Form submission and feedback processing have not been verified.
+- Netlify deploy configuration now adds baseline browser security headers (nosniff, frame denial, referrer policy, permissions policy and HSTS); no Content Security Policy is set because the app's external resource requirements have not been fully audited.
+- Candidate Render blueprint CORS now includes the PR #20 Netlify deploy-preview origin as well as the primary site. This blueprint change has not been applied to the live Render services.
 
 ## Supabase — previously verified configuration
 
