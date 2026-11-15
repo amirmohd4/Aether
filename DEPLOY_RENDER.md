@@ -72,7 +72,7 @@ Build the React frontend from the same release candidate and set:
 - `VITE_SUPABASE_ANON_KEY`: Supabase publishable/anon key only.
 - `VITE_REQUIRE_AUTH=true` for the authenticated staging environment.
 
-The current `netlify.toml` has separate production and deploy-preview API settings. Confirm the preview's API target and matching backend CORS allowlist before claiming the deployed frontend/backend pair works. A publishable/anon key may be public; service-role keys, database passwords and encryption keys must never be in frontend variables.
+The current `netlify.toml` has separate production and deploy-preview API settings. The candidate Render blueprint explicitly allows the PR #20 preview origin and primary site; this is only blueprint configuration until applied to an isolated staging service. Confirm the preview's actual API target and deployed backend CORS allowlist before claiming the deployed frontend/backend pair works. Netlify deploys now set baseline security headers; a Content Security Policy remains deferred pending a complete external-resource audit. A publishable/anon key may be public; service-role keys, database passwords and encryption keys must never be in frontend variables.
 
 ## Staging verification
 
