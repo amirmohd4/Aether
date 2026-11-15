@@ -1,11 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import { servicesConfig } from '../servicesConfig';
-import { CheckCircle2, CircleAlert, ClipboardCheck, FileText, Globe2, Play, RotateCcw, ShieldAlert } from 'lucide-react';
 
-const INDIA_SPECIFIC_REFERENCE_IDS = new Set(['gst', 'company', 'ration-card', 'pds-subsidy', 'pmay', 'rera-project', 'pf-esi', 'food-business-license']);
-function getServiceJurisdictionScope(serviceId: string): string {
-  return INDIA_SPECIFIC_REFERENCE_IDS.has(serviceId) ? 'India-specific reference' : 'Configurable workflow pattern';
+function getServiceJurisdictionScope(_serviceId: string): string {
+  return 'Illustrative workflow template; local legal requirements are not verified';
 }
+import { CheckCircle2, CircleAlert, ClipboardCheck, FileText, Globe2, Play, RotateCcw, ShieldAlert } from 'lucide-react';
 
 type Scenario = 'happy' | 'missing' | 'review' | 'retry' | 'rejected';
 type JourneyStep = { title: string; detail: string; status: 'complete' | 'attention' | 'pending' };
@@ -199,7 +198,7 @@ export const GlobalMockStudio: React.FC = () => {
         <div>
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-cyan-200"><Globe2 className="h-4 w-4" /> Global research preview</div>
           <h2 className="mt-2 text-2xl font-bold text-white md:text-3xl">Test a complete mock journey</h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">Choose from the available service templates, test different workflow paths, and tell us where Aether should reduce friction. Some templates are India-specific references; all actual requirements and availability must be configured and verified for the relevant jurisdiction. Use fictional details only.</p>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">Choose any of the 32 service templates, test different workflow paths, and tell us where Aether should reduce friction. Some templates are India-specific references; all actual requirements and availability must be configured and verified for the relevant jurisdiction. Use fictional details only.</p>
         </div>
         <div className="flex items-center gap-2 rounded-xl border border-amber-300/20 bg-amber-300/[0.07] px-3 py-2 text-[11px] text-amber-100"><ShieldAlert className="h-4 w-4 shrink-0" /> SYNTHETIC ONLY · NOT AN OFFICIAL RECORD</div>
       </div>
@@ -220,7 +219,7 @@ export const GlobalMockStudio: React.FC = () => {
             </label>
           </div>
           <label className="block text-xs font-semibold text-slate-300">2. What outcome are you testing?
-            <textarea value={objective} onChange={e => setObjective(e.target.value)} placeholder={'Example: I need to renew a driving licence'} maxLength={500} className="mt-2 h-20 w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm font-normal text-white placeholder:text-slate-500" />
+            <textarea value={objective} onChange={e => setObjective(e.target.value)} placeholder={'Example: I need to renew a driving licence'} className="mt-2 h-20 w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm font-normal text-white placeholder:text-slate-500" />
           </label>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="text-xs font-semibold text-slate-300">Applicant type
