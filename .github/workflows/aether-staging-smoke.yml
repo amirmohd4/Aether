@@ -79,4 +79,5 @@ jobs:
     steps:
       - name: Explain required staging variables
         run: |
-          echo "::notice::Set repository variables AETHER_STAGING_API_URL and AETHER_STAGING_FRONTEND_URL to enable automatic staging smoke checks. Set secret AETHER_STAGING_API_KEY for authenticated product/release checks."
+          echo "::error::Staging release gate is BLOCKED. Configure repository variables AETHER_STAGING_API_URL and AETHER_STAGING_FRONTEND_URL, plus secret AETHER_STAGING_API_KEY, then rerun this workflow. A skipped staging test must never produce a green release-gate result."
+          exit 1
