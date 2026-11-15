@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Release smoke test for the Aether controlled-MVP or production API."""
+"""Fail-closed release smoke test for the Aether controlled-MVP API."""
 
 from __future__ import annotations
 
@@ -13,6 +13,13 @@ def main() -> int:
     base = os.getenv("AETHER_API_URL", "http://localhost:8081").rstrip("/")
     bearer = os.getenv("AETHER_API_TOKEN", "").strip()
     api_key = os.getenv("AETHER_API_KEY", "").strip()
+
+    if not (bearer or api_key):
+        print(
+            "FAIL authenticated release smoke: AETHER_API_TOKEN or "
+            "AETHER_API_KEY is required; refusing to report a partial pass"
+        )
+        return 2
 
     headers = {}
     if bearer:
@@ -38,14 +45,20 @@ def main() -> int:
     with httpx.Client(timeout=20.0, follow_redirects=True) as client:
         for name, path, expected, auth_required in checks:
             try:
-                if auth_required and not (bearer or api_key):
-                    print(f"SKIP {name}: AETHER_API_TOKEN or AETHER_API_KEY not supplied")
-                    continue
                 response = client.get(base + path, headers=headers)
                 ok = response.status_code == expected
                 detail = ""
                 if auth_required:
                     authenticated_checks += 1
+                if ok and name == "ready":
+                    payload = response.json()
+                    ok = (
+                        payload.get("status") == "ready"
+                        and payload.get("database") == "ready"
+                        and payload.get("database_role_valid") is True
+                    )
+                    if not ok:
+                        detail = f" readiness_payload={payload}"
                 if ok and name == "release readiness":
                     payload = response.json()
                     status_checks = payload.get("checks") or {}
@@ -58,10 +71,17 @@ def main() -> int:
                         "worker_command_configured": True,
                         "synthetic_mode": True,
                     }
-                    missing = [key for key, value in required.items() if status_checks.get(key) is not value]
-                    ok = payload.get("ready_for_controlled_mvp") is True and not blockers and not missing
+                    missing = [
+                        key for key, value in required.items()
+                        if status_checks.get(key) is not value
+                    ]
+                    ok = (
+                        payload.get("ready_for_controlled_mvp") is True
+                        and not blockers
+                        and not missing
+                    )
                     if blockers:
-                        detail = f" blockers={blockers}"
+                        detail += f" blockers={blockers}"
                     if missing:
                         detail += f" failed_checks={missing}"
                 print(f"{'PASS' if ok else 'FAIL'} {name}: HTTP {response.status_code}{detail}")
@@ -71,9 +91,22 @@ def main() -> int:
                 print(f"FAIL {name}: {type(exc).__name__}: {exc}")
                 failures.append(name)
 
-    if authenticated_checks == 0:
-        print("WARNING: only public infrastructure checks ran; authenticated product/release checks remain unverified")
-    return 1 if failures else 0
+    expected_authenticated_checks = sum(1 for check in checks if check[3])
+    if authenticated_checks != expected_authenticated_checks:
+        print(
+            "FAIL authenticated coverage: "
+            f"ran {authenticated_checks}/{expected_authenticated_checks} checks"
+        )
+        failures.append("authenticated coverage")
+
+    if failures:
+        print(f"Release smoke failed: {', '.join(failures)}")
+        return 1
+    print(
+        f"PASS complete release smoke: {authenticated_checks} authenticated "
+        "product/release checks plus public health/readiness checks"
+    )
+    return 0
 
 
 if __name__ == "__main__":
