@@ -30,21 +30,24 @@ def auth_mode() -> str:
     return os.getenv("AETHER_AUTH_MODE", "none").strip().lower()
 
 
-def _api_key_principal(request: Request) -> Principal:
+def _api_key_principal(request: Request, *, allow_static: bool = False) -> Principal:
     configured = os.getenv("AETHER_API_KEY")
     supplied = request.headers.get("X-Aether-API-Key")
     if not supplied:
         raise HTTPException(status_code=401, detail="Aether API key required")
 
-    if configured and hmac.compare_digest(supplied, configured):
+    if allow_static and configured and hmac.compare_digest(supplied, configured):
+        scopes = frozenset(
+            item.strip()
+            for item in os.getenv("AETHER_API_KEY_SCOPES", "cases:read").split(",")
+            if item.strip()
+        )
         return Principal(
-            subject=os.getenv("AETHER_API_KEY_SUBJECT", "api-client"),
+            subject=os.getenv("AETHER_API_KEY_SUBJECT", "staging-smoke"),
             role=os.getenv("AETHER_API_KEY_ROLE", "service"),
             tenant_id=os.getenv("AETHER_API_KEY_TENANT_ID"),
             auth_mode="api_key",
-            scopes=frozenset(
-                item.strip() for item in os.getenv("AETHER_API_KEY_SCOPES", "*").split(",") if item.strip()
-            ),
+            scopes=scopes,
         )
 
     key_hash = hashlib.sha256(supplied.encode("utf-8")).hexdigest()
@@ -184,8 +187,17 @@ def require_principal(request: Request) -> Principal:
             auth_mode="none",
         )
     if mode == "api_key":
-        return _api_key_principal(request)
+        return _api_key_principal(request, allow_static=True)
     if mode == "supabase":
+        # Staging smoke automation uses a separately configured, read-only
+        # machine key while human users continue to authenticate with Supabase.
+        # This static-key path is opt-in and cannot be enabled in production.
+        if request.headers.get("X-Aether-API-Key"):
+            staging_static_key = (
+                os.getenv("AETHER_ENV", "").strip().lower() == "staging"
+                and os.getenv("AETHER_ALLOW_STATIC_STAGING_API_KEY", "").strip().lower() == "true"
+            )
+            return _api_key_principal(request, allow_static=staging_static_key)
         return _supabase_principal(request)
     raise HTTPException(status_code=500, detail=f"Unsupported Aether auth mode: {mode}")
 
