@@ -760,14 +760,6 @@ export const AetherCommandCenter: React.FC = () => {
             className="w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm"
           />
           {authMessage && <p className="mt-3 text-xs text-cyan-200">{authMessage}</p>}
-                    <button
-            type="button"
-            onClick={simulateProcess}
-            disabled={!objective.trim() || loading}
-            className="mr-2 rounded-xl border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-[10px] font-semibold text-cyan-100 hover:bg-cyan-300/15 disabled:opacity-50"
-          >
-            Pre-check journey
-          </button>
 <button
             onClick={submitAuth}
             disabled={authLoading || !authEmail || !authPassword}
