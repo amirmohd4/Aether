@@ -137,7 +137,7 @@ def test_citizen_can_upload_list_and_download_exact_synthetic_document(monkeypat
     assert started.status_code == 200
     case_id = started.json()["summary"]["case_id"]
 
-    content = "\\n".join([
+    content = "\n".join([
         "AETHER SYNTHETIC SAMPLE — NOT VALID FOR OFFICIAL USE",
         "THIS FILE CONTAINS FICTIONAL TEST DATA ONLY.",
         "",
