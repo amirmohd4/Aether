@@ -6,7 +6,7 @@ Last checked: 2026-11-21.
 
 **NO-GO for public production launch. CONDITIONAL GO for a tightly controlled synthetic pilot once browser acceptance, deployed write-path tests, operational ownership and privacy/terms are completed.**
 
-The current candidate is `aether-mvp-build` at `66393d61509b3df201a248c9c1ae29eb6ed066b6`. PR [#11](https://github.com/amirmohd4/Aether/pull/11) promotes this candidate to `main`; it remains open and unmerged. The candidate contains 88 commits relative to `main` and changes 58 files. Production must not be updated by an unreviewed merge simply because CI is green.
+The current candidate is `aether-mvp-build` at `1de9e95386684043a933f73e18e4c6104f74a506`. PR [#11](https://github.com/amirmohd4/Aether/pull/11) promotes this candidate to `main`; it remains open and unmerged. The candidate contains 88 commits relative to `main` and changes 58 files. Production must not be updated by an unreviewed merge simply because CI is green.
 
 Aether's initial release is a synthetic government research/pilot environment. It does not submit official government applications, access private government records, issue certificates, or make statutory decisions. Live integrations require written authorization, approved credentials/endpoints, authoritative effective-dated rules, certification where required, and system-of-record reconciliation.
 
@@ -16,7 +16,7 @@ Aether's initial release is a synthetic government research/pilot environment. I
 
 - Candidate: `aether-mvp-build`, commit `66393d61509b3df201a248c9c1ae29eb6ed066b6`.
 - Aether MVP CI: passed on the current candidate; backend and frontend jobs succeeded.
-- Aether MVP Tests: passed on the current candidate; **154 backend tests passed**.
+- Aether MVP Tests: passed on the current candidate; **158 backend tests passed**.
 - Aether MVP Frontend: passed on the current candidate.
 - Aether Staging Release Smoke: passed on the current PR candidate, but remains a read-only smoke.
 - Aether Staging Release Smoke: passed on PR #11 merge ref `41cde4f43f4dfe3ef7a85d16c2363840a39034e2`.
@@ -31,14 +31,14 @@ Aether's initial release is a synthetic government research/pilot environment. I
 The connected project is `aether`, ref `lekudqjewxxunqjuqayi`, status `ACTIVE_HEALTHY`.
 
 Fresh database inspection on 2026-11-21 confirmed:
-- Ten applied migrations.
-- Thirteen public application tables and ten `aether_internal` tables.
-- RLS enabled on all 23 application tables.
+- Twelve applied migrations, including `20261121120346_aether_admin_action_tables` and `20261121120537_aether_document_bucket_limits`.
+- Thirteen public application tables and twelve `aether_internal` tables.
+- RLS enabled on all 25 application tables; the two new admin queue tables grant data access only to `aether_runtime`, with no browser-role SELECT.
 - `aether_runtime` exists, can log in, is not a superuser, and cannot create databases or roles.
 - `aether-documents` exists and is private; its bucket limit is now 15 MiB and its MIME allowlist matches the application upload allowlist (PDF, plain text, CSV, JSON, JPEG, PNG and DOCX).
 - The `aether_runtime` database role has `rolbypassrls=false`; browser roles have no broad direct access to application records.
 - Security Advisor returned no lints. Performance Advisor reported 38 unused-index informational findings; these were not changed because usage may be low on the current staging project.
-- Cross-tenant admin access was found in candidate code and fixed: `admin` is now tenant-scoped for both case detail access and case listing. New tests cover cross-tenant denial, tenant-scoped admin listing and tenantless-admin denial; the 154-test suite passed.
+- Cross-tenant admin access was found in candidate code and fixed: `admin` is now tenant-scoped for both case detail access and case listing. New tests cover cross-tenant denial, tenant-scoped admin listing and tenantless-admin denial; the 158-test suite passed.
 
 These checks do not prove the deployed application can perform private storage operations, encryption, or tenant-scoped document access.
 
@@ -46,7 +46,7 @@ These checks do not prove the deployed application can perform private storage o
 
 Three services are present:
 
-- `aether-staging`: separate staging service, branch `integration-check/public-preview-into-hardened`; latest observed live deploy commit `a8b4b8eb9c85b82fd84fac05de6dc28dac33cf25`. Candidate and staging branches have diverged: candidate is 24 commits ahead and 17 behind the deployed branch. Do not switch the service branch until all 17 staging-only commits and candidate changes are reconciled.
+- `aether-staging`: separate staging service, branch `integration-check/public-preview-into-hardened`; latest observed live deploy commit `a8b4b8eb9c85b82fd84fac05de6dc28dac33cf25`. Candidate and staging branches originally diverged by 24 commits ahead and 17 behind. A conflict-free reconciliation branch `aether-staging-reconciled` now preserves the staging branch base and copies all 29 candidate-diff files exactly. PR [#28](https://github.com/amirmohd4/Aether/pull/28) is open to merge it into the staging branch; do not merge until its checks pass. PR #27 is the earlier conflicted attempt and is superseded.
 - `aether-backend`: production backend still deploys from `main`, latest observed live commit `f64148aad10a5f8f586efde0cefe7a817fe6d996`. It has not been promoted to the candidate.
 - `aether-public-demo`: public demo service on its separate older branch.
 
