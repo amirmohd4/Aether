@@ -70,7 +70,7 @@ Database-level configuration does not by itself prove the deployed application's
 - [ ] Decide whether Free-tier cold starts and service suspension are acceptable for the pilot; disclose the availability limitation or approve a paid plan explicitly.
 - [ ] Run a bounded load and failure test before expanding the pilot.
 
-The current staging service is not the production backend. PR #11 remains unmerged and PR #20 remains a draft. Production Render service `aether-backend` still deploys from `main` at the older commit `f64148aad10a5f8f586efde0cefe7a817fe6d996`. Do not repoint it as a shortcut.
+The current staging service is not the production backend. PR #11 remains unmerged and PR #20 was closed as superseded by PR #11. Production Render service `aether-backend` still deploys from `main` at the older commit `f64148aad10a5f8f586efde0cefe7a817fe6d996`. Do not repoint it as a shortcut.
 
 ## Frontend and browser acceptance — outstanding
 
