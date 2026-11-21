@@ -93,3 +93,126 @@ def test_api_workflow_runs_from_objective_to_authorized_decision_and_audit(monke
     assert audit_after.status_code == 200
     assert audit_after.json()["integrity"]["valid"] is True
     assert audit_after.json()["integrity"]["checked_events"] >= audit_before.json()["integrity"]["checked_events"]
+
+
+
+def test_citizen_can_upload_list_and_download_exact_synthetic_document(monkeypatch, tmp_path):
+    """Exercise the citizen evidence path with fictional data and local test storage."""
+    import hashlib
+
+    monkeypatch.setenv("AETHER_AUTH_MODE", "none")
+    monkeypatch.setenv("AETHER_ENV", "development")
+    monkeypatch.setenv("AETHER_SYNTHETIC_ONLY_DOCUMENTS", "true")
+    monkeypatch.setenv("AETHER_DOCUMENT_ROOT", str(tmp_path / "documents"))
+
+    objective = "I want to open a restaurant"
+    jurisdiction = {
+        "country": "India",
+        "state": "Jammu and Kashmir",
+        "district": "Jammu",
+    }
+    requirements = client.post(
+        "/api/aether/v2/requirements",
+        json={
+            "objective": objective,
+            "customer_type": "business",
+            "jurisdiction": jurisdiction,
+            "inputs": {},
+        },
+    )
+    assert requirements.status_code == 200
+    required_documents = requirements.json()["documents"]
+    assert required_documents
+    document_type = required_documents[0]
+
+    started = client.post(
+        "/api/aether/v2/cases",
+        json={
+            "objective": objective,
+            "customer_type": "business",
+            "jurisdiction": jurisdiction,
+            "inputs": {"owner_name": "Synthetic Citizen 001"},
+        },
+    )
+    assert started.status_code == 200
+    case_id = started.json()["summary"]["case_id"]
+
+    content = "\\n".join([
+        "AETHER SYNTHETIC SAMPLE — NOT VALID FOR OFFICIAL USE",
+        "THIS FILE CONTAINS FICTIONAL TEST DATA ONLY.",
+        "",
+        f"Document type: {document_type}",
+        "Applicant: Demo Person 001 (fictional)",
+        "Organisation: Example Test Enterprise (fictional)",
+        "Address: 1 Example Lane, Sample Nagar, Demo State, India (fictional)",
+        "Reference: AETHER-DEMO-0001",
+        "Issue date: 2026-01-15 (illustrative only)",
+        "Status: TEST DATA — NO LEGAL OR GOVERNMENT EFFECT",
+        "",
+        "No real person, business, identity number, bank account, property, or government record is represented.",
+        "Do not alter this file to impersonate an official document.",
+    ]).encode("utf-8")
+    filename = f"AETHER-SYNTHETIC-{document_type}.txt"
+
+    uploaded = client.post(
+        f"/api/aether/v2/cases/{case_id}/documents/upload",
+        params={"document_type": document_type},
+        files={"file": (filename, content, "text/plain")},
+    )
+    assert uploaded.status_code == 200, uploaded.text
+    upload_result = uploaded.json()
+    assert upload_result["status"] in {"uploaded", "uploaded_and_resumed"}
+    document_id = upload_result["document"]["document_id"]
+    assert upload_result["document"]["sha256"] == hashlib.sha256(content).hexdigest()
+
+    listed = client.get(f"/api/aether/v2/cases/{case_id}/documents")
+    assert listed.status_code == 200, listed.text
+    assert any(item["document_id"] == document_id for item in listed.json()["documents"])
+
+    downloaded = client.get(
+        f"/api/aether/v2/cases/{case_id}/documents/{document_id}/download"
+    )
+    assert downloaded.status_code == 200, downloaded.text
+    assert downloaded.content == content
+    assert downloaded.headers.get("x-document-sha256") == hashlib.sha256(content).hexdigest()
+
+
+def test_citizen_upload_rejects_real_or_modified_document_in_synthetic_preview(monkeypatch):
+    monkeypatch.setenv("AETHER_AUTH_MODE", "none")
+    monkeypatch.setenv("AETHER_ENV", "development")
+    monkeypatch.setenv("AETHER_SYNTHETIC_ONLY_DOCUMENTS", "true")
+
+    objective = "I want to open a restaurant"
+    jurisdiction = {
+        "country": "India",
+        "state": "Jammu and Kashmir",
+        "district": "Jammu",
+    }
+    required = client.post(
+        "/api/aether/v2/requirements",
+        json={
+            "objective": objective,
+            "customer_type": "business",
+            "jurisdiction": jurisdiction,
+            "inputs": {},
+        },
+    ).json()["documents"]
+    started = client.post(
+        "/api/aether/v2/cases",
+        json={
+            "objective": objective,
+            "customer_type": "business",
+            "jurisdiction": jurisdiction,
+            "inputs": {},
+        },
+    )
+    assert started.status_code == 200
+    case_id = started.json()["summary"]["case_id"]
+
+    rejected = client.post(
+        f"/api/aether/v2/cases/{case_id}/documents/upload",
+        params={"document_type": required[0]},
+        files={"file": ("applicant.pdf", b"%PDF-1.7 fictional", "application/pdf")},
+    )
+    assert rejected.status_code == 400
+    assert "exact in-app generated sample file" in rejected.json()["detail"]
