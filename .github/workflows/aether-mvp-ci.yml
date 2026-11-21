@@ -6,6 +6,7 @@ on:
       - aether-mvp-build
       - aether-mvp-final-hardening
       - aether-integration-foundation
+      - integration-check/public-preview-into-hardened
       - main
   pull_request:
     branches:
