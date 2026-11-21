@@ -152,7 +152,9 @@ def test_citizen_can_upload_list_and_download_exact_synthetic_document(monkeypat
         "No real person, business, identity number, bank account, property, or government record is represented.",
         "Do not alter this file to impersonate an official document.",
     ]).encode("utf-8")
-    filename = f"AETHER-SYNTHETIC-{document_type}.txt"
+    import re
+    safe_type = re.sub(r"[^a-z0-9_-]", "_", document_type, flags=re.IGNORECASE)
+    filename = f"AETHER-SYNTHETIC-{safe_type}.txt"
 
     uploaded = client.post(
         f"/api/aether/v2/cases/{case_id}/documents/upload",
