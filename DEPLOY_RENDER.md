@@ -4,8 +4,8 @@ Aether's controlled MVP uses the existing Supabase project for persistence, Auth
 
 ## Deployment boundary
 
-- The active candidate is PR [#20](https://github.com/amirmohd4/Aether/pull/20), branch `integration-check/public-preview-into-hardened`. Keep it in draft and do not merge until the release gates in `docs/RELEASE_READINESS.md` pass.
-- Keep `main` release-only. Existing Render services still run older branches/commits; do not treat them as staging for PR #20.
+- The active code candidate is PR [#11](https://github.com/amirmohd4/Aether/pull/11), branch `aether-mvp-build`. PR [#27](https://github.com/amirmohd4/Aether/pull/27) is a staging reconciliation attempt and currently has merge conflicts; do not force-merge it.
+- Keep `main` release-only. The existing Render staging service still runs `integration-check/public-preview-into-hardened` until a conflict-free reconciliation PR is reviewed and merged.
 - Keep government connectors disabled. The first release is a synthetic/sandbox GovOS, not a live government filing or approval service.
 - Do not create paid infrastructure for the MVP. The candidate blueprint uses one Free web service with an embedded worker; do not create a separate background worker service unless the architecture and cost are explicitly reviewed.
 - Render Free services may suspend while idle. They are not a guarantee of always-on background processing; disclose this limitation in demos.
@@ -72,11 +72,11 @@ Build the React frontend from the same release candidate and set:
 - `VITE_SUPABASE_ANON_KEY`: Supabase publishable/anon key only.
 - `VITE_REQUIRE_AUTH=true` for the authenticated staging environment.
 
-The current `netlify.toml` has separate production and deploy-preview API settings. The candidate Render blueprint explicitly allows the PR #20 preview origin and primary site; this is only blueprint configuration until applied to an isolated staging service. Confirm the preview's actual API target and deployed backend CORS allowlist before claiming the deployed frontend/backend pair works. Netlify deploys now set baseline security headers; a Content Security Policy remains deferred pending a complete external-resource audit. A publishable/anon key may be public; service-role keys, database passwords and encryption keys must never be in frontend variables.
+The current `netlify.toml` has separate production and deploy-preview API settings. The candidate Render blueprint allows the primary site and preview origins #20 and #11; the current staging service's live CORS allowlist was updated separately. Confirm the actual deployed backend CORS allowlist before claiming the frontend/backend pair works. Confirm the preview's actual API target and deployed backend CORS allowlist before claiming the deployed frontend/backend pair works. Netlify deploys now set baseline security headers; a Content Security Policy remains deferred pending a complete external-resource audit. A publishable/anon key may be public; service-role keys, database passwords and encryption keys must never be in frontend variables.
 
 ## Staging verification
 
-1. Deploy the candidate to an isolated staging API and matching frontend. Do not repoint the existing production or public-demo service, and do not use a shared production database for test writes.
+1. Deploy the reconciled candidate to the existing staging API and matching preview only after the staging reconciliation PR is conflict-free. Do not repoint the production or public-demo service, and do not use a shared production database for test writes.
 2. Confirm API `/health` returns HTTP 200.
 3. Confirm `/ready` returns HTTP 200, database is ready, and `database_role_valid=true`.
 4. Confirm authenticated `/api/aether/v2/release/readiness` reports `ready_for_controlled_mvp=true`.
