@@ -1043,11 +1043,13 @@ def _authorize_case(case, principal: Principal) -> None:
     if principal.auth_mode == "api_key" and same_tenant:
         return
     if principal.role.lower() in {"officer", "department_admin"} and same_tenant:
-        if principal.department and case.service_department:
-            if principal.department.lower() != case.service_department.lower():
-                raise HTTPException(status_code=404, detail="Case not found")
+        if principal.department and (
+            not case.service_department
+            or principal.department.lower() != case.service_department.lower()
+        ):
+            raise HTTPException(status_code=404, detail="Case not found")
         for key, value in (principal.jurisdiction or {}).items():
-            if value and case.jurisdiction.get(key) and case.jurisdiction.get(key) != value:
+            if value and case.jurisdiction.get(key) != value:
                 raise HTTPException(status_code=404, detail="Case not found")
         return
     if same_owner and (not case.tenant_id or not principal.tenant_id or same_tenant):
