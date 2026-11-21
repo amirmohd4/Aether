@@ -672,7 +672,8 @@ def upload_case_document(
             "case_status": resumed.status,
             "missing_documents": [],
             "document": document_summary(stored),
-            "case": serialize(resumed, include_tasks=False),
+            # The browser needs the resumed task graph to render the live case state.
+            "case": serialize(resumed, include_tasks=True),
         }
     except KeyError:
         raise HTTPException(status_code=404, detail="Case not found")
