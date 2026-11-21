@@ -1417,7 +1417,7 @@ export const AetherCommandCenter: React.FC = () => {
                       <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
                         <select
                           value={uploadDocumentType}
-                          onChange={(e) => setUploadDocumentType(e.target.value)}
+                          onChange={(e) => { setUploadDocumentType(e.target.value); setUploadFile(null); }}
                           className="rounded-lg border border-white/10 bg-slate-900 p-2 text-xs"
                         >
                           <option value="">Choose sample type</option>
