@@ -554,16 +554,31 @@ def list_api_keys(principal: Principal = Depends(require_scope("cases:read"))):
         raise HTTPException(status_code=503, detail="API key store unavailable") from exc
 
 
+def _require_tenant_admin(principal: Principal, target_tenant_id: str | None = None) -> str:
+    """Require a real Supabase-authenticated admin bound to the target tenant."""
+    if (
+        principal.auth_mode != "supabase"
+        or principal.role.lower() != "admin"
+        or not principal.tenant_id
+    ):
+        raise HTTPException(status_code=403, detail="Tenant administrator membership required")
+    if target_tenant_id is not None and target_tenant_id != principal.tenant_id:
+        raise HTTPException(status_code=403, detail="Administrators may manage memberships in their own tenant only")
+    return principal.tenant_id
+
+
 @router.get("/admin/memberships")
 def list_memberships(principal: Principal = Depends(require_role("admin"))):
+    tenant_id = _require_tenant_admin(principal)
     if engine.store is None:
         raise HTTPException(status_code=503, detail="Membership store unavailable")
     try:
         with SessionLocal() as db:
             rows = db.execute(text(
                 "SELECT user_id, tenant_id, role, status, department, jurisdiction, created_at, updated_at "
-                "FROM public.aether_memberships ORDER BY created_at DESC LIMIT 500"
-            )).mappings().all()
+                "FROM public.aether_memberships WHERE tenant_id = :tenant_id "
+                "ORDER BY created_at DESC LIMIT 500"
+            ), {"tenant_id": tenant_id}).mappings().all()
             return {"memberships": [dict(row) for row in rows]}
     except Exception as exc:
         raise HTTPException(status_code=503, detail="Membership store unavailable") from exc
@@ -574,10 +589,14 @@ def set_membership(data: Dict[str, Any], principal: Principal = Depends(require_
     required = {"user_id", "tenant_id", "role"}
     if not required.issubset(data):
         raise HTTPException(status_code=400, detail="user_id, tenant_id and role are required")
+    tenant_id = _require_tenant_admin(principal, str(data["tenant_id"]))
     allowed_roles = {"user", "citizen", "business", "bank", "developer", "insurer", "enterprise", "officer", "department_admin", "admin"}
     role = str(data["role"]).lower()
     if role not in allowed_roles:
         raise HTTPException(status_code=400, detail="Unsupported Aether role")
+    status = str(data.get("status", "active")).lower()
+    if status not in {"active", "inactive", "suspended"}:
+        raise HTTPException(status_code=400, detail="Membership status must be active, inactive, or suspended")
     try:
         with SessionLocal() as db:
             db.execute(text(
@@ -589,14 +608,14 @@ def set_membership(data: Dict[str, Any], principal: Principal = Depends(require_
                 "jurisdiction = EXCLUDED.jurisdiction, updated_at = now()"
             ), {
                 "user_id": data["user_id"],
-                "tenant_id": data["tenant_id"],
+                "tenant_id": tenant_id,
                 "role": role,
-                "status": str(data.get("status", "active")),
+                "status": status,
                 "department": data.get("department"),
                 "jurisdiction": __import__("json").dumps(data.get("jurisdiction") or {}),
             })
             db.commit()
-        return {"status": "updated", "user_id": data["user_id"], "tenant_id": data["tenant_id"], "role": role}
+        return {"status": "updated", "user_id": data["user_id"], "tenant_id": tenant_id, "role": role}
     except Exception as exc:
         raise HTTPException(status_code=503, detail="Membership store unavailable") from exc
 
