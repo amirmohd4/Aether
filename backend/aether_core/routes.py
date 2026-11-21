@@ -205,12 +205,21 @@ def release_readiness():
         and record.get("verified_at")
         and record.get("effective_date")
     ]
+    try:
+        with SessionLocal() as db:
+            admin_action_queue_schema = bool(db.execute(text(
+                "SELECT to_regclass('aether_internal.aether_v2_admin_actions') IS NOT NULL "
+                "AND to_regclass('aether_internal.aether_v2_admin_work_items') IS NOT NULL"
+            )).scalar())
+    except Exception:
+        admin_action_queue_schema = False
+
     checks = {
         "database_url": bool(os.getenv("DATABASE_URL")),
         "supabase_auth": os.getenv("AETHER_AUTH_MODE", "none").strip().lower() == "supabase",
         "encryption_key": bool(os.getenv("AETHER_ENCRYPTION_KEY")),
-        # Verify the actual private bucket in every controlled/production environment.
-        # Presence of credentials alone does not prove that the bucket exists or is private.
+        "admin_action_queue_schema": admin_action_queue_schema,
+        # Verify the actual private bucket, server-enforced size limit and MIME allowlist.
         "private_document_storage": document_store.storage_ready(),
         "production_connectors": engine.workers.production_connectors_configured(),
         "authoritative_rule_coverage": (
@@ -237,7 +246,8 @@ def release_readiness():
         ("database_url", "DATABASE_URL is not configured"),
         ("supabase_auth", "AETHER_AUTH_MODE must be supabase"),
         ("encryption_key", "AETHER_ENCRYPTION_KEY is not configured"),
-        ("private_document_storage", "Private document storage is not configured"),
+        ("admin_action_queue_schema", "Administrative action queue migrations are not applied"),
+        ("private_document_storage", "Private document storage is missing or upload limits are not enforced"),
         ("legacy_api_quarantined", "Legacy API routes are not quarantined"),
         ("worker_command_configured", "Durable worker command is not configured"),
         ("synthetic_mode", "Controlled beta must use synthetic government systems"),
@@ -262,8 +272,10 @@ def release_readiness():
         from .document_crypto import encryption_key_ready
         if not encryption_key_ready():
             blockers.append("AETHER_ENCRYPTION_KEY is invalid")
+    if production and not checks["admin_action_queue_schema"]:
+        blockers.append("Administrative action queue migrations are not applied")
     if production and not checks["private_document_storage"]:
-        blockers.append("Private Supabase document storage is not configured")
+        blockers.append("Private Supabase document storage is missing or upload limits are not enforced")
     if production and not checks["production_connectors"]:
         blockers.append("No live government connectors are configured")
     if production and not checks["authoritative_rule_coverage"]:
