@@ -29,7 +29,7 @@ These are implemented capabilities. They are not proof that every deployed user 
 
 - [x] Backend test suite passed on the promoted candidate.
 - [x] Frontend typecheck and production build passed on the promoted candidate.
-- [x] Aether MVP CI and backend tests passed on candidate commit `66393d61509b3df201a248c9c1ae29eb6ed066b6` (154 backend tests), including tenant-admin cross-tenant denial and tenant-scoped admin listing.
+- [x] Aether MVP CI and backend tests passed on candidate commit `1de9e95386684043a933f73e18e4c6104f74a506` (158 backend tests), including tenant-admin cross-tenant denial and tenant-scoped admin listing.
 - [x] Aether MVP Tests passed on that candidate.
 - [x] Aether MVP Frontend passed on that candidate; the later authenticated-preview configuration commit also passed frontend lint/build.
 - [x] Aether Staging Release Smoke completed successfully on PR #11 merge ref `41cde4f43f4dfe3ef7a85d16c2363840a39034e2`.
@@ -42,12 +42,14 @@ These are implemented capabilities. They are not proof that every deployed user 
 ## Supabase — verified at database level
 
 - [x] Existing project `aether` (`lekudqjewxxunqjuqayi`) reports `ACTIVE_HEALTHY`.
-- [x] Ten migrations are recorded as applied.
-- [x] Thirteen public application tables and ten internal execution tables are present.
-- [x] RLS is enabled on all 23 application tables.
+- [x] Twelve migrations are recorded as applied, including admin action queue and document bucket limit migrations.
+- [x] Thirteen public application tables and twelve internal execution tables are present.
+- [x] RLS is enabled on all 25 application tables; the two admin queue tables grant access only to `aether_runtime` and deny browser-role SELECT.
 - [x] Dedicated `aether_runtime` role exists and is non-superuser, cannot create roles or databases, and can log in.
 - [x] `aether-documents` bucket exists and is private.
 - [x] Bucket-level upload restrictions set to 15 MiB and the application's approved MIME allowlist.
+- [x] Admin action/work-item schema migration applied with RLS and least-privilege runtime grants.
+- [x] Candidate readiness endpoint checks both admin queue tables and server-enforced storage limits.
 - [x] Supabase Security and Health Advisors returned no lints.
 
 - [ ] Prove the deployed staging process can upload, retrieve and delete a test document through its configured server-side credentials.
@@ -68,7 +70,7 @@ Database-level configuration does not by itself prove the deployed application's
 - [ ] Decide whether Free-tier cold starts and service suspension are acceptable for the pilot; disclose the availability limitation or approve a paid plan explicitly.
 - [ ] Run a bounded load and failure test before expanding the pilot.
 
-The current staging service is not the production backend. Production Render service `aether-backend` still deploys from `main` at the older commit `f64148aad10a5f8f586efde0cefe7a817fe6d996`. Do not repoint it as a shortcut.
+The current staging service is not the production backend. Production Render service `aether-backend` still deploys from `main` at the older commit `f64148aad10a5f8f586efde0cefe7a817fe6d996`. PR #28 now proposes a conflict-free reconciliation that preserves staging history; wait for its checks and merge before testing the candidate backend. Do not repoint production as a shortcut.
 
 ## Frontend and browser acceptance — outstanding
 
