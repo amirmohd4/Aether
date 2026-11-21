@@ -6,7 +6,7 @@ Aether is a government execution layer. It takes a real-world objective, underst
 
 ## Current MVP
 
-- 34 services in the shared service registry
+- 61 core MVP service families in the shared service registry, with an extended India-wide service taxonomy available for discovery
 - Objective understanding with ranked service candidates
 - Requirement discovery with jurisdiction/source provenance
 - Reusable cross-department work graphs
@@ -29,6 +29,10 @@ Aether is a government execution layer. It takes a real-world objective, underst
 - Controlled-MVP release readiness endpoint and expanded post-deployment smoke test
 
 The controlled MVP uses a deterministic synthetic government environment. It does not issue official government decisions/documents and does not represent live government authority.
+
+## National jurisdiction model
+
+Aether is national in product scope. The applicant selects the location where the requested service applies (for example, the property, business, person or activity location). Aether uses the service plus that jurisdiction to resolve the most specific available process profile. Applicant residence is not assumed to control every service. Profiles carry the responsible authority, official source, effective date and verification date. If no verified profile exists, Aether may explain and prepare a draft workflow but must label the rules unverified and must not invent fees, deadlines, document requirements or officer powers.
 
 ## Architecture
 
