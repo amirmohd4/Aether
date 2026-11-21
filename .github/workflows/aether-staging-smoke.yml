@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - aether-mvp-build
+      - integration-check/public-preview-into-hardened
   pull_request:
     branches:
       - main
@@ -27,7 +28,7 @@ jobs:
     timeout-minutes: 12
     env:
       AETHER_API_URL: ${{ inputs.api_url || vars.AETHER_STAGING_API_URL || 'https://aether-staging.onrender.com' }}
-      AETHER_FRONTEND_URL: ${{ inputs.frontend_url || vars.AETHER_STAGING_FRONTEND_URL || 'https://deploy-preview-20--aether-govos.netlify.app' }}
+      AETHER_FRONTEND_URL: ${{ inputs.frontend_url || vars.AETHER_STAGING_FRONTEND_URL || 'https://deploy-preview-11--aether-govos.netlify.app' }}
       AETHER_API_KEY: ${{ secrets.AETHER_STAGING_API_KEY }}
     steps:
       - name: Check out release candidate

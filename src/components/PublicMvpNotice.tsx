@@ -20,9 +20,10 @@ export function PublicMvpNotice() {
     >
       <strong>Aether is an independent platform, not a government website.</strong>{' '}
       Public MVP workflows use public information and/or simulated data unless a
-      screen explicitly identifies an authorized live integration. Sandbox
-      completion does not submit an application or create an official government
-      record.
+      screen explicitly identifies an authorized live integration. Do not enter
+      Aadhaar numbers, bank details, real identity documents or other sensitive
+      personal information. Sandbox completion does not submit an application or
+      create an official government record.
     </aside>
   );
 }

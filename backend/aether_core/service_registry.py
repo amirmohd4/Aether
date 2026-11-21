@@ -42,6 +42,11 @@ SERVICE_ALIASES = {
     "encumbrance_certificate": ["encumbrance", "property ec", "non encumbrance certificate"],
     "land_conversion": ["land use conversion", "agricultural to commercial land", "land diversion"],
     "title_verification": ["title check", "property title check", "real estate due diligence", "land verification"],
+    "mutation": ["mutation of property", "change land owner", "land record transfer", "record mutation", "inheritance mutation", "warasat intiqal", "sale mutation", "intiqal"],
+    "certified_land_record": ["fard", "nakal", "jamabandi", "record of rights", "ror extract"],
+    "land_demarcation": ["tatima", "field boundary survey", "nishandehi"],
+    "land_partition": ["taqseem", "partition of ancestral land"],
+    "land_record_correction": ["correction in jamabandi", "correction in khasra girdawari"],
     "trade_license": ["municipal trade licence", "shop license", "business permit"],
     "building_permit": ["building approval", "construction permit", "building sanction"],
     "water_connection": ["new water connection", "water supply connection"],
@@ -85,6 +90,33 @@ SERVICE_DEFINITIONS = [
     ("encumbrance_certificate", "Encumbrance Certificate", "Registration", ["citizen", "business", "bank", "developer", "insurer"], ["encumbrance certificate", "ec"], "property_loan", "encumbrance_certificate"),
     ("land_conversion", "Land Conversion", "Revenue", ["citizen", "business", "developer"], ["land conversion", "convert land"], "commercial_project", "land_conversion_order"),
     ("title_verification", "Title Verification", "Revenue", ["bank", "insurer", "developer", "business"], ["title verification", "verify title", "property verification", "verify property", "bank loan", "property loan"], "property_loan", "title_evidence_package"),
+    ("domicile_certificate", "Domicile/Residence Certificate", "Revenue", ["citizen", "business", "developer"], ["domicile certificate", "residence certificate", "permanent resident certificate"], None, "domicile_certificate"),
+    ("income_certificate", "Income Certificate", "Revenue", ["citizen", "business", "developer"], ["income certificate", "annual income certificate"], None, "income_certificate"),
+    ("caste_certificate", "Caste/Category Certificate", "Revenue", ["citizen"], ["caste certificate", "category certificate", "sc st certificate", "obc certificate"], None, "caste_certificate"),
+    ("legal_heir_certificate", "Legal Heir/Surviving Member Certificate", "Revenue", ["citizen", "business"], ["legal heir certificate", "surviving member certificate", "family member certificate"], None, "legal_heir_certificate"),
+    ("certified_land_record", "Certified Land Record / Fard / Record of Rights", "Revenue", ["citizen", "business", "bank", "developer", "insurer"], ["certified land record", "fard", "nakal", "record of rights", "ror", "jamabandi copy"], None, "certified_land_record"),
+    ("jamabandi_copy", "Jamabandi / Record of Rights Extract", "Revenue", ["citizen", "business", "bank", "developer", "insurer"], ["jamabandi", "jamabandi extract", "record of rights extract"], None, "jamabandi_copy"),
+    ("khasra_girdawari_copy", "Khasra Girdawari / Crop Inspection Record", "Revenue", ["citizen", "business", "bank", "developer", "insurer"], ["khasra girdawari", "girdawari", "crop inspection record", "khasra record"], None, "khasra_girdawari_copy"),
+    ("land_partition", "Land Partition", "Revenue", ["citizen", "business", "developer"], ["land partition", "partition of land", "taqseem", "property partition"], None, "partition_order"),
+    ("land_demarcation", "Land Demarcation / Boundary Survey", "Revenue", ["citizen", "business", "developer", "bank"], ["land demarcation", "land survey", "boundary demarcation", "tatima"], None, "demarcation_report"),
+    ("land_record_correction", "Land Record Correction / Rectification", "Revenue", ["citizen", "business", "developer"], ["land record correction", "jamabandi correction", "khasra correction", "record rectification"], None, "corrected_land_record"),
+    ("land_possession_certificate", "Land Possession Certificate / Report", "Revenue", ["citizen", "business", "developer", "bank"], ["land possession certificate", "possession report", "possession verification"], None, "land_possession_certificate"),
+    ("land_encroachment_complaint", "Government Land Encroachment Complaint", "Revenue", ["citizen", "business", "developer"], ["land encroachment", "government land encroachment", "illegal occupation of land"], None, "encroachment_action_report"),
+    ("land_acquisition_compensation", "Land Acquisition / Compensation Claim", "Revenue", ["citizen", "business", "developer"], ["land acquisition", "compensation claim", "acquired land compensation"], None, "land_acquisition_case"),
+    ("revenue_case_status", "Revenue Court / Tehsil Case Status", "Revenue", ["citizen", "business", "developer"], ["revenue court case", "tehsil case status", "revenue appeal", "revenue mutation dispute"], None, "revenue_case_status"),
+    ("state_land_lease", "State Land Lease / Allotment Application", "Revenue", ["citizen", "business", "developer"], ["state land lease", "government land allotment", "nazool land lease", "land allotment"], None, "land_lease_decision"),
+    ("disaster_damage_assessment", "Land / Crop Damage Assessment and Relief Claim", "Revenue", ["citizen", "business", "developer"], ["crop damage assessment", "land damage assessment", "disaster relief claim", "natural calamity compensation"], None, "damage_assessment_report"),
+    ("property_certificate", "Property / Land Holding Certificate", "Revenue", ["citizen", "business", "developer", "bank"], ["property certificate", "land holding certificate", "property holding proof"], None, "property_certificate"),
+    ("dependent_certificate", "Dependent Certificate", "Revenue", ["citizen"], ["dependent certificate", "dependency certificate"], None, "dependent_certificate"),
+    ("reserved_category_certificate", "Reserved Category Certificate", "Revenue", ["citizen"], ["reserved category certificate", "rba certificate", "alc certificate", "ews certificate", "pahari speaking people certificate"], None, "reserved_category_certificate"),
+    ("aks_masavi_latha_extract", "Aks Masavi / Latha Map Extract", "Revenue", ["citizen", "business", "developer", "bank"], ["aks masavi", "aks latha", "masavi extract", "latha extract"], None, "aks_masavi_latha_extract"),
+    ("tatima_shajra_extract", "Tatima Shajra / Subdivision Map Extract", "Revenue", ["citizen", "business", "developer", "bank"], ["tatima shajra", "tatima sharja", "tatima map", "subdivision map extract"], None, "tatima_shajra_extract"),
+    ("chulah_chowkidari_extract", "Chulah / Chowkidari Record Extract", "Revenue", ["citizen"], ["chulah extract", "chowkidari extract", "chowkidara record"], None, "chulah_chowkidari_extract"),
+    ("land_passbook", "Land Passbook / Property Card", "Revenue", ["citizen", "business", "developer", "bank"], ["land passbook", "property card", "land ownership passbook"], None, "land_passbook"),
+    ("mutation_attestation", "Mutation Attestation / Certification", "Revenue", ["citizen", "business", "developer"], ["mutation attestation", "attest mutation", "attestation of mutation"], None, "attested_mutation_order"),
+    ("mutation_copy", "Certified Copy of Mutation", "Revenue", ["citizen", "business", "developer", "bank"], ["copy of mutation", "mutation copy", "certified mutation copy"], None, "mutation_copy"),
+    ("inheritance_mutation", "Inheritance / Succession Mutation", "Revenue", ["citizen", "business"], ["inheritance mutation", "warasat mutation", "succession mutation", "mutation after death"], None, "inheritance_mutation_order"),
+    ("lien_mark_cancellation", "Land Lien Marking / Cancellation", "Revenue", ["citizen", "business", "developer", "bank"], ["lien marking", "mark lien on land", "lien cancellation", "cancellation of lien"], None, "lien_status_record"),
     ("trade_license", "Trade License", "Municipal", ["citizen", "business", "developer"], ["trade license", "business license", "commercial license"], "restaurant", "trade_license"),
     ("building_permit", "Building Permit", "Municipal", ["citizen", "business", "developer"], ["building permit", "building permission"], "commercial_project", "building_permission"),
     ("water_connection", "Water Connection", "Municipal", ["citizen", "business"], ["water connection"], None, "water_connection"),
@@ -144,6 +176,25 @@ def _document_defaults(service_id: str) -> List[str]:
         "encumbrance_certificate",
         "land_conversion",
         "title_verification",
+        "certified_land_record",
+        "jamabandi_copy",
+        "khasra_girdawari_copy",
+        "land_partition",
+        "land_demarcation",
+        "land_record_correction",
+        "land_possession_certificate",
+        "land_encroachment_complaint",
+        "land_acquisition_compensation",
+        "revenue_case_status",
+        "state_land_lease",
+        "property_certificate",
+        "aks_masavi_latha_extract",
+        "tatima_shajra_extract",
+        "land_passbook",
+        "mutation_attestation",
+        "mutation_copy",
+        "inheritance_mutation",
+        "lien_mark_cancellation",
     }
     business_services = {
         "trade_license",
@@ -159,6 +210,10 @@ def _document_defaults(service_id: str) -> List[str]:
 
     if service_id in property_services:
         return DEFAULT_DOCUMENTS["property"]
+    if service_id == "disaster_damage_assessment":
+        return ["identity_document", "land_record", "damage_evidence"]
+    if service_id in {"dependent_certificate", "reserved_category_certificate"}:
+        return ["identity_document", "residence_proof", "supporting_eligibility_evidence"]
     if service_id in business_services:
         return DEFAULT_DOCUMENTS["business"]
     if service_id == "building_permit":

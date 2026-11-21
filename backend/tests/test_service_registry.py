@@ -20,3 +20,58 @@ def test_service_registry_respects_customer_type():
     registry = ServiceRegistry()
     assert registry.resolve("I need a scholarship", "business") is None
     assert registry.resolve("I need a scholarship", "citizen").id == "scholarship"
+
+
+def test_revenue_department_catalog_covers_core_land_and_certificate_services():
+    registry = ServiceRegistry()
+    revenue_services = {
+        service.id for service in registry.all() if service.department == "Revenue"
+    }
+    assert {
+        "mutation",
+        "land_conversion",
+        "title_verification",
+        "domicile_certificate",
+        "income_certificate",
+        "caste_certificate",
+        "legal_heir_certificate",
+        "certified_land_record",
+        "jamabandi_copy",
+        "khasra_girdawari_copy",
+        "land_partition",
+        "land_demarcation",
+        "land_record_correction",
+        "land_possession_certificate",
+        "land_encroachment_complaint",
+        "land_acquisition_compensation",
+        "revenue_case_status",
+        "state_land_lease",
+        "disaster_damage_assessment",
+        "property_certificate",
+        "dependent_certificate",
+        "reserved_category_certificate",
+        "aks_masavi_latha_extract",
+        "tatima_shajra_extract",
+        "chulah_chowkidari_extract",
+        "land_passbook",
+        "mutation_attestation",
+        "mutation_copy",
+        "inheritance_mutation",
+        "lien_mark_cancellation",
+    } <= revenue_services
+
+
+def test_developer_can_resolve_revenue_land_services():
+    registry = ServiceRegistry()
+    assert registry.resolve("I need a fard / jamabandi copy", "developer").id in {
+        "certified_land_record", "jamabandi_copy"
+    }
+    assert registry.resolve("I need land demarcation for my project", "developer").id == "land_demarcation"
+    assert registry.resolve("I need mutation of land ownership", "developer").id == "mutation"
+
+
+def test_jk_revenue_plus_service_names_resolve():
+    registry = ServiceRegistry()
+    assert registry.resolve("I need an Aks Masavi / Latha extract", "developer").id == "aks_masavi_latha_extract"
+    assert registry.resolve("I need a Tatima Shajra map", "developer").id == "tatima_shajra_extract"
+    assert registry.resolve("I need a certified copy of mutation", "developer").id == "mutation_copy"

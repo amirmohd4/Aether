@@ -106,12 +106,12 @@
 
 **Actions:**
 1. Open the API Marketplace.
-2. Show the 34 controlled MVP service contracts.
+2. Show the expanded 61-service core catalog and broader India-wide service taxonomy.
 3. Show tenant-scoped API key controls.
 4. Show connector and rule-pack readiness.
 
 **Voiceover:**
-“For developers and institutional partners, Aether exposes a shared service catalog and tenant-scoped API access. Real connectors and authoritative rule packs are explicitly configured rather than implied.”
+“For developers and institutional partners, Aether exposes a shared national service catalog, jurisdiction-aware process readiness and tenant-scoped API access. Real connectors and authoritative rule packs are explicitly configured rather than implied.”
 
 ---
 
