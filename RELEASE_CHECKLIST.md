@@ -29,25 +29,27 @@ These are implemented capabilities. They are not proof that every deployed user 
 
 - [x] Backend test suite passed on the promoted candidate.
 - [x] Frontend typecheck and production build passed on the promoted candidate.
-- [x] Aether MVP CI and backend tests passed on candidate commit `66393d61509b3df201a248c9c1ae29eb6ed066b6` (154 backend tests), including tenant-admin cross-tenant denial and tenant-scoped admin listing.
+- [x] Aether MVP CI and backend tests passed on candidate commit `1de9e95386684043a933f73e18e4c6104f74a506` (158 backend tests), including tenant-admin cross-tenant denial and tenant-scoped admin listing.
 - [x] Aether MVP Tests passed on that candidate.
 - [x] Aether MVP Frontend passed on that candidate; the later authenticated-preview configuration commit also passed frontend lint/build.
 - [x] Aether Staging Release Smoke completed successfully on PR #11 merge ref `41cde4f43f4dfe3ef7a85d16c2363840a39034e2`.
 - [x] Staging smoke observed HTTP 200 for health, readiness and root; readiness asserted database role validity.
 - [x] Authenticated staging smoke passed service catalog, marketplace, connector catalog, rule readiness, India admin overview, department catalog, journey templates and release-readiness checks.
-- [x] Netlify deploy preview #11 reached `ready` for candidate commit `66393d61509b3df201a248c9c1ae29eb6ed066b6`.
+- [x] Netlify deploy preview #11 reached `ready` for candidate commit `1de9e95386684043a933f73e18e4c6104f74a506`.
 
 **Scope limitation:** the staging smoke uses a read-only API key and performs read/readiness checks. It does not create a case, upload/read a document, perform an officer decision, or prove a full citizen-to-officer journey. The candidate preview configuration now points to authenticated `aether-staging` and sets `VITE_REQUIRE_AUTH=true`; the staging CORS allowlist was updated to include preview #11 and redeployed successfully. This configuration has not yet been exercised in a real browser, and staging still runs the older integration branch rather than the candidate backend.
 
 ## Supabase — verified at database level
 
 - [x] Existing project `aether` (`lekudqjewxxunqjuqayi`) reports `ACTIVE_HEALTHY`.
-- [x] Ten migrations are recorded as applied.
-- [x] Thirteen public application tables and ten internal execution tables are present.
-- [x] RLS is enabled on all 23 application tables.
+- [x] Twelve migrations are recorded as applied, including admin action queue and document bucket limit migrations.
+- [x] Thirteen public application tables and twelve internal execution tables are present.
+- [x] RLS is enabled on all 25 application tables; the two admin queue tables grant access only to `aether_runtime` and deny browser-role SELECT.
 - [x] Dedicated `aether_runtime` role exists and is non-superuser, cannot create roles or databases, and can log in.
 - [x] `aether-documents` bucket exists and is private.
 - [x] Bucket-level upload restrictions set to 15 MiB and the application's approved MIME allowlist.
+- [x] Admin action/work-item schema migration applied with RLS and least-privilege runtime grants.
+- [x] Candidate readiness endpoint checks both admin queue tables and server-enforced storage limits.
 - [x] Supabase Security and Health Advisors returned no lints.
 
 - [ ] Prove the deployed staging process can upload, retrieve and delete a test document through its configured server-side credentials.
@@ -59,8 +61,8 @@ Database-level configuration does not by itself prove the deployed application's
 ## Render, runtime and availability
 
 - [x] A separate `aether-staging` Render service exists and is active.
-- [x] Staging service reports live deploy commit `a8b4b8eb9c85b82fd84fac05de6dc28dac33cf25` from `integration-check/public-preview-into-hardened`.
-- [x] Staging release smoke passed `/health`, `/ready` and asserted `database_role_valid=true`, confirming the configured runtime database identity matched `aether_runtime` at test time.
+- [x] Staging service now runs reconciled candidate commit `a07df14e03cf4d38c1c169400ea699accd49ebe8` from `integration-check/public-preview-into-hardened` after PR #28 merged.
+- [x] Post-deploy staging release smoke passed `/health`, `/ready`, root and eight authenticated read-only product/release checks; `/ready` asserted `database_role_valid=true`.
 - [ ] Confirm deployed environment-variable names/configuration without exposing values; verify encryption, Supabase Auth, storage and worker settings.
 - [ ] Prove worker dispatch processes a synthetic durable task, not merely that the polling loop emits ticks.
 - [ ] Prove retries, lease expiry, restart recovery and notification outbox delivery.
@@ -68,7 +70,7 @@ Database-level configuration does not by itself prove the deployed application's
 - [ ] Decide whether Free-tier cold starts and service suspension are acceptable for the pilot; disclose the availability limitation or approve a paid plan explicitly.
 - [ ] Run a bounded load and failure test before expanding the pilot.
 
-The current staging service is not the production backend. Production Render service `aether-backend` still deploys from `main` at the older commit `f64148aad10a5f8f586efde0cefe7a817fe6d996`. Do not repoint it as a shortcut.
+The current staging service is not the production backend. PR #11 remains unmerged and PR #20 remains a draft. Production Render service `aether-backend` still deploys from `main` at the older commit `f64148aad10a5f8f586efde0cefe7a817fe6d996`. Do not repoint it as a shortcut.
 
 ## Frontend and browser acceptance — outstanding
 
@@ -87,7 +89,7 @@ The current staging service is not the production backend. Production Render ser
 - [ ] Missing-evidence flow, document upload, final-document resume and task graph are verified against deployed storage.
 - [ ] Officer/operator queue, human approval/rejection, exceptions and notifications complete end-to-end.
 - [ ] Audit chain verifies after a complete deployed case.
-- [x] Candidate unit tests deny cross-tenant tenant-admin case access and limit admin case listing to the active tenant.
+- [x] Candidate unit tests deny cross-tenant tenant-admin case access, limit admin case listing to the active tenant and fail closed on missing officer department/jurisdiction scope.
 - [ ] Deployed tenant isolation, cross-tenant denial, role, department and jurisdiction boundaries pass adversarial staging tests.
 - [ ] API-key scope denial, expiry and revocation are tested against the deployed service.
 - [ ] File size, MIME, signature, malformed-file and upload abuse limits are tested.
