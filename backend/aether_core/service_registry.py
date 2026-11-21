@@ -106,6 +106,17 @@ SERVICE_DEFINITIONS = [
     ("revenue_case_status", "Revenue Court / Tehsil Case Status", "Revenue", ["citizen", "business", "developer"], ["revenue court case", "tehsil case status", "revenue appeal", "revenue mutation dispute"], None, "revenue_case_status"),
     ("state_land_lease", "State Land Lease / Allotment Application", "Revenue", ["citizen", "business", "developer"], ["state land lease", "government land allotment", "nazool land lease", "land allotment"], None, "land_lease_decision"),
     ("disaster_damage_assessment", "Land / Crop Damage Assessment and Relief Claim", "Revenue", ["citizen", "business", "developer"], ["crop damage assessment", "land damage assessment", "disaster relief claim", "natural calamity compensation"], None, "damage_assessment_report"),
+    ("property_certificate", "Property / Land Holding Certificate", "Revenue", ["citizen", "business", "developer", "bank"], ["property certificate", "land holding certificate", "property holding proof"], None, "property_certificate"),
+    ("dependent_certificate", "Dependent Certificate", "Revenue", ["citizen"], ["dependent certificate", "dependency certificate"], None, "dependent_certificate"),
+    ("reserved_category_certificate", "Reserved Category Certificate", "Revenue", ["citizen"], ["reserved category certificate", "rba certificate", "alc certificate", "ews certificate", "pahari speaking people certificate"], None, "reserved_category_certificate"),
+    ("aks_masavi_latha_extract", "Aks Masavi / Latha Map Extract", "Revenue", ["citizen", "business", "developer", "bank"], ["aks masavi", "aks latha", "masavi extract", "latha extract"], None, "aks_masavi_latha_extract"),
+    ("tatima_shajra_extract", "Tatima Shajra / Subdivision Map Extract", "Revenue", ["citizen", "business", "developer", "bank"], ["tatima shajra", "tatima sharja", "tatima map", "subdivision map extract"], None, "tatima_shajra_extract"),
+    ("chulah_chowkidari_extract", "Chulah / Chowkidari Record Extract", "Revenue", ["citizen"], ["chulah extract", "chowkidari extract", "chowkidara record"], None, "chulah_chowkidari_extract"),
+    ("land_passbook", "Land Passbook / Property Card", "Revenue", ["citizen", "business", "developer", "bank"], ["land passbook", "property card", "land ownership passbook"], None, "land_passbook"),
+    ("mutation_attestation", "Mutation Attestation / Certification", "Revenue", ["citizen", "business", "developer"], ["mutation attestation", "attest mutation", "attestation of mutation"], None, "attested_mutation_order"),
+    ("mutation_copy", "Certified Copy of Mutation", "Revenue", ["citizen", "business", "developer", "bank"], ["copy of mutation", "mutation copy", "certified mutation copy"], None, "mutation_copy"),
+    ("inheritance_mutation", "Inheritance / Succession Mutation", "Revenue", ["citizen", "business"], ["inheritance mutation", "warasat mutation", "succession mutation", "mutation after death"], None, "inheritance_mutation_order"),
+    ("lien_mark_cancellation", "Land Lien Marking / Cancellation", "Revenue", ["citizen", "business", "developer", "bank"], ["lien marking", "mark lien on land", "lien cancellation", "cancellation of lien"], None, "lien_status_record"),
     ("trade_license", "Trade License", "Municipal", ["citizen", "business", "developer"], ["trade license", "business license", "commercial license"], "restaurant", "trade_license"),
     ("building_permit", "Building Permit", "Municipal", ["citizen", "business", "developer"], ["building permit", "building permission"], "commercial_project", "building_permission"),
     ("water_connection", "Water Connection", "Municipal", ["citizen", "business"], ["water connection"], None, "water_connection"),
@@ -176,6 +187,14 @@ def _document_defaults(service_id: str) -> List[str]:
         "land_acquisition_compensation",
         "revenue_case_status",
         "state_land_lease",
+        "property_certificate",
+        "aks_masavi_latha_extract",
+        "tatima_shajra_extract",
+        "land_passbook",
+        "mutation_attestation",
+        "mutation_copy",
+        "inheritance_mutation",
+        "lien_mark_cancellation",
     }
     business_services = {
         "trade_license",
@@ -193,6 +212,8 @@ def _document_defaults(service_id: str) -> List[str]:
         return DEFAULT_DOCUMENTS["property"]
     if service_id == "disaster_damage_assessment":
         return ["identity_document", "land_record", "damage_evidence"]
+    if service_id in {"dependent_certificate", "reserved_category_certificate"}:
+        return ["identity_document", "residence_proof", "supporting_eligibility_evidence"]
     if service_id in business_services:
         return DEFAULT_DOCUMENTS["business"]
     if service_id == "building_permit":
