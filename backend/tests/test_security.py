@@ -37,8 +37,46 @@ def test_cross_tenant_user_cannot_access_case():
         raise AssertionError("cross-tenant access should be rejected")
 
 
-def test_admin_can_access_case():
-    _authorize_case(_case(), Principal("admin-1", "admin", "tenant-x", "supabase"))
+def test_admin_can_access_case_within_own_tenant():
+    _authorize_case(_case(), Principal("admin-1", "admin", "tenant-1", "supabase"))
+
+
+def test_admin_cannot_access_case_in_another_tenant():
+    try:
+        _authorize_case(_case(), Principal("admin-1", "admin", "tenant-x", "supabase"))
+    except HTTPException as exc:
+        assert exc.status_code == 404
+    else:
+        raise AssertionError("tenant admin must not access another tenant's case")
+
+
+def test_admin_case_listing_is_limited_to_own_tenant(monkeypatch):
+    from aether_core.routes import _list_visible_cases
+
+    captured = {}
+
+    def fake_list(**kwargs):
+        captured.update(kwargs)
+        return [{"case_id": "A-TENANT-1"}]
+
+    monkeypatch.setattr("aether_core.routes.engine.store.list", fake_list)
+    visible = _list_visible_cases(
+        Principal("admin-1", "admin", "tenant-1", "supabase"),
+        limit=10,
+    )
+
+    assert visible == [{"case_id": "A-TENANT-1"}]
+    assert captured["tenant_id"] == "tenant-1"
+
+
+def test_admin_without_tenant_cannot_list_cases(monkeypatch):
+    from aether_core.routes import _list_visible_cases
+
+    def forbidden_list(**kwargs):
+        raise AssertionError("tenantless admin must not query cases")
+
+    monkeypatch.setattr("aether_core.routes.engine.store.list", forbidden_list)
+    assert _list_visible_cases(Principal("admin-1", "admin", None, "supabase")) == []
 
 
 def test_officer_cannot_access_case_outside_authorized_department():
