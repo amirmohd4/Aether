@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Response
 import hashlib
+import os
+import re
 import secrets
 
 from .api_models import DocumentSubmissionRequest, HumanDecisionRequest, StartCaseRequest
@@ -28,6 +30,37 @@ from .rule_change_impact import diff_process_profiles
 from .administrative_intelligence import AdministrativeIntelligence
 from backend.database import SessionLocal
 from sqlalchemy import text
+
+def _validate_synthetic_document_upload(document_type: str, filename: str, mime_type: str | None, content: bytes) -> None:
+    """In synthetic-only preview mode, accept only the exact in-app generated fixture."""
+    enabled = os.getenv("AETHER_SYNTHETIC_ONLY_DOCUMENTS", "false").strip().lower() in {"1", "true", "yes"}
+    if not enabled:
+        return
+
+    safe_type = re.sub(r"[^a-z0-9_-]", "_", document_type, flags=re.IGNORECASE)
+    expected_filename = f"AETHER-SYNTHETIC-{safe_type}.txt"
+    expected_text = "\\n".join([
+        "AETHER SYNTHETIC SAMPLE — NOT VALID FOR OFFICIAL USE",
+        "THIS FILE CONTAINS FICTIONAL TEST DATA ONLY.",
+        "",
+        f"Document type: {document_type}",
+        "Applicant: Demo Person 001 (fictional)",
+        "Organisation: Example Test Enterprise (fictional)",
+        "Address: 1 Example Lane, Sample Nagar, Demo State, India (fictional)",
+        "Reference: AETHER-DEMO-0001",
+        "Issue date: 2026-01-15 (illustrative only)",
+        "Status: TEST DATA — NO LEGAL OR GOVERNMENT EFFECT",
+        "",
+        "No real person, business, identity number, bank account, property, or government record is represented.",
+        "Do not alter this file to impersonate an official document.",
+    ]).encode("utf-8")
+
+    if mime_type != "text/plain" or filename != expected_filename or content != expected_text:
+        raise HTTPException(
+            status_code=400,
+            detail="Synthetic preview accepts only the exact in-app generated sample file. Real or third-party documents are not accepted.",
+        )
+
 
 router = APIRouter(prefix="/api/aether/v2", tags=["Aether V2"], dependencies=[Depends(require_principal)])
 requirements_engine = RequirementEngine()
@@ -665,6 +698,12 @@ def upload_case_document(
                 status_code=413,
                 detail="Document exceeds the configured upload limit",
             )
+        _validate_synthetic_document_upload(
+            document_type,
+            file.filename or "",
+            file.content_type,
+            content,
+        )
         stored = document_store.save(
             case_id=case_id,
             tenant_id=case.tenant_id or principal.tenant_id,
