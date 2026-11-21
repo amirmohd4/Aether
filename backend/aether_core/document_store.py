@@ -70,13 +70,7 @@ class DocumentStore:
             Path(filename or "document").name,
         )
         resolved_mime = mime_type or mimetypes.guess_type(safe_name)[0] or "application/octet-stream"
-        allowed = {
-            item.strip() for item in os.getenv(
-                "AETHER_ALLOWED_DOCUMENT_MIME_TYPES",
-                "application/pdf,text/plain,text/csv,application/json,image/jpeg,image/png,"
-                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            ).split(",") if item.strip()
-        }
+        allowed = self._allowed_mime_types()
         if resolved_mime not in allowed:
             raise ValueError(f"Unsupported document type: {resolved_mime}")
 
@@ -149,7 +143,7 @@ class DocumentStore:
         return headers
 
     def storage_ready(self) -> bool:
-        """Check that Supabase Storage is configured and the bucket is private."""
+        """Require a private bucket with server-enforced size and MIME limits."""
         if not self._supabase_configured():
             return False
         try:
@@ -160,36 +154,43 @@ class DocumentStore:
             )
             if check.status_code != 200:
                 return False
-            data = check.json()
-            return data.get("public") is False
+            return self._bucket_configuration_valid(check.json())
         except Exception:
             return False
 
+    def _bucket_configuration_valid(self, data: Dict[str, Any]) -> bool:
+        try:
+            file_size_limit = int(data.get("file_size_limit") or 0)
+        except (TypeError, ValueError):
+            return False
+        allowed_mime_types = data.get("allowed_mime_types")
+        return (
+            data.get("public") is False
+            and file_size_limit == self._max_bytes()
+            and isinstance(allowed_mime_types, list)
+            and set(allowed_mime_types) == self._allowed_mime_types()
+        )
+
     def _ensure_supabase_bucket(self) -> None:
-        if self._bucket_ready or not self._supabase_configured():
+        if self._bucket_ready:
             return
+        if not self._supabase_configured():
+            raise RuntimeError("Supabase document storage is not configured")
 
         check = httpx.get(
             f"{self.supabase_url}/storage/v1/bucket/{self.bucket}",
             headers=self._headers(),
             timeout=15.0,
         )
-        if check.status_code == 200:
-            if check.json().get("public") is True:
-                raise RuntimeError("Aether document bucket must be private")
-            self._bucket_ready = True
-            return
-        if check.status_code != 404:
-            check.raise_for_status()
-
-        create = httpx.post(
-            f"{self.supabase_url}/storage/v1/bucket",
-            json={"id": self.bucket, "name": self.bucket, "public": False},
-            headers=self._headers("application/json"),
-            timeout=15.0,
-        )
-        if create.status_code not in {200, 201, 409}:
-            create.raise_for_status()
+        if check.status_code == 404:
+            raise RuntimeError(
+                "Aether document bucket is missing; apply the storage bucket migration before accepting uploads"
+            )
+        check.raise_for_status()
+        if not self._bucket_configuration_valid(check.json()):
+            raise RuntimeError(
+                "Aether document bucket must be private and enforce the configured file-size and MIME limits"
+            )
         self._bucket_ready = True
 
     def _save_supabase(self, key: str, content: bytes, mime_type: str) -> None:
@@ -205,6 +206,16 @@ class DocumentStore:
     @staticmethod
     def _max_bytes() -> int:
         return max(1, int(os.getenv("AETHER_MAX_DOCUMENT_BYTES", str(15 * 1024 * 1024))))
+
+    @staticmethod
+    def _allowed_mime_types() -> set[str]:
+        return {
+            item.strip() for item in os.getenv(
+                "AETHER_ALLOWED_DOCUMENT_MIME_TYPES",
+                "application/pdf,text/plain,text/csv,application/json,image/jpeg,image/png,"
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            ).split(",") if item.strip()
+        }
 
     def _extract(self, filename: str, mime_type: str, content: bytes) -> tuple[str, str]:
         if mime_type.startswith("text/") or mime_type in {"application/json", "application/xml"}:
