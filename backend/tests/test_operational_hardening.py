@@ -131,3 +131,61 @@ def test_document_store_rejects_mismatched_binary_signature(tmp_path, monkeypatc
         assert "signature" in str(exc).lower()
     else:
         raise AssertionError("mismatched PDF signature must be rejected")
+
+
+def test_storage_ready_requires_server_enforced_bucket_limits(monkeypatch):
+    from types import SimpleNamespace
+
+    store = DocumentStore()
+    store.supabase_url = "https://example.supabase.co"
+    store.service_key = "test-service-key"
+    monkeypatch.delenv("AETHER_ALLOWED_DOCUMENT_MIME_TYPES", raising=False)
+    expected_types = store._allowed_mime_types()
+    bucket = {
+        "public": False,
+        "file_size_limit": 15 * 1024 * 1024,
+        "allowed_mime_types": sorted(expected_types),
+    }
+    monkeypatch.setattr(
+        "aether_core.document_store.httpx.get",
+        lambda *args, **kwargs: SimpleNamespace(
+            status_code=200,
+            json=lambda: bucket,
+        ),
+    )
+
+    assert store.storage_ready() is True
+    bucket["file_size_limit"] = None
+    assert store.storage_ready() is False
+    bucket["file_size_limit"] = 15 * 1024 * 1024
+    bucket["allowed_mime_types"] = ["*/*"]
+    assert store.storage_ready() is False
+    bucket["allowed_mime_types"] = sorted(expected_types)
+    bucket["public"] = True
+    assert store.storage_ready() is False
+
+
+def test_document_upload_fails_closed_when_bucket_is_missing(monkeypatch):
+    from types import SimpleNamespace
+    from aether_core.document_store import DocumentStore
+
+    store = DocumentStore()
+    store.supabase_url = "https://example.supabase.co"
+    store.service_key = "test-service-key"
+    post_called = {"value": False}
+    monkeypatch.setattr(
+        "aether_core.document_store.httpx.get",
+        lambda *args, **kwargs: SimpleNamespace(status_code=404),
+    )
+    monkeypatch.setattr(
+        "aether_core.document_store.httpx.post",
+        lambda *args, **kwargs: post_called.update(value=True),
+    )
+
+    try:
+        store._ensure_supabase_bucket()
+    except RuntimeError as exc:
+        assert "bucket is missing" in str(exc).lower()
+    else:
+        raise AssertionError("missing document bucket must fail closed")
+    assert post_called["value"] is False
