@@ -29,13 +29,13 @@ These are implemented capabilities. They are not proof that every deployed user 
 
 - [x] Backend test suite passed on the promoted candidate.
 - [x] Frontend typecheck and production build passed on the promoted candidate.
-- [x] Aether MVP CI and backend tests passed on candidate commit `6d20369fb3c022cf2082a9dff5090bfe8f8273cf` (151 backend tests).
+- [x] Aether MVP CI and backend tests passed on candidate commit `66393d61509b3df201a248c9c1ae29eb6ed066b6` (154 backend tests), including tenant-admin cross-tenant denial and tenant-scoped admin listing.
 - [x] Aether MVP Tests passed on that candidate.
 - [x] Aether MVP Frontend passed on that candidate; the later authenticated-preview configuration commit also passed frontend lint/build.
 - [x] Aether Staging Release Smoke completed successfully on PR #11 merge ref `41cde4f43f4dfe3ef7a85d16c2363840a39034e2`.
 - [x] Staging smoke observed HTTP 200 for health, readiness and root; readiness asserted database role validity.
 - [x] Authenticated staging smoke passed service catalog, marketplace, connector catalog, rule readiness, India admin overview, department catalog, journey templates and release-readiness checks.
-- [x] Netlify deploy preview #11 reached `ready` for candidate commit `cded35acc47ced0f2c3199e7ca9de4a281400a81`.
+- [x] Netlify deploy preview #11 reached `ready` for candidate commit `66393d61509b3df201a248c9c1ae29eb6ed066b6`.
 
 **Scope limitation:** the staging smoke uses a read-only API key and performs read/readiness checks. It does not create a case, upload/read a document, perform an officer decision, or prove a full citizen-to-officer journey. The candidate preview configuration now points to authenticated `aether-staging` and sets `VITE_REQUIRE_AUTH=true`; the staging CORS allowlist was updated to include preview #11 and redeployed successfully. This configuration has not yet been exercised in a real browser, and staging still runs the older integration branch rather than the candidate backend.
 
@@ -47,6 +47,7 @@ These are implemented capabilities. They are not proof that every deployed user 
 - [x] RLS is enabled on all 23 application tables.
 - [x] Dedicated `aether_runtime` role exists and is non-superuser, cannot create roles or databases, and can log in.
 - [x] `aether-documents` bucket exists and is private.
+- [x] Bucket-level upload restrictions set to 15 MiB and the application's approved MIME allowlist.
 - [x] Supabase Security and Health Advisors returned no lints.
 
 - [ ] Prove the deployed staging process can upload, retrieve and delete a test document through its configured server-side credentials.
@@ -86,7 +87,8 @@ The current staging service is not the production backend. Production Render ser
 - [ ] Missing-evidence flow, document upload, final-document resume and task graph are verified against deployed storage.
 - [ ] Officer/operator queue, human approval/rejection, exceptions and notifications complete end-to-end.
 - [ ] Audit chain verifies after a complete deployed case.
-- [ ] Tenant isolation, cross-tenant denial, role, department and jurisdiction boundaries pass adversarial staging tests.
+- [x] Candidate unit tests deny cross-tenant tenant-admin case access and limit admin case listing to the active tenant.
+- [ ] Deployed tenant isolation, cross-tenant denial, role, department and jurisdiction boundaries pass adversarial staging tests.
 - [ ] API-key scope denial, expiry and revocation are tested against the deployed service.
 - [ ] File size, MIME, signature, malformed-file and upload abuse limits are tested.
 - [ ] CORS, rate limits, security headers, error handling and monitoring are checked on the actual candidate frontend/backend pair.
