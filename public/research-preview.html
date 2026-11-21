@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Explore Aether GovOS, a governed execution layer designed to coordinate work across public-service systems, departments, evidence checks and human decisions. Public synthetic research preview.">
+  <meta name="theme-color" content="#07111f">
+  <title>Aether GovOS — From Request to Coordinated Outcome</title>
+  <style>
+    :root{color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#07111f;color:#edf4fc;--line:#ffffff1a;--muted:#b0c0d3;--cyan:#8bdcff;--panel:#0c1a2b;--green:#84e1b1;--amber:#f8d58c}
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;line-height:1.6;background:radial-gradient(ellipse at 55% -5%,#173854 0,#07111f 52%)}
+    a{color:var(--cyan)}
+    button,input,select,textarea{font:inherit}
+    a:focus-visible,button:focus-visible{outline:3px solid #fff;outline-offset:3px}
+    .wrap{width:min(1120px,100% - 36px);margin:0 auto}
+    header{padding:20px 0;display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid var(--line)}
+    .brand{font-weight:850;letter-spacing:.025em;text-decoration:none;color:#edf4fc}
+    nav{display:flex;gap:18px;flex-wrap:wrap;font-size:.9rem}
+    nav a{text-decoration:none}
+    .hero{padding:clamp(48px,8vw,88px) 0 52px}
+    .eyebrow{text-transform:uppercase;letter-spacing:.16em;font-size:.74rem;font-weight:850;color:var(--cyan)}
+    h1{max-width:930px;font-size:clamp(2.55rem,7vw,5.5rem);letter-spacing:-.06em;line-height:1.01;margin:15px 0 20px}
+    h2{font-size:clamp(1.55rem,3.2vw,2.25rem);letter-spacing:-.035em;line-height:1.15;margin:0 0 14px}
+    h3{line-height:1.25}
+    .lead{max-width:800px;color:#c2d0df;font-size:clamp(1.05rem,2.2vw,1.25rem)}
+    .notice{margin-top:24px;padding:15px 18px;border:1px solid #e7b75b66;background:#e7b75b12;border-radius:14px;color:#f8dfad;max-width:900px;font-size:.95rem}
+    .actions{display:flex;flex-wrap:wrap;gap:11px;margin-top:25px}
+    .button{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 16px;border-radius:11px;font-weight:800;text-decoration:none;border:1px solid #8bdcff66;min-height:46px}
+    .primary{background:var(--cyan);color:#07111f}
+    .secondary{color:#edf4fc;background:#ffffff08}
+    .section{padding:42px 0;border-top:1px solid var(--line)}
+    .section-lead{color:var(--muted);max-width:820px;margin-top:0}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,235px),1fr));gap:14px}
+    .card{border:1px solid #ffffff1c;background:var(--panel);border-radius:16px;padding:20px}
+    .num{color:var(--cyan);font-size:.75rem;font-weight:850;letter-spacing:.12em}
+    .card h3{margin:9px 0;font-size:1.08rem}
+    .card p{color:var(--muted);margin-bottom:0;font-size:.94rem}
+    .flow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;color:#dbe9f7}
+    .step{border:1px solid #ffffff24;border-radius:10px;padding:9px 12px;background:#ffffff08;font-size:.9rem}
+    .arrow{color:var(--cyan)}
+    .example{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start}
+    .panel{border:1px solid var(--line);background:#0a1727;border-radius:18px;padding:20px}
+    .pill{display:inline-flex;border:1px solid #8bdcff44;color:var(--cyan);padding:4px 9px;border-radius:999px;font-size:.75rem;font-weight:800}
+    .timeline{list-style:none;margin:18px 0 0;padding:0;display:grid;gap:10px}
+    .timeline li{display:grid;grid-template-columns:32px 1fr;gap:11px;padding:12px;border:1px solid #ffffff13;border-radius:12px;background:#ffffff04}
+    .n{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#8bdcff18;color:var(--cyan);font-weight:850;font-size:.8rem}
+    .timeline strong{display:block;font-size:.94rem}
+    .timeline p{margin:4px 0 0;color:var(--muted);font-size:.86rem}
+    .scenarios{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}
+    .scenario{border:1px solid #ffffff26;background:#ffffff08;color:#d9e5f2;padding:9px 12px;border-radius:10px;cursor:pointer;font-size:.86rem}
+    .scenario[aria-pressed="true"]{background:#8bdcff;color:#07111f;border-color:#8bdcff;font-weight:850}
+    .result{border:1px solid #8bdcff33;background:#8bdcff0c;border-radius:13px;padding:15px}
+    .result h3{margin:8px 0;font-size:1rem}
+    .result p{margin:0;color:#c3d2e1;font-size:.91rem}
+    .boundary{border-left:3px solid var(--amber);padding:10px 13px;background:#f8d58c0b;color:#f2ddb0;font-size:.9rem;margin-top:14px}
+    .role{border-top:1px solid #ffffff13;padding:13px 0}
+    .role:first-child{border-top:0}
+    .role strong{display:block}
+    .role span{color:var(--muted);font-size:.9rem}
+    .feedback-grid{display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center}
+    footer{border-top:1px solid var(--line);padding:25px 0 40px;color:#91a6bc;font-size:.88rem}
+    @media(max-width:720px){.example,.feedback-grid{grid-template-columns:1fr}.hero{padding-top:48px}header{align-items:flex-start;flex-direction:column}nav{gap:12px}}
+    @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  </style>
+</head>
+<body>
+  <header class="wrap">
+    <a class="brand" href="/research-preview.html" aria-label="Aether GovOS research preview home">AETHER <span style="color:var(--cyan)">GOVOS</span></a>
+    <nav aria-label="Primary navigation">
+      <a href="#how-it-works">How it works</a>
+      <a href="#guided-example">Try an example</a>
+      <a href="/feedback.html">Give feedback</a>
+      <a href="https://github.com/amirmohd4/Aether">Code &amp; tests ↗</a>
+    </nav>
+  </header>
+  <main class="wrap">
+    <section class="hero" style="border:0">
+      <p class="eyebrow">India-wide vision · Research preview MVP · Synthetic environment</p>
+      <h1>Government work should move as one connected journey.</h1>
+      <p class="lead">Aether GovOS is being built as an administrative execution layer: it helps coordinate the work that happens <em>after</em> a request starts—requirements, evidence checks, department handoffs, recoverable failures, human review and outcome verification—across existing systems.</p>
+      <div class="notice"><strong>Important boundary:</strong> This is an early research MVP, not a live government service. The public demo uses fictional cases and simulated department systems and responses. It does not access protected government records or connect to official systems, submit real applications, issue permits or benefits, or make legal decisions. This preview does not prove real-world time or cost savings. Do not enter real personal data or upload confidential records. No government endorsement is claimed.</div>
+      <div class="actions">
+        <a class="button primary" href="/">Try the interactive synthetic sandbox <span aria-hidden="true">→</span></a>
+        <a class="button secondary" href="#guided-example">See a realistic example first</a>
+        <a class="button secondary" href="/feedback.html">Help shape the MVP</a>
+      </div>
+      <p class="section-lead" style="margin-top:18px;font-size:.9rem">The goal is a credible demonstration of the full vision—not a claim that every department is already integrated or that production results have been proven.</p>
+    </section>
+
+    <section class="section" id="problem">
+      <p class="eyebrow">The problem we are testing</p>
+      <h2>Digitising one form does not coordinate the entire process.</h2>
+      <p class="section-lead">A citizen or business may begin in one portal, supply evidence, wait for checks from different teams, answer follow-up requests, and still have no clear view of what is blocked or who must act next. Officers and integrators may face repeated data entry, fragmented status, manual chasing and recovery after systems fail. The exact pain differs by service and jurisdiction; we need practitioners to validate it.</p>
+      <div class="grid">
+        <article class="card"><span class="num">01 · CITIZENS &amp; BUSINESSES</span><h3>One understandable journey</h3><p>Explain what is needed, what has been checked, what is missing, and what happens next—without making people navigate an unclear chain of offices.</p></article>
+        <article class="card"><span class="num">02 · OFFICERS &amp; TEAMS</span><h3>Less chasing, clearer ownership</h3><p>See dependencies, pending work, exceptions, evidence provenance and the next responsible action in one case timeline.</p></article>
+        <article class="card"><span class="num">03 · DEPARTMENTS &amp; DEVELOPERS</span><h3>Coordinate instead of replace</h3><p>Connect approved workflows across existing systems, retaining each authority's system of record, controls and decision rights.</p></article>
+      </div>
+    </section>
+
+    <section class="section" id="how-it-works">
+      <p class="eyebrow">The Aether concept</p>
+      <h2>From a request to a traceable, verified status.</h2>
+      <div class="flow" aria-label="Request to requirements to work graph to permitted execution to verification to human authority to outcome">
+        <span class="step">Understand request</span><span class="arrow">→</span><span class="step">Find requirements</span><span class="arrow">→</span><span class="step">Build work graph</span><span class="arrow">→</span><span class="step">Coordinate tasks</span><span class="arrow">→</span><span class="step">Verify &amp; reconcile</span><span class="arrow">→</span><span class="step">Human authority</span><span class="arrow">→</span><span class="step">Traceable status</span>
+      </div>
+      <div class="grid" style="margin-top:16px">
+        <article class="card"><span class="num">MAP</span><h3>Know the dependencies</h3><p>Turn a goal into tasks, owners, prerequisites and safe points to pause instead of treating every case as a simple checklist.</p></article>
+        <article class="card"><span class="num">COORDINATE</span><h3>Run permitted work</h3><p>Model tasks that can happen in parallel, preserve case context, and recover from temporary failures without creating duplicate side effects.</p></article>
+        <article class="card"><span class="num">VERIFY</span><h3>Show why a status changed</h3><p>Keep a trace of checks, source or simulation, exceptions and reconciliation. Never claim success just because a request was sent.</p></article>
+        <article class="card"><span class="num">GOVERN</span><h3>Respect authority</h3><p>Stop for statutory decisions, inspections, disputed evidence and other reserved actions. An authorised person remains responsible.</p></article>
+      </div>
+      <p class="section-lead" style="margin-top:16px">Aether is intended to complement—not replace—existing government portals, case-management tools, registries and official systems. A workflow can only use integrations that its owner has authorised.</p>
+    </section>
+
+    <section class="section" id="guided-example">
+      <p class="eyebrow">Guided example · fictional case</p>
+      <h2>See how one business request could cross several teams.</h2>
+      <p class="section-lead">Imagine a small business owner preparing to open a restaurant. Depending on the location and business model, a real process may involve different requirements and authorities. The sequence below illustrates orchestration patterns only; it is not a legal checklist and does not assert which approvals apply in any particular place.</p>
+      <div class="example">
+        <div class="panel">
+          <span class="pill">CASE DEMO-2048 · SYNTHETIC</span>
+          <h3 style="font-size:1.25rem;margin:12px 0 5px">“Help me understand and coordinate what is needed to open a restaurant.”</h3>
+          <p class="section-lead" style="font-size:.91rem;margin-bottom:0">Aether first maps the intended outcome, identifies candidate requirements and makes uncertainty visible. In a real deployment, jurisdiction-specific rules and every connector would require validation and permission.</p>
+          <ol class="timeline" id="journey-stages">
+            <li><span class="n">1</span><div><strong>Understand the request</strong><p>Capture business type and location at the minimum necessary level; ask a clarification question if the target service is ambiguous.</p></div></li>
+            <li><span class="n">2</span><div><strong>Build a dependency-aware plan</strong><p>Map illustrative premises, business and food-safety checks. Mark which can run in parallel and which depend on earlier evidence.</p></div></li>
+            <li><span class="n">3</span><div><strong>Coordinate approved checks</strong><p>In this public demo, simulated systems return fictional statuses. An authorised live pilot would require the system owner's approval and a supported interface.</p></div></li>
+            <li><span class="n">4</span><div><strong>Resolve gaps and exceptions</strong><p>If a document is missing or a system times out, keep completed work, explain the blocker and resume safely after the issue is resolved.</p></div></li>
+            <li><span class="n">5</span><div><strong>Pause for required human action</strong><p>Inspection, professional certification or a legal decision stays with the authorised person wherever the real process requires it.</p></div></li>
+            <li><span class="n">6</span><div><strong>Reconcile the outcome</strong><p>Show evidence references, task state and next action. The public preview records only a simulated outcome—not a real licence or approval.</p></div></li>
+          </ol>
+        </div>
+        <div class="panel">
+          <h3 style="margin:0;font-size:1.15rem">What happens when the process does not go perfectly?</h3>
+          <p class="section-lead" style="font-size:.9rem">Choose a scenario to see the behaviour we want the MVP to demonstrate.</p>
+          <div class="scenarios" role="group" aria-label="Select a simulated workflow scenario">
+            <button class="scenario" type="button" data-scenario="routine" aria-pressed="true">Routine path</button>
+            <button class="scenario" type="button" data-scenario="missing" aria-pressed="false">Missing evidence</button>
+            <button class="scenario" type="button" data-scenario="retry" aria-pressed="false">System failure</button>
+            <button class="scenario" type="button" data-scenario="review" aria-pressed="false">Human review</button>
+            <button class="scenario" type="button" data-scenario="conflict" aria-pressed="false">Evidence conflict</button>
+          </div>
+          <div class="result" aria-live="polite" aria-atomic="true">
+            <span class="pill" id="scenario-state">SIMULATED · ROUTINE</span>
+            <h3 id="scenario-title">Permitted checks complete; status reconciled</h3>
+            <p id="scenario-copy">The simulated tasks return expected responses. Aether records what was checked and which steps still require an authorised decision, if any.</p>
+          </div>
+          <div class="boundary"><strong>Never “AI-approved” by default.</strong> A missing document should pause dependent work; a timeout should trigger bounded recovery and reconciliation; conflicting evidence should be surfaced; reserved decisions should remain with the responsible authority.</div>
+          <div class="actions">
+            <a class="button primary" href="/">Run the interactive synthetic workspace →</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="who">
+      <p class="eyebrow">Designed for a connected ecosystem</p>
+      <h2>One execution layer, different views of the same work.</h2>
+      <div class="grid">
+        <article class="card"><h3>Citizens and businesses</h3><p>A clearer view of the requirements, outstanding items and status of a workflow.</p></article>
+        <article class="card"><h3>Government officers</h3><p>A case queue with evidence, pending tasks, exceptions, next actions and clear human approval boundaries.</p></article>
+        <article class="card"><h3>Departments and public bodies</h3><p>Permissioned coordination across teams while official systems remain authoritative.</p></article>
+        <article class="card"><h3>Developers, banks and integrators</h3><p>Well-scoped, auditable workflow capabilities that can be integrated where access and agreements permit.</p></article>
+      </div>
+      <p class="section-lead" style="margin-top:15px">This is a national product vision, not a claim of universal coverage. The first real workflow must be narrow, validated with practitioners, measured against a baseline and approved by the relevant system owners before live operation.</p>
+    </section>
+
+    <section class="section" id="scope">
+      <p class="eyebrow">What is real today?</p>
+      <h2>Be precise about the boundary between prototype and deployment.</h2>
+      <div class="grid">
+        <article class="card"><span class="num" style="color:var(--green)">IN THIS MVP</span><h3>Demonstrable software behaviour</h3><p>An interactive synthetic workspace, illustrative service templates, workflow scenarios for missing evidence, retries, conflict and human review, plus research feedback collection.</p></article>
+        <article class="card"><span class="num" style="color:var(--amber)">NOT CLAIMED</span><h3>Not a live government rollout</h3><p>No live government data access, official application submission, legally valid decision or certificate, universal jurisdiction rules, approved integrations or proven savings.</p></article>
+        <article class="card"><span class="num">NEXT VALIDATION</span><h3>Prove one real workflow</h3><p>Validate the process with affected users, confirm rules and data permissions, secure an authorised sandbox or connector, set human boundaries and measure outcomes against a baseline.</p></article>
+      </div>
+    </section>
+
+    <section class="section" id="feedback">
+      <div class="feedback-grid">
+        <div>
+          <p class="eyebrow">Help shape the first validated workflow</p>
+          <h2>Tell us where real work breaks down.</h2>
+          <p class="section-lead">Useful feedback explains which step repeats, who owns the next action, what evidence is hard to obtain, how exceptions are handled, what must never be automated, and what proof would make the system trustworthy.</p>
+          <p class="section-lead" style="font-size:.9rem">Please share the process, not the person or case. Do not submit Aadhaar/PAN numbers, identity documents, bank details, case IDs, personal information or confidential records. Contact information is optional.</p>
+        </div>
+        <div class="actions" style="margin-top:0">
+          <a class="button primary" href="/feedback.html">Give structured feedback →</a>
+          <a class="button secondary" href="https://github.com/amirmohd4/Aether/issues">Report an issue ↗</a>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer><div class="wrap">Aether GovOS · Early-stage research MVP · Synthetic systems only · No government endorsement claimed. No real-world time or cost savings have been proven.</div></footer>
+  <script>
+    const scenarios = {
+      routine: {
+        state: "SIMULATED · ROUTINE",
+        title: "Permitted checks complete; status reconciled",
+        copy: "The simulated tasks return expected responses. Aether records what was checked and which steps still require an authorised decision, if any."
+      },
+      missing: {
+        state: "SIMULATED · WAITING FOR EVIDENCE",
+        title: "Pause the dependent work and request the missing item",
+        copy: "Keep the case and already verified evidence. Explain exactly which fictional requirement remains unverified, avoid starting dependent work, and resume only after the item is supplied and checked."
+      },
+      retry: {
+        state: "SIMULATED · RECOVERY",
+        title: "Recover from a transient failure without duplicating work",
+        copy: "Preserve the case state and idempotency key, apply a bounded retry policy, then reconcile the result before retrying an operation whose outcome is unknown. Show the failure and recovery in the audit trail."
+      },
+      review: {
+        state: "SIMULATED · HUMAN ACTION REQUIRED",
+        title: "Route the evidence to an authorised person",
+        copy: "Present the relevant evidence, reason for review and next action. The workflow remains pending; Aether does not approve, reject, inspect or certify on behalf of an authority."
+      },
+      conflict: {
+        state: "SIMULATED · CONFLICT DETECTED",
+        title: "Surface the mismatch instead of guessing",
+        copy: "Stop the affected downstream steps, preserve the evidence references, explain the conflict and route it for clarification or authorised review. A simulated mismatch is not an official adverse decision."
+      }
+    };
+    const buttons = Array.from(document.querySelectorAll("[data-scenario]"));
+    const state = document.getElementById("scenario-state");
+    const title = document.getElementById("scenario-title");
+    const copy = document.getElementById("scenario-copy");
+    buttons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const scenario = scenarios[button.dataset.scenario];
+        if (!scenario) return;
+        buttons.forEach((other) => other.setAttribute("aria-pressed", String(other === button)));
+        state.textContent = scenario.state;
+        title.textContent = scenario.title;
+        copy.textContent = scenario.copy;
+      });
+    });
+  </script>
+</body>
+</html>

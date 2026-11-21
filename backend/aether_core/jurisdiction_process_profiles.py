@@ -108,7 +108,17 @@ class JurisdictionProcessRegistry:
         def specificity(profile: JurisdictionProcessProfile) -> int:
             return int(bool(profile.state)) + int(bool(profile.district))
 
-        return max(candidates, key=specificity)
+        # Prefer the most jurisdiction-specific profile; when equally specific
+        # versions coexist, use the latest effective/verified record so a
+        # newly published rule revision is visible to open cases.
+        return max(
+            candidates,
+            key=lambda profile: (
+                specificity(profile),
+                profile.effective_date or "",
+                profile.verified_at or "",
+            ),
+        )
 
     def all(self) -> List[JurisdictionProcessProfile]:
         return list(self._profiles)
