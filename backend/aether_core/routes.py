@@ -39,7 +39,7 @@ def _validate_synthetic_document_upload(document_type: str, filename: str, mime_
 
     safe_type = re.sub(r"[^a-z0-9_-]", "_", document_type, flags=re.IGNORECASE)
     expected_filename = f"AETHER-SYNTHETIC-{safe_type}.txt"
-    expected_text = "\\n".join([
+    expected_text = "\n".join([
         "AETHER SYNTHETIC SAMPLE — NOT VALID FOR OFFICIAL USE",
         "THIS FILE CONTAINS FICTIONAL TEST DATA ONLY.",
         "",
