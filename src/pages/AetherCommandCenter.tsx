@@ -557,7 +557,7 @@ export const AetherCommandCenter: React.FC = () => {
       '',
       'No real person, business, identity number, bank account, property, or government record is represented.',
       'Do not alter this file to impersonate an official document.',
-    ].join('\\n');
+    ].join('\n');
     const generated = new File([sample], 'AETHER-SYNTHETIC-' + safeType + '.txt', {
       type: 'text/plain',
       lastModified: Date.now(),
