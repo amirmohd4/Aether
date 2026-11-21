@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - aether-mvp-build
+      - integration-check/public-preview-into-hardened
   pull_request:
     branches:
       - main
