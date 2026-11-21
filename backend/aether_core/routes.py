@@ -206,11 +206,22 @@ def release_readiness():
         and record.get("effective_date")
     ]
     try:
-        with SessionLocal() as db:
-            admin_action_queue_schema = bool(db.execute(text(
-                "SELECT to_regclass('aether_internal.aether_v2_admin_actions') IS NOT NULL "
-                "AND to_regclass('aether_internal.aether_v2_admin_work_items') IS NOT NULL"
-            )).scalar())
+        from backend.database import engine as database_engine
+        if database_engine.dialect.name == "sqlite":
+            from sqlalchemy import inspect
+            from .case_store import DatabaseCaseStore
+            DatabaseCaseStore().ensure_schema()
+            table_names = set(inspect(database_engine).get_table_names())
+            admin_action_queue_schema = {
+                "aether_v2_admin_actions",
+                "aether_v2_admin_work_items",
+            }.issubset(table_names)
+        else:
+            with SessionLocal() as db:
+                admin_action_queue_schema = bool(db.execute(text(
+                    "SELECT to_regclass('aether_internal.aether_v2_admin_actions') IS NOT NULL "
+                    "AND to_regclass('aether_internal.aether_v2_admin_work_items') IS NOT NULL"
+                )).scalar())
     except Exception:
         admin_action_queue_schema = False
 
