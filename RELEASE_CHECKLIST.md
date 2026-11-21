@@ -6,7 +6,7 @@ Last verified: 2026-11-21. This checklist records current evidence, not historic
 
 - [x] Objective understanding with ranked service candidates and clarification stops.
 - [x] Requirements discovery with provenance and authority-status distinction.
-- [x] Shared 34-service registry and reusable process graphs.
+- [x] Shared national service catalogue; 61 core service-family definitions plus extended India-wide taxonomy and reusable process graphs.
 - [x] Dependency-aware work graphs and parallel task execution.
 - [x] Deterministic synthetic government environment.
 - [x] Evidence verification, reconciliation, exception/risk handling and critical-path state.
@@ -29,15 +29,15 @@ These are implemented capabilities. They are not proof that every deployed user 
 
 - [x] Backend test suite passed on the promoted candidate.
 - [x] Frontend typecheck and production build passed on the promoted candidate.
-- [x] Aether MVP CI passed on candidate commit `a6c3f65264c49fc8816a3e35c76dfd0c47ef1ddc`.
+- [x] Aether MVP CI and backend tests passed on candidate commit `6d20369fb3c022cf2082a9dff5090bfe8f8273cf` (151 backend tests).
 - [x] Aether MVP Tests passed on that candidate.
-- [x] Aether MVP Frontend passed on that candidate.
+- [x] Aether MVP Frontend passed on that candidate; the later authenticated-preview configuration commit also passed frontend lint/build.
 - [x] Aether Staging Release Smoke completed successfully on PR #11 merge ref `41cde4f43f4dfe3ef7a85d16c2363840a39034e2`.
 - [x] Staging smoke observed HTTP 200 for health, readiness and root; readiness asserted database role validity.
 - [x] Authenticated staging smoke passed service catalog, marketplace, connector catalog, rule readiness, India admin overview, department catalog, journey templates and release-readiness checks.
-- [x] Netlify deploy preview #11 reached `ready` for candidate commit `a6c3f65264c49fc8816a3e35c76dfd0c47ef1ddc`.
+- [x] Netlify deploy preview #11 reached `ready` for candidate commit `cded35acc47ced0f2c3199e7ca9de4a281400a81`.
 
-**Scope limitation:** the staging smoke uses a read-only API key and performs read/readiness checks. It does not create a case, upload/read a document, perform an officer decision, or prove a full citizen-to-officer journey. The frontend HTTP check used the configured preview URL `deploy-preview-20`, not candidate preview #11; it verified HTML availability only, not browser authentication or API wiring.
+**Scope limitation:** the staging smoke uses a read-only API key and performs read/readiness checks. It does not create a case, upload/read a document, perform an officer decision, or prove a full citizen-to-officer journey. The candidate preview configuration now points to authenticated `aether-staging` and sets `VITE_REQUIRE_AUTH=true`; the staging CORS allowlist was updated to include preview #11 and redeployed successfully. This configuration has not yet been exercised in a real browser, and staging still runs the older integration branch rather than the candidate backend.
 
 ## Supabase — verified at database level
 
