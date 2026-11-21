@@ -77,6 +77,7 @@ def serialize(case, include_tasks: bool = True):
         },
         "understanding": understanding.as_dict(),
         "requirements": case.requirements,
+        "jurisdiction_process": engine.process_profile_status(case),
         "human_actions": case.human_actions,
         "exceptions": case.exceptions,
         "evidence": case.evidence,
