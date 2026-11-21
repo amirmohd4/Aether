@@ -1427,10 +1427,11 @@ export const AetherCommandCenter: React.FC = () => {
                         </select>
                         <input
                           type="file"
+                          accept=".txt,text/plain"
                           onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
                           className="rounded-lg border border-white/10 bg-slate-900 p-2 text-xs text-slate-300"
                         />
-                        <p className="mt-2 text-[10px] leading-4 text-amber-200/80">Public demo safety: use fictional/sample files only. Do not upload Aadhaar, PAN, bank, health, tax, land, or other personal or confidential records.</p>
+                        <p className="mt-2 text-[10px] leading-4 text-amber-200/80">Synthetic preview accepts only Aether-generated .txt sample files. Do not upload Aadhaar, PAN, bank, health, tax, land, or any real personal or confidential record.</p>
                         <button
                           onClick={uploadDocument}
                           disabled={loading || !uploadDocumentType || !uploadFile}
