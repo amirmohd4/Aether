@@ -6,7 +6,7 @@ Last checked: 2026-11-21.
 
 **NO-GO for public production launch. CONDITIONAL GO for a tightly controlled synthetic pilot once browser acceptance, deployed write-path tests, operational ownership and privacy/terms are completed.**
 
-The current candidate is `aether-mvp-build` at `a6c3f65264c49fc8816a3e35c76dfd0c47ef1ddc`. PR [#11](https://github.com/amirmohd4/Aether/pull/11) promotes this candidate to `main`; it remains open and unmerged. The candidate contains 88 commits relative to `main` and changes 58 files. Production must not be updated by an unreviewed merge simply because CI is green.
+The current candidate is `aether-mvp-build` at `cded35acc47ced0f2c3199e7ca9de4a281400a81`. PR [#11](https://github.com/amirmohd4/Aether/pull/11) promotes this candidate to `main`; it remains open and unmerged. The candidate contains 88 commits relative to `main` and changes 58 files. Production must not be updated by an unreviewed merge simply because CI is green.
 
 Aether's initial release is a synthetic government research/pilot environment. It does not submit official government applications, access private government records, issue certificates, or make statutory decisions. Live integrations require written authorization, approved credentials/endpoints, authoritative effective-dated rules, certification where required, and system-of-record reconciliation.
 
@@ -14,15 +14,15 @@ Aether's initial release is a synthetic government research/pilot environment. I
 
 ### Repository and CI
 
-- Candidate: `aether-mvp-build`, commit `a6c3f65264c49fc8816a3e35c76dfd0c47ef1ddc`.
+- Candidate: `aether-mvp-build`, commit `cded35acc47ced0f2c3199e7ca9de4a281400a81`.
 - Aether MVP CI: passed.
 - Aether MVP Tests: passed.
 - Aether MVP Frontend: passed.
 - Aether Staging Release Smoke: passed on PR #11 merge ref `41cde4f43f4dfe3ef7a85d16c2363840a39034e2`.
-- Netlify candidate deploy preview #11: `ready` for the candidate commit.
+- Netlify candidate deploy preview #11: `ready` for candidate commit `cded35acc47ced0f2c3199e7ca9de4a281400a81`; preview is configured for the authenticated staging API (`VITE_REQUIRE_AUTH=true`).
 - The authenticated smoke used a read-only API key. It passed eight read/readiness product checks: service catalog, marketplace, connector catalog, rule readiness, India admin overview, departments, journey templates and release readiness. Public health/readiness/root checks also returned HTTP 200.
 - The smoke asserted `/ready` reports database ready and `database_role_valid=true`.
-- The frontend part of that smoke fetched the configured `deploy-preview-20` URL and checked only that HTML was served. It did not exercise candidate preview #11, login, browser state, or frontend-to-staging API calls.
+- The candidate Netlify preview is now configured to use `https://aether-staging.onrender.com` and require Supabase authentication; the staging CORS allowlist was updated to include preview #11, and that Render redeploy completed successfully. This wiring has not yet been tested in a real browser. Staging still runs the older `integration-check/public-preview-into-hardened` commit, not the candidate backend.
 - The smoke did not create a case, upload/retrieve a document, approve/reject a human task, or verify a full user journey.
 
 ### Supabase
