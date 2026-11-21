@@ -114,6 +114,16 @@ type OperatorBrief = {
 };
 
 type CaseResponse = {
+  jurisdiction_process?: {
+    status: string;
+    current_profile?: {
+      status?: string;
+      authority?: string | null;
+      source_url?: string | null;
+      effective_date?: string | null;
+      verified_at?: string | null;
+    };
+  };
   execution_provenance?: {
     case_mode: string;
     task_modes: Record<string, string>;
@@ -1134,6 +1144,23 @@ export const AetherCommandCenter: React.FC = () => {
                       ) : null}
                     </div>
                     <span className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-cyan-200">{caseData.summary.status}</span>
+                  </div>
+                  <div className="mt-4 rounded-xl border border-white/10 bg-slate-950/30 p-3">
+                    <p className="text-[11px] font-semibold text-slate-200">Applicable government rules</p>
+                    <p className="mt-1 text-[11px] text-slate-400">
+                      Service location: {[country, state, district].filter(Boolean).join(', ')}
+                    </p>
+                    {caseData.jurisdiction_process?.current_profile?.status === 'ready' ? (
+                      <>
+                        <p className="mt-2 text-[11px] text-emerald-200">Verified process profile loaded for this service and location.</p>
+                        {caseData.jurisdiction_process.current_profile.authority && <p className="mt-1 text-[10px] text-slate-400">Authority: {caseData.jurisdiction_process.current_profile.authority}</p>}
+                        {caseData.jurisdiction_process.current_profile.effective_date && <p className="mt-1 text-[10px] text-slate-400">Effective from: {caseData.jurisdiction_process.current_profile.effective_date}</p>}
+                        {caseData.jurisdiction_process.current_profile.verified_at && <p className="mt-1 text-[10px] text-slate-400">Last verified: {caseData.jurisdiction_process.current_profile.verified_at}</p>}
+                        {caseData.jurisdiction_process.current_profile.source_url && <a className="mt-2 inline-block text-[10px] text-cyan-300 underline" href={caseData.jurisdiction_process.current_profile.source_url} target="_blank" rel="noreferrer">View official source</a>}
+                      </>
+                    ) : (
+                      <p className="mt-2 text-[11px] text-amber-200">No complete verified process profile is available for this service and location. Aether will not invent local fees, deadlines or legal requirements; this case remains a controlled workflow.</p>
+                    )}
                   </div>
                   <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/10">
                     <div className="h-full bg-cyan-400 transition-all" style={{ width: `${completedPercent}%` }} />
