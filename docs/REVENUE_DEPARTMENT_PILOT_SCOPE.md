@@ -1,89 +1,76 @@
-# Revenue Department Pilot Scope
+# Aether National Product Scope
 
 ## Product decision
 
-The first Aether pilot is a **Revenue Department service hub**, not a developer-only workflow. Developers are one supported customer type; citizens, landowners, businesses, banks and other permitted applicants must be supported where a service applies to them.
+Aether is a national, multi-department Government OS. Its product scope is not restricted to one department, State/UT, district, user type or service category.
 
-The current shared service registry now contains 61 total MVP services, including **30 Revenue Department service entries**. These are service-family definitions for intent recognition and workflow routing. They are not a claim that every service is legally available in every State/UT or that all 30 have a verified production process pack.
+The national service directory is intended to cover Central, State/UT, district, municipal and local government services. The shared platform provides objective understanding, service discovery, case management, document intake, workflow orchestration, notifications, payments where authorized, evidence verification, human review, audit and developer APIs.
 
-## Revenue service families in the MVP registry
+The current core registry contains 61 service-family definitions and the extended India service taxonomy contains additional service families. These are discovery and routing definitions, not proof that every service is currently available, legally verified or executable in every jurisdiction.
 
-### Land records and extracts
-- Certified land record / Fard / Record of Rights
-- Jamabandi / Record of Rights extract
-- Khasra Girdawari / crop inspection record
-- Aks Masavi / Latha map extract
-- Tatima Shajra / subdivision map extract
-- Chulah / Chowkidari record extract
-- Land passbook / property card
-- Certified mutation copy
+## National coverage model
 
-### Mutation, ownership and land administration
-- Land/property mutation
-- Inheritance / succession mutation
-- Mutation attestation
-- Land partition
-- Land demarcation / boundary survey
-- Land record correction / rectification
-- Land possession certificate / report
-- Land lien marking / cancellation
-- Land conversion / change of land use
-- State land lease / allotment application
-- Government land encroachment complaint
-- Land acquisition / compensation claim
+Aether should cover departments and public authorities across:
 
-### Certificates and citizen services
-- Domicile / residence certificate
-- Income certificate
-- Caste / category certificate
-- Reserved category certificate
-- Dependent certificate
-- Legal heir / surviving member certificate
-- Property / land holding certificate
+- Revenue, land administration and registration
+- Municipal administration and local bodies
+- Planning, housing and urban development
+- Transport and road authorities
+- Health, food safety and drug control
+- Education, skills and employment
+- Agriculture, rural development and animal husbandry
+- Labour and social security
+- Social welfare, pensions and public distribution
+- Taxation, corporate affairs and MSME
+- Police, justice, legal services and grievance redressal
+- Environment, forests, mines and disaster management
+- Electricity, water, sanitation and public utilities
+- Procurement and other public services
 
-### Case, business and relief workflows
-- Revenue court / Tehsil case status
-- Land / crop damage assessment and relief claim
-- Title verification for developers, businesses, banks and insurers
+This list is a taxonomy, not a claim that all departments have production integrations.
 
-The service catalog should accept local synonyms and terms (for example Fard, Intikal, Warasat, Jamabandi, Girdawari, Aks Masavi, Latha and Tatima Shajra). Aether should ask clarifying questions when the service, parcel or jurisdiction is ambiguous.
+## Location and jurisdiction resolution
 
-## Department boundary
+The intake experience must ask for the location to which the requested service applies. Depending on the service, that can be the applicant's residence, property/parcel, business premises, place of activity, registered office or another legally relevant location.
 
-Some journeys cross into Registration, Municipal, Planning, Forest, Environment, Agriculture, Disaster Management or other departments. Aether may coordinate those dependencies, but must identify the actual responsible authority and must not label another department's statutory approval as a Revenue Department decision.
+Applicant residence must not automatically be treated as the controlling jurisdiction. For example, a person may live in one State and apply for a land-record service concerning property in another State.
 
-Property registration, stamp duty, encumbrance records and construction approvals may be related to a Revenue journey but their competent authority and legal process must be established for the selected jurisdiction.
+Resolution order:
 
-## Jurisdiction and legal accuracy
+1. Understand the requested service and the subject of the application.
+2. Identify which location legally controls that service.
+3. Collect the minimum required location fields (country, State/UT, district, and lower-level geography where required).
+4. Resolve the most specific verified process profile available for that service and jurisdiction.
+5. Apply only rules effective on the requested/application date.
+6. Display the selected jurisdiction, responsible authority, source, effective date and last verification date.
+7. Ask the user to correct or clarify ambiguous locations.
+8. If no verified profile exists, label the process as unverified and do not invent requirements, fees, statutory timelines, appeal routes or officer powers.
 
-Service availability, responsible officer, forms, evidence, fee, statutory deadline, appeal authority and workflow differ by State/UT and sometimes by district. Do not infer these from a generic India-wide catalog.
+Profiles must be versioned and source-backed. A valid process profile should identify its service, jurisdiction, authority, official source URL, effective date, verification date, requirements, process steps and authority boundaries. Expired, conflicting or incomplete profiles must not be silently treated as current.
 
-Aether's jurisdiction process registry requires a process profile with an authority, source URL, effective date and verification date before marking a workflow ready for jurisdiction-specific execution. Until such a profile is verified:
-- show the service as catalogued but jurisdiction rules as unverified;
-- do not invent document lists, fees, deadlines or officer powers;
-- do not submit an application or represent a simulated result as an official outcome;
-- keep human statutory decisions and physical field verification with the competent authority.
+## Department boundaries and cross-government journeys
 
-## Jammu & Kashmir reference sources reviewed
+Aether may coordinate dependencies across departments, but must preserve the legal identity of each competent authority. It must not present one department's action as another department's statutory decision. Statutory approvals, signatures, inspections and adjudications remain with authorized officials unless a formally authorized integration explicitly permits another action.
 
-These sources demonstrate the breadth of Revenue services in J&K and are references for catalog design, not authority to apply J&K rules to Ladakh or another jurisdiction:
+## Service coverage and truthful claims
 
-- District Jammu Revenue Department functions and land-record types: https://jammu.nic.in/department-of-revenue/
-- District Budgam Revenue online services (Fard, Aks Masavi/Latha, mutation attestation/copy, demarcation, Girdawari, Jamabandi, encumbrance, Chulah/Chowkidari, change of land use, land passbook): https://budgam.nic.in/revenue-online-services/
-- District Rajouri Revenue citizen services: https://rajouri.nic.in/revenue/
-- District Samba Revenue services, designated officers and timelines: https://samba.gov.in/revenue-deptt/
-- J&K Jansugam Legal Heir service detail: https://jansugam.jk.gov.in/getServiceDesc.html?serviceId=18240009
+Every service-family entry must have a clear coverage status:
+- Catalogued: the service can be discovered and routed at a family level.
+- Jurisdiction profile missing: local process details are not verified.
+- Profile incomplete: some official source, authority, date or process information is missing.
+- Verified process: the current jurisdiction profile has been checked against authoritative sources.
+- Sandbox executable: Aether can demonstrate the workflow using synthetic systems.
+- Live integration authorized: the competent authority has authorized the connector and credentials.
+- Live outcome verified: a result has been reconciled with the official system of record.
 
-## Next implementation sequence
+Do not describe a catalogued service as live or available for statutory submission.
 
-1. Confirm the first pilot jurisdiction (State/UT and district). Ladakh and Jammu & Kashmir must be treated as separate jurisdictions.
-2. Build and verify the jurisdiction-specific service inventory from the competent administration's current official service list, laws, forms, service guarantees and appeal structure.
-3. Create source-backed process profiles for each included service, with effective dates and named authorities.
-4. Build a reusable intake schema for applicant identity, parcel identifiers (district, tehsil, village, khasra, khata/khewat as applicable), co-owners, purpose and supporting evidence.
-5. Add service-specific evidence checklists, validation, duplicate detection, case tracking, grievance/appeal paths and officer queues.
-6. Run synthetic end-to-end tests for every service family before inviting pilot users.
-7. Keep external government submissions and official record updates disabled until written authorization and supported integrations exist.
+## Launch strategy
 
-## Free-infrastructure constraint
+The public MVP can launch as a national discovery and controlled workflow-orchestration product if the interface clearly labels sandbox behavior, jurisdiction coverage and limitations. It must not claim national statutory execution, universal service coverage or government endorsement.
 
-The pilot remains on the existing free tiers. Do not upgrade Render, Netlify or Supabase plans or incur paid usage without explicit user approval. Design for cold starts, quotas, restarts and limited worker availability; disclose these limitations rather than promising production-grade uptime.
+Before any real applications or operational personal data are processed, Aether needs the relevant institutional authorization, verified jurisdiction rule packs, privacy and retention controls, secure operational support, and approved government connectors.
+
+## Free infrastructure constraint
+
+Continue on existing free tiers. Do not upgrade Render, Netlify or Supabase or incur paid usage without explicit approval. Disclose cold starts, quotas, storage limits, worker constraints and availability limitations.
