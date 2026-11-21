@@ -841,6 +841,7 @@ class AetherExecutionEngine:
                 previous_hash=audit_entry.get("previous_hash"),
                 event_hash=audit_entry.get("event_hash"),
                 sequence=entry["sequence"],
+                timestamp=audit_entry.get("timestamp"),
             )
             return entry
 

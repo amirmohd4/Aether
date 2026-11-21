@@ -40,10 +40,10 @@
 1. Open the requirements view.
 2. Show required inputs and documents.
 3. Show jurisdiction and rule-source provenance.
-4. Upload a required document from the guided intake flow.
+4. Upload a generated sample document from the guided intake flow; never use a real citizen or business document.
 
 **Voiceover:**
-“Requirements are discovered with jurisdiction and rule provenance. Documents are validated, stored privately, hashed for integrity, and linked back to the case.”
+“Requirements are discovered with jurisdiction and rule provenance. Synthetic sample documents are validated, stored privately, hashed for integrity, and linked back to the case. This demo does not require real personal records.”
 
 **Important:** Demonstration data is synthetic. Do not present sandbox rules as live legal authority.
 
@@ -79,13 +79,13 @@
 ## 2:00–2:20 — Human and Statutory Boundary
 
 **Actions:**
-1. Navigate to the officer authority queue.
-2. Show a task paused for a human decision.
-3. Approve or reject with an officer role.
-4. Resume the case.
+1. Navigate to the simulated officer review queue.
+2. Show a task paused at a human-authority boundary.
+3. Record a simulated approval or rejection using the demo officer role.
+4. Resume the synthetic case.
 
 **Voiceover:**
-“When law or institutional authority requires a person, physical act, or statutory decision, Aether stops. The authorized officer acts, the decision is recorded, and the workflow resumes.”
+“When law or institutional authority requires a person, physical act, or statutory decision, Aether stops. In this demo, a simulated officer action shows how the review and resume flow works. It is not a real statutory decision.”
 
 ---
 
@@ -98,7 +98,7 @@
 4. Show usage/payment records where configured.
 
 **Voiceover:**
-“The final state includes the outcome, supporting evidence, event history and tamper-evident audit chain. Operational events are durable rather than dependent on a single browser session.”
+“The synthetic final state includes a simulated outcome, supporting evidence, event history and tamper-evident audit chain. It is not an official government outcome.”
 
 ---
 
