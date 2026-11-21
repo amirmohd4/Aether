@@ -269,7 +269,6 @@ export const AetherCommandCenter: React.FC = () => {
   const [error, setError] = useState('');
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
-  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const [authMessage, setAuthMessage] = useState('');
   const [useDemoEvidence, setUseDemoEvidence] = useState(false);
   const [missingDocuments, setMissingDocuments] = useState<string[]>([]);
@@ -277,7 +276,7 @@ export const AetherCommandCenter: React.FC = () => {
   const [uploadDocumentType, setUploadDocumentType] = useState('');
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [intakeNotice, setIntakeNotice] = useState('');
-  const { session, loading: authLoading, required: authRequired, signIn, signUp, signOut } = useAuth();
+  const { session, loading: authLoading, required: authRequired, signIn, signOut } = useAuth();
 
   React.useEffect(() => {
     if (session?.access_token) {
@@ -480,10 +479,8 @@ export const AetherCommandCenter: React.FC = () => {
 
   async function submitAuth() {
     setAuthMessage('');
-    const message = authMode === 'signin'
-      ? await signIn(authEmail, authPassword)
-      : await signUp(authEmail, authPassword);
-    setAuthMessage(message || (authMode === 'signin' ? 'Signed in.' : 'Account created. Check your email if confirmation is enabled.'));
+    const message = await signIn(authEmail, authPassword);
+    setAuthMessage(message || 'Signed in. If access is denied, ask the Aether team to provision your pilot workspace.');
   }
 
   async function startCase() {
@@ -746,7 +743,7 @@ export const AetherCommandCenter: React.FC = () => {
           <div className="mb-6">
             <p className="text-sm font-semibold text-cyan-300">Aether GovOS</p>
             <h1 className="mt-2 text-2xl font-bold">Secure workspace</h1>
-            <p className="mt-2 text-sm text-slate-400">Sign in before accessing government case data.</p>
+            <p className="mt-2 text-sm text-slate-400">This is an invite-only pilot workspace. Sign in with an account provisioned by the Aether team. Public visitors can explore the overview and product sandbox without accessing case data.</p>
           </div>
           <input
             type="email"
@@ -776,13 +773,7 @@ export const AetherCommandCenter: React.FC = () => {
             disabled={authLoading || !authEmail || !authPassword}
             className="mt-5 w-full rounded-xl bg-cyan-400 px-4 py-3 text-sm font-bold text-slate-950 disabled:opacity-50"
           >
-            {authMode === 'signin' ? 'Sign in' : 'Create account'}
-          </button>
-          <button
-            onClick={() => setAuthMode(authMode === 'signin' ? 'signup' : 'signin')}
-            className="mt-3 w-full rounded-xl border border-white/10 px-4 py-2 text-xs text-slate-300"
-          >
-            {authMode === 'signin' ? 'Create a new account' : 'Back to sign in'}
+            Sign in
           </button>
         </section>
       </main>
