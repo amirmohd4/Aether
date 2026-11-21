@@ -204,8 +204,8 @@ export const AetherCommandCenter: React.FC = () => {
   const [objective, setObjective] = useState('I want to open a restaurant');
   const [customerType, setCustomerType] = useState('business');
   const [country, setCountry] = useState('India');
-  const [state, setState] = useState('Jammu and Kashmir');
-  const [district, setDistrict] = useState('Jammu');
+  const [state, setState] = useState('');
+  const [district, setDistrict] = useState('');
   const [caseData, setCaseData] = useState<CaseResponse | null>(null);
   const [preflightSimulation, setPreflightSimulation] = useState<{
     status: string;
@@ -883,10 +883,20 @@ export const AetherCommandCenter: React.FC = () => {
               <option value="citizen">Citizen</option>
             </select>
 
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              <input value={country} onChange={(e) => setCountry(e.target.value)} className="rounded-lg border border-white/10 bg-slate-900 p-2 text-xs" />
-              <input value={state} onChange={(e) => setState(e.target.value)} className="rounded-lg border border-white/10 bg-slate-900 p-2 text-xs" />
-              <input value={district} onChange={(e) => setDistrict(e.target.value)} className="rounded-lg border border-white/10 bg-slate-900 p-2 text-xs" />
+            <div className="mt-4">
+              <p className="mb-2 text-xs font-semibold text-slate-300">Where does this service apply?</p>
+              <p className="mb-3 text-[11px] text-slate-500">Enter the location of the property, business, person or activity involved. This may differ from your current home address. Aether uses it to look up the relevant government process.</p>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                <label className="text-[10px] text-slate-400">Country
+                  <input aria-label="Service country" value={country} onChange={(e) => setCountry(e.target.value)} placeholder="India" className="mt-1 w-full rounded-lg border border-white/10 bg-slate-900 p-2 text-xs text-slate-100" />
+                </label>
+                <label className="text-[10px] text-slate-400">State / UT
+                  <input aria-label="Service State or Union Territory" value={state} onChange={(e) => setState(e.target.value)} placeholder="Enter State / UT" className="mt-1 w-full rounded-lg border border-white/10 bg-slate-900 p-2 text-xs text-slate-100" />
+                </label>
+                <label className="text-[10px] text-slate-400">District
+                  <input aria-label="Service district" value={district} onChange={(e) => setDistrict(e.target.value)} placeholder="Enter district" className="mt-1 w-full rounded-lg border border-white/10 bg-slate-900 p-2 text-xs text-slate-100" />
+                </label>
+              </div>
             </div>
 
             <label className="mt-4 flex items-center gap-2 text-xs text-slate-300">
@@ -1099,7 +1109,7 @@ export const AetherCommandCenter: React.FC = () => {
                   <Activity className="mx-auto h-10 w-10 text-cyan-300" />
                   <h2 className="mt-4 text-xl font-semibold">No active case</h2>
                   <p className="mt-2 text-sm text-slate-400">
-                    Try a restaurant, property-loan, factory/project, licence, certificate, or other service from the 34-service MVP catalog.
+                    Try a government service from Aether's national service catalogue. Jurisdiction-specific rules are shown only when verified.
                   </p>
                 </div>
               </div>
