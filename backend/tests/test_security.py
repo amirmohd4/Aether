@@ -227,3 +227,26 @@ def test_static_staging_api_key_is_not_enabled_by_default(monkeypatch):
     else:
         raise AssertionError("production must not accept the static staging key")
     assert called["allow_static"] is False
+
+
+
+def test_tenant_admin_membership_scope_rejects_cross_tenant_and_non_human_admins():
+    from aether_core.routes import _require_tenant_admin
+
+    assert _require_tenant_admin(
+        Principal("admin-1", "admin", "tenant-1", "supabase"),
+        "tenant-1",
+    ) == "tenant-1"
+
+    for principal, target in [
+        (Principal("admin-1", "admin", "tenant-1", "supabase"), "tenant-2"),
+        (Principal("admin-1", "admin", None, "supabase"), None),
+        (Principal("service-key", "admin", "tenant-1", "api_key"), "tenant-1"),
+        (Principal("demo", "demo", "demo", "none"), "demo"),
+    ]:
+        try:
+            _require_tenant_admin(principal, target)
+        except HTTPException as exc:
+            assert exc.status_code == 403
+        else:
+            raise AssertionError("membership administration must be tenant-bound to a human admin")
