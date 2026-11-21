@@ -21,10 +21,10 @@ Aether's initial release is a synthetic government research/pilot environment. I
 - Aether Staging Release Smoke: passed on the current PR candidate, but remains a read-only smoke.
 - Aether Staging Release Smoke: passed on PR #11 merge ref `41cde4f43f4dfe3ef7a85d16c2363840a39034e2`.
 - Netlify candidate deploy preview #11: `ready` for candidate commit `1de9e95386684043a933f73e18e4c6104f74a506`; preview is configured for the authenticated staging API (`VITE_REQUIRE_AUTH=true`).
-- The authenticated smoke used a read-only API key. It passed eight read/readiness product checks: service catalog, marketplace, connector catalog, rule readiness, India admin overview, departments, journey templates and release readiness. Public health/readiness/root checks also returned HTTP 200.
+- The authenticated smoke used a read-only API key. It passed eight read/readiness product checks: service catalog, marketplace, connector catalog, rule readiness, India admin overview, departments, journey templates and release readiness. Public health/readiness/root checks also returned HTTP 200. The smoke asserted `ready_for_controlled_mvp=true` with no controlled blockers, including Supabase Auth, encryption, admin queue schema, private storage limits, legacy API quarantine, worker configuration and synthetic mode.
 - The smoke asserted `/ready` reports database ready and `database_role_valid=true`.
 - The candidate Netlify preview is now configured to use `https://aether-staging.onrender.com` and require Supabase authentication; the staging CORS allowlist was updated to include preview #11, and that Render redeploy completed successfully. This wiring has not yet been tested in a real browser. Staging now runs the reconciled candidate at `a07df14e03cf4d38c1c169400ea699accd49ebe8` after PR #28 merged. The production backend remains on `main`.
-- The post-deploy smoke passed after the candidate reached staging commit `a07df14e03cf4d38c1c169400ea699accd49ebe8`. It remains read-only: it did not create a case, upload/retrieve a document, approve/reject a human task, or verify a full user journey.
+- The post-deploy smoke passed after the candidate reached staging commit `a07df14e03cf4d38c1c169400ea699accd49ebe8` and asserted `ready_for_controlled_mvp=true`. It remains read-only: it did not create a case, upload/retrieve a document, approve/reject a human task, or verify a full user journey.
 
 ### Supabase
 
