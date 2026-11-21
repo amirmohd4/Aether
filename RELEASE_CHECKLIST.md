@@ -62,7 +62,7 @@ Database-level configuration does not by itself prove the deployed application's
 
 - [x] A separate `aether-staging` Render service exists and is active.
 - [x] Staging service now runs reconciled candidate commit `a07df14e03cf4d38c1c169400ea699accd49ebe8` from `integration-check/public-preview-into-hardened` after PR #28 merged.
-- [x] Post-deploy staging release smoke passed `/health`, `/ready`, root and eight authenticated read-only product/release checks; `/ready` asserted `database_role_valid=true`.
+- [x] Post-deploy staging release smoke passed `/health`, `/ready`, root and eight authenticated read-only product/release checks; `/ready` asserted `database_role_valid=true` and release readiness asserted `ready_for_controlled_mvp=true` with no controlled blockers.
 - [ ] Confirm deployed environment-variable names/configuration without exposing values; verify encryption, Supabase Auth, storage and worker settings.
 - [ ] Prove worker dispatch processes a synthetic durable task, not merely that the polling loop emits ticks.
 - [ ] Prove retries, lease expiry, restart recovery and notification outbox delivery.
