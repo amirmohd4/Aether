@@ -103,6 +103,34 @@ def test_officer_cannot_access_case_outside_authorized_jurisdiction():
         raise AssertionError("cross-jurisdiction officer access should be rejected")
 
 
+def test_officer_cannot_access_case_when_department_metadata_is_missing():
+    case = _case()
+    case.service_department = None
+    try:
+        _authorize_case(
+            case,
+            Principal("officer-4", "officer", "tenant-1", "supabase", "Revenue"),
+        )
+    except HTTPException as exc:
+        assert exc.status_code == 404
+    else:
+        raise AssertionError("missing department metadata must fail closed")
+
+
+def test_officer_cannot_access_case_when_scoped_jurisdiction_is_missing():
+    case = _case()
+    case.jurisdiction = {"country": "India"}
+    try:
+        _authorize_case(
+            case,
+            Principal("officer-5", "officer", "tenant-1", "supabase", "Revenue", {"country": "India", "state": "Jammu and Kashmir"}),
+        )
+    except HTTPException as exc:
+        assert exc.status_code == 404
+    else:
+        raise AssertionError("missing scoped jurisdiction must fail closed")
+
+
 
 def test_officer_case_listing_filters_department_and_jurisdiction(monkeypatch):
     from aether_core.routes import _list_visible_cases
