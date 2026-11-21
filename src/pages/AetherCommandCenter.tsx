@@ -540,6 +540,33 @@ export const AetherCommandCenter: React.FC = () => {
     setMissingDocuments(body.missing_documents || []);
   }
 
+  function generateSyntheticSample() {
+    if (!uploadDocumentType) return;
+    const safeType = uploadDocumentType.replace(/[^a-z0-9_-]/gi, '_');
+    const sample = [
+      'AETHER SYNTHETIC SAMPLE — NOT VALID FOR OFFICIAL USE',
+      'THIS FILE CONTAINS FICTIONAL TEST DATA ONLY.',
+      '',
+      'Document type: ' + uploadDocumentType,
+      'Applicant: Demo Person 001 (fictional)',
+      'Organisation: Example Test Enterprise (fictional)',
+      'Address: 1 Example Lane, Sample Nagar, Demo State, India (fictional)',
+      'Reference: AETHER-DEMO-0001',
+      'Issue date: 2026-01-15 (illustrative only)',
+      'Status: TEST DATA — NO LEGAL OR GOVERNMENT EFFECT',
+      '',
+      'No real person, business, identity number, bank account, property, or government record is represented.',
+      'Do not alter this file to impersonate an official document.',
+    ].join('\\n');
+    const generated = new File([sample], 'AETHER-SYNTHETIC-' + safeType + '.txt', {
+      type: 'text/plain',
+      lastModified: Date.now(),
+    });
+    setUploadFile(generated);
+    setIntakeNotice('Synthetic sample generated. It contains fictional data only and is not an official document.');
+    setError('');
+  }
+
   async function uploadDocument() {
     if (!caseData || !uploadDocumentType || !uploadFile) return;
     setLoading(true);
@@ -1411,6 +1438,17 @@ export const AetherCommandCenter: React.FC = () => {
                         >
                           Upload
                         </button>
+                      </div>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={generateSyntheticSample}
+                          disabled={loading || !uploadDocumentType}
+                          className="rounded-lg border border-emerald-300/30 px-3 py-2 text-xs font-semibold text-emerald-100 disabled:opacity-50"
+                        >
+                          Generate synthetic sample file
+                        </button>
+                        {uploadFile && <span className="text-[10px] text-emerald-200">Selected: {uploadFile.name}</span>}
                       </div>
                     </div>
                   </div>
