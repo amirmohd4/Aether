@@ -23,5 +23,5 @@
     Strict-Transport-Security = "max-age=31536000; includeSubDomains"
 
 [context.deploy-preview.environment]
-  VITE_API_URL = "https://aether-public-demo.onrender.com"
-  VITE_REQUIRE_AUTH = "false"
+  VITE_API_URL = "https://aether-staging.onrender.com"
+  VITE_REQUIRE_AUTH = "true"
