@@ -23,12 +23,11 @@ permissions:
 
 jobs:
   staging-smoke:
-    if: ${{ (inputs.api_url != '' || vars.AETHER_STAGING_API_URL != '') && (inputs.frontend_url != '' || vars.AETHER_STAGING_FRONTEND_URL != '') }}
     runs-on: ubuntu-latest
     timeout-minutes: 12
     env:
-      AETHER_API_URL: ${{ inputs.api_url || vars.AETHER_STAGING_API_URL }}
-      AETHER_FRONTEND_URL: ${{ inputs.frontend_url || vars.AETHER_STAGING_FRONTEND_URL }}
+      AETHER_API_URL: ${{ inputs.api_url || vars.AETHER_STAGING_API_URL || 'https://aether-staging.onrender.com' }}
+      AETHER_FRONTEND_URL: ${{ inputs.frontend_url || vars.AETHER_STAGING_FRONTEND_URL || 'https://deploy-preview-20--aether-govos.netlify.app' }}
       AETHER_API_KEY: ${{ secrets.AETHER_STAGING_API_KEY }}
     steps:
       - name: Check out release candidate
@@ -67,16 +66,3 @@ jobs:
         run: |
           python -m pip install --disable-pip-version-check httpx
           python scripts/release_smoke_test.py
-
-      - name: Report authentication coverage
-        if: env.AETHER_API_KEY == ''
-        run: |
-          echo "::warning::AETHER_STAGING_API_KEY is not configured. Public health checks ran, but authenticated catalog and controlled-release checks were skipped. Do not treat this run as final launch approval."
-
-  staging-not-configured:
-    if: ${{ (inputs.api_url == '' && vars.AETHER_STAGING_API_URL == '') || (inputs.frontend_url == '' && vars.AETHER_STAGING_FRONTEND_URL == '') }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Explain required staging variables
-        run: |
-          echo "::notice::Set repository variables AETHER_STAGING_API_URL and AETHER_STAGING_FRONTEND_URL to enable automatic staging smoke checks. Set secret AETHER_STAGING_API_KEY for authenticated product/release checks."

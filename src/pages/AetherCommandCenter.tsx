@@ -261,7 +261,7 @@ export const AetherCommandCenter: React.FC = () => {
   const [authPassword, setAuthPassword] = useState('');
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const [authMessage, setAuthMessage] = useState('');
-  const [useDemoEvidence, setUseDemoEvidence] = useState(true);
+  const [useDemoEvidence, setUseDemoEvidence] = useState(false);
   const [missingDocuments, setMissingDocuments] = useState<string[]>([]);
   const [selectedDocuments, setSelectedDocuments] = useState<string[]>([]);
   const [uploadDocumentType, setUploadDocumentType] = useState('');
@@ -490,13 +490,17 @@ export const AetherCommandCenter: React.FC = () => {
           customer_type: customerType,
           jurisdiction: { country, state, district },
           inputs: {
-            documents: useDemoEvidence ? DEMO_DOCUMENTS : selectedDocuments,
-            owner_name: 'Demo Owner',
-            parcel_id: 'PARCEL-DEMO-001',
-            property_id: 'PROPERTY-DEMO-001',
-            company_id: 'COMPANY-DEMO-001',
-            project_id: 'PROJECT-DEMO-001',
+            // Only the explicit synthetic path may seed placeholder evidence and IDs.
+            // Guided intake starts with no submitted evidence; applicants upload real files.
+            documents: useDemoEvidence ? DEMO_DOCUMENTS : [],
             demo_mode: useDemoEvidence,
+            ...(useDemoEvidence ? {
+              owner_name: 'Demo Owner',
+              parcel_id: 'PARCEL-DEMO-001',
+              property_id: 'PROPERTY-DEMO-001',
+              company_id: 'COMPANY-DEMO-001',
+              project_id: 'PROJECT-DEMO-001',
+            } : {}),
           },
         }),
       });

@@ -4,11 +4,11 @@ Aether's controlled MVP uses the existing Supabase project for persistence, Auth
 
 ## Deployment boundary
 
-- Keep `main` release-only. Do not merge PR #11 until the staging gates pass.
-- Use `aether-mvp-build` as the release-candidate source for staging.
+- The active candidate is PR [#20](https://github.com/amirmohd4/Aether/pull/20), branch `integration-check/public-preview-into-hardened`. Keep it in draft and do not merge until the release gates in `docs/RELEASE_READINESS.md` pass.
+- Keep `main` release-only. Existing Render services still run older branches/commits; do not treat them as staging for PR #20.
 - Keep government connectors disabled. The first release is a synthetic/sandbox GovOS, not a live government filing or approval service.
-- Do not create a paid Render resource for the MVP. The current blueprint uses one Free web service with an embedded worker thread; do not create a separate background worker service.
-- The Render Free plan may suspend idle services and is not a guarantee of always-on background processing. Clearly disclose that limitation in a controlled demo.
+- Do not create paid infrastructure for the MVP. The candidate blueprint uses one Free web service with an embedded worker; do not create a separate background worker service unless the architecture and cost are explicitly reviewed.
+- Render Free services may suspend while idle. They are not a guarantee of always-on background processing; disclose this limitation in demos.
 
 ## Render web service
 
@@ -22,7 +22,7 @@ Use the existing Aether backend Docker configuration:
 - Worker interval: `AETHER_WORKER_INTERVAL_SECONDS=5`
 - Worker startup delay: `AETHER_WORKER_STARTUP_DELAY_SECONDS=8`
 
-The embedded worker is deliberately selected to avoid requiring another Render service. It runs alongside the API process and processes durable cases/notification outbox work when the Free web instance is awake.
+The embedded worker runs alongside the API process and processes durable cases/notification-outbox work when the Free web instance is awake. A log line showing worker ticks is not proof that real work items are processed successfully.
 
 ## Required server-side environment
 
@@ -61,30 +61,33 @@ The existing Supabase migrations create the login role `aether_runtime`; the rol
 4. Set `DATABASE_URL` to the project's Supabase PostgreSQL pooler endpoint and correct pooler port. The application applies the configured host, role and password overrides.
 5. Verify the deployed `/ready` response. It must return HTTP 200 and `database_role_valid: true`.
 
-The readiness endpoint now rejects a staging/production database connection using the wrong database role. Do not use the Supabase postgres superuser as the Aether application's runtime identity.
+The readiness endpoint rejects a staging/production database connection using the wrong database role. Do not use the Supabase postgres superuser as the Aether application's runtime identity.
 
 ## Netlify frontend
 
-Build the React frontend from the same release candidate branch and set:
+Build the React frontend from the same release candidate and set:
 
 - `VITE_API_URL`: matching staging Render API base URL.
 - `VITE_SUPABASE_URL`: existing Supabase project URL.
 - `VITE_SUPABASE_ANON_KEY`: Supabase publishable/anon key only.
-- `VITE_REQUIRE_AUTH=true`.
+- `VITE_REQUIRE_AUTH=true` for the authenticated staging environment.
 
-The current `netlify.toml` values point at the existing public backend and must be changed for a separate staging deployment. A publishable/anon key may be public; service-role keys, database passwords and encryption keys must never be in frontend variables.
+The current `netlify.toml` has separate production and deploy-preview API settings. The candidate Render blueprint explicitly allows the PR #20 preview origin and primary site; this is only blueprint configuration until applied to an isolated staging service. Confirm the preview's actual API target and deployed backend CORS allowlist before claiming the deployed frontend/backend pair works. Netlify deploys now set baseline security headers; a Content Security Policy remains deferred pending a complete external-resource audit. A publishable/anon key may be public; service-role keys, database passwords and encryption keys must never be in frontend variables.
 
-## Release verification
+## Staging verification
 
-1. Confirm `/health` returns HTTP 200.
-2. Confirm `/ready` returns HTTP 200, database is ready, and the expected least-privilege role is valid.
-3. Confirm the authenticated `/api/aether/v2/release/readiness` response reports `ready_for_controlled_mvp=true`.
-4. Confirm connector mode is synthetic and legacy APIs are quarantined.
-5. Set GitHub repository variables `AETHER_STAGING_API_URL` and `AETHER_STAGING_FRONTEND_URL` to the two staging origins. Pushes to `aether-mvp-build` will then run the staging smoke workflow automatically.
-6. Create a read-only Aether API key with the required `cases:read` scope and store it as the GitHub Actions secret `AETHER_STAGING_API_KEY`.
-7. The workflow checks API health/readiness (including the expected runtime DB role), frontend response, service catalog, marketplace, connector catalog, rule readiness, India department/journey endpoints and controlled-MVP release readiness.
+1. Deploy the candidate to an isolated staging API and matching frontend. Do not repoint the existing production or public-demo service, and do not use a shared production database for test writes.
+2. Confirm API `/health` returns HTTP 200.
+3. Confirm `/ready` returns HTTP 200, database is ready, and `database_role_valid=true`.
+4. Confirm authenticated `/api/aether/v2/release/readiness` reports `ready_for_controlled_mvp=true`.
+5. Confirm connector mode is synthetic and legacy APIs are quarantined.
+6. Set GitHub repository variables `AETHER_STAGING_API_URL` and `AETHER_STAGING_FRONTEND_URL`.
+7. Create a read-only Aether API key with `cases:read` scope and store it as GitHub Actions secret `AETHER_STAGING_API_KEY`.
+8. Run `.github/workflows/aether-staging-smoke.yml`. A skipped job or a notice-only run is not a passing staging test.
+9. Exercise document upload/read, tenant isolation, worker dispatch/recovery/retries, feedback submission and full synthetic citizen/business plus operator journeys.
+10. Record monitoring, privacy/accessibility checks and a successful rollback rehearsal.
 
-If `AETHER_STAGING_API_KEY` is absent, authenticated product/release checks are skipped and the workflow emits a warning. That run is not final launch approval.
+If `AETHER_STAGING_API_KEY` is absent, authenticated product/release checks are not completed. That run is not final launch approval.
 
 ## Rollback
 

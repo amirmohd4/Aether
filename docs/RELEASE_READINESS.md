@@ -1,93 +1,97 @@
 # Aether Release Readiness
 
-Last checked: 2026-11-13 18:00 UTC
+Last checked: 2026-11-15
 
-## Current decision
+## Release decision
 
-**NO-GO for public launch until a deployed staging run passes.** The core GovOS software scope remains unchanged and is implemented in the development branch. The latest reviewed release-candidate code passed backend tests, frontend typecheck/build and combined CI. Supabase is restored and its schema/security posture has been checked. New release gates now verify the actual private document bucket and require the least-privilege database role.
+**NO-GO for a production GovOS launch.** The current candidate is suitable for continued controlled synthetic-preview validation, but it is not yet proven as a fully operational end-to-end release.
 
-The remaining critical work is deployment configuration and end-to-end proof: Render still runs older commits from older branches; the runtime database role/password and Supabase service credentials are not exposed for verification; no staging URLs/API key are configured in GitHub; and the new staging smoke job therefore skipped. Do not merge PR #11 into `main` yet.
+The active candidate is PR [#20](https://github.com/amirmohd4/Aether/pull/20), branch `integration-check/public-preview-into-hardened`, The latest code-hardening commit is `1e5c332a92cebd6cde66603185c3e8cde19fb437`; subsequent commits update deployment and release documentation. It remains an open draft and must not be merged until the release gates below pass.
 
-Aether's first release is the existing India-first AI Government Execution Platform / GovOS, operating against synthetic government systems. It must not claim official government filing, approval or certificate issuance.
+Aether's first public experience must remain an independent synthetic research preview. It does not submit official government applications, access private government records, issue certificates, or make statutory decisions. Live integrations require written authorization, approved credentials/endpoints, authoritative effective-dated rules, certification, and system-of-record reconciliation.
 
-## Verified repository and code
+## Candidate scope
+
+The PR description records the intended candidate scope:
+- 34-service registry, objective understanding, requirements discovery and jurisdiction-aware process planning.
+- Cross-department work graphs, dependency-aware execution, retries, checkpoints, case recovery and reconciliation.
+- Evidence/document workflows, private storage adapter, audit chain, tenant/RBAC controls and scoped API keys.
+- Operator/officer workspaces, India administrative intelligence and developer marketplace foundations.
+- Synthetic workflow studio, five demonstration scenarios, research-preview landing pages and feedback experience.
+
+These are implementation claims and product scope, not proof that every journey has passed deployed end-to-end testing.
+
+## Verified repository and CI
 
 - Repository: `amirmohd4/Aether`.
-- Development branch: `aether-mvp-build`.
-- Reviewed release-candidate commit: `d0f9c4502f811bfd16cd122216ee8b60fae0f9d8`.
-- PR #11 targets `main`, remains open and unmerged. Keep it unmerged until staging and rollback gates pass.
-- Product scope is unchanged: objective understanding, requirements discovery, shared service catalog, cross-department process/work graphs, dependency-aware execution, evidence/document handling, human authority boundaries, audit/reconciliation, operator/developer surfaces and India administrative intelligence.
-- The India module contains an India-wide discovery taxonomy, three illustrative cross-department journey templates, authenticated read APIs and a frontend explorer. These are planning aids, not exhaustive statutory checklists.
-- On code commit `d0f9c4502f811bfd16cd122216ee8b60fae0f9d8`, all core CI passed:
-  - Aether MVP Tests: Python compilation and complete backend pytest suite passed.
-  - Aether MVP CI: backend tests and frontend typecheck/build passed.
-  - Aether MVP Frontend: TypeScript check and Vite production build passed.
-  - Administrative action worker workflow passed.
-- Added regression tests for explicit worker configuration, private storage readiness and database runtime-role enforcement.
-- `/ready` now rejects a staging/production connection unless `current_user` matches `AETHER_DATABASE_EXPECTED_ROLE`.
-- `/api/aether/v2/release/readiness` now checks that the real Supabase Storage bucket exists and is private, rather than trusting environment-variable presence; it also requires explicit embedded-worker or worker-command configuration.
-- `render.yaml` now specifies one Free backend web service with an embedded worker, rather than creating a separate worker service. This avoids a second Render resource for the controlled MVP.
-- Authenticated smoke coverage now includes service catalog, marketplace, connectors, rule readiness, India admin overview/departments/journeys and controlled release readiness.
+- Candidate PR: [#20](https://github.com/amirmohd4/Aether/pull/20), open, draft, unmerged.
+- Candidate code hardening commit: `1e5c332a92cebd6cde66603185c3e8cde19fb437`.
+- Base `main` head at PR creation: `f64148aad10a5f8f586efde0cefe7a817fe6d996`.
+- Frontend CI passed: dependency install, TypeScript check and Vite build.
+- Combined MVP CI passed: backend tests and frontend checks/build.
+- MVP test workflow passed: Python compilation and backend pytest suite.
+- The staging workflow did **not** run its staging-smoke job. The `staging-not-configured` notice job succeeded while `staging-smoke` was skipped. This was incorrectly reported as an overall workflow success; the workflow has now been changed to fail closed when staging is unconfigured. This is not a staging pass.
+- Netlify deploy preview for PR #20 is marked ready at [deploy-preview-20](https://deploy-preview-20--aether-govos.netlify.app/), built from the candidate commit. A ready static deployment is not proof of successful API, auth, upload, or workflow journeys.
+- Netlify feedback form `aether-feedback` is present with zero recorded submissions. Form submission and feedback processing have not been verified.
+- Netlify deploy configuration now adds baseline browser security headers (nosniff, frame denial, referrer policy, permissions policy and HSTS); no Content Security Policy is set because the app's external resource requirements have not been fully audited.
+- Candidate Render blueprint CORS now includes the PR #20 Netlify deploy-preview origin as well as the primary site. This blueprint change has not been applied to the live Render services.
 
-## Supabase — verified
+## Supabase — previously verified configuration
 
-- Existing project: `aether`, ref `lekudqjewxxunqjuqayi`.
-- Organization plan: `free` / `tier_free`; no replacement project or upgrade was created.
-- Project status: `ACTIVE_HEALTHY`.
-- Ten migrations recorded as applied.
-- Thirteen public application tables and ten `aether_internal` execution tables.
+The existing project is `aether`, ref `lekudqjewxxunqjuqayi`, on the Free plan. The most recent recorded inspection found:
+- Project status `ACTIVE_HEALTHY`.
+- Ten applied migrations; 13 public application tables and ten `aether_internal` execution tables.
 - RLS enabled on all 23 application tables.
-- Dedicated `aether_runtime` role exists as a non-superuser login role.
-- Browser roles have no access to internal execution tables; runtime role has required internal access.
-- `aether-documents` exists and is private (`public=false`).
-- Supabase Security and Health Advisors returned no lints.
-- Performance Advisor reported 39 informational unused-index findings. No indexes were removed without workload evidence.
-- Database inspection through the Supabase administration connection does not prove Render uses the `aether_runtime` role. The deployed backend must pass the new `/ready` role check.
+- Dedicated non-superuser login role `aether_runtime`.
+- Browser roles blocked from internal execution tables; runtime role has the required internal grants.
+- Private `aether-documents` storage bucket.
+- No Supabase Security or Health Advisor lints.
+- 39 informational unused-index findings; no indexes were removed without workload evidence.
 
-## Render — release deployment outstanding
+These database-administration checks do not prove that a deployed Render process authenticates as `aether_runtime`. The candidate's `/ready` check must pass against the deployed runtime.
 
-- `aether-backend` is Free, deploys from `main`, and latest recorded live deployment is `f64148aad10a5f8f586efde0cefe7a817fe6d996` (2026-10-15). It is not running the current release candidate.
-- `aether-public-demo` is Free, deploys from `launch/public-research-preview`, and latest recorded live deployment is `eb148e6dc6866ea0a5214b01d9f908a89d94a264` (2026-10-29).
-- The backend service uses `/health` as its Render health check. `/ready` is the database/role readiness gate.
-- No separate worker service exists in the connected Render workspace. The updated blueprint uses the embedded worker to avoid creating another service. Its actual ticks still need to be verified after deployment.
-- Render service-detail responses do not expose environment-variable values. The following deployed values are therefore not independently verified: `DATABASE_URL`, `AETHER_DATABASE_PASSWORD`, `AETHER_DATABASE_ROLE_OVERRIDE`, `AETHER_DATABASE_EXPECTED_ROLE`, Supabase service-role key, encryption key, auth mode and CORS.
-- The runbook now documents the least-privilege `aether_runtime` role configuration. Render must receive the matching database-role password as a secret; never commit it.
-- Direct public endpoint checks were inaccessible from the current environment. Render logs/events previously returned no application entries; this is not proof of runtime health.
+## Render — current deployment boundary
+
+Two existing Free services were inspected:
+- `aether-backend` deploys from `main`; its service configuration was last updated 2026-10-15. It is not deployed from PR #20.
+- `aether-public-demo` deploys from `launch/public-research-preview`; its service configuration was last updated 2026-10-29. It is not deployed from PR #20.
+
+Recent application logs from `aether-public-demo` show embedded worker ticks every five seconds, with zero items processed and zero notifications delivered/failed in the sampled entries. This proves the worker loop is emitting ticks on that service; it does not prove candidate worker correctness, successful work execution, retries, recovery, or notification delivery.
+
+Render service metadata does not expose environment-variable values. The deployed database URL/password, runtime role, Supabase service credentials, encryption key, auth mode and CORS configuration therefore remain unverified. The candidate backend has not been deployed to an isolated staging service.
+
+Do not repoint either existing service to the candidate as a shortcut: the current services are not an isolated staging environment, and sharing the existing database would create an unsafe test boundary.
 
 ## Staging smoke automation
 
-- Added `.github/workflows/aether-staging-smoke.yml`.
-- It runs on pushes to `aether-mvp-build` and accepts explicit API/frontend URLs for manual dispatch once available.
-- It checks `/health`, `/ready` (including the expected database role), root API and frontend HTML, then runs authenticated product/release smoke checks.
-- The latest workflow run completed with the `staging-not-configured` notice job; the actual `staging-smoke` job was skipped because staging URLs are not configured.
-- Required GitHub repository variables: `AETHER_STAGING_API_URL`, `AETHER_STAGING_FRONTEND_URL`.
-- Required GitHub repository secret for authenticated coverage: `AETHER_STAGING_API_KEY` (read-only Aether API key with `cases:read` scope).
-- The smoke run is not evidence of a successful staging deployment until those values are set and the staging-smoke job itself completes.
+Workflow: `.github/workflows/aether-staging-smoke.yml`.
 
-## Frontend
+Required GitHub repository variables:
+- `AETHER_STAGING_API_URL`
+- `AETHER_STAGING_FRONTEND_URL`
 
-- Frontend TypeScript check and Vite production build passed in CI.
-- Current `netlify.toml` points at the existing backend URL and existing Supabase project.
-- The deployed frontend/backend pair is not verified to use the current release candidate. A staging frontend must use the staging API URL and public Supabase publishable key.
-- No service-role key, database password or encryption key may be placed in frontend assets.
+Required GitHub Actions secret:
+- `AETHER_STAGING_API_KEY` — a read-only Aether API key with the required `cases:read` scope.
 
-## Go/no-go gates
+The workflow verifies API `/health`, `/ready` (including `database_role_valid=true`), root API response, frontend response and authenticated product/release smoke checks. The latest candidate run skipped the actual staging job because the staging URLs are not configured. The workflow is now changed to fail when these values are absent, preventing a skipped staging gate from appearing green. Do not describe the previous run as a passing smoke test.
 
-- [x] Existing Supabase Free project restored to ACTIVE_HEALTHY.
-- [x] Ten migrations, 13 public tables, ten internal tables, RLS, runtime role and private bucket verified.
-- [x] Core backend tests, frontend lint/build and combined CI passed on reviewed release-candidate code.
-- [x] Readiness checks hardened for private storage, explicit worker configuration and least-privilege database role.
-- [x] Staging deployment runbook and automated smoke workflow added.
-- [ ] Configure the `aether_runtime` password in Supabase and matching Render secret; verify deployed `/ready` returns HTTP 200 with `database_role_valid=true`.
-- [ ] Deploy the reviewed release candidate to an isolated staging API and matching frontend without replacing the current production service.
-- [ ] Configure GitHub staging URL variables and authenticated smoke secret; run the actual staging-smoke job.
-- [ ] Verify deployed Supabase Auth, private document upload/read, encryption and tenant isolation.
-- [ ] Verify embedded worker ticks, durable case recovery, retries and notification outbox.
-- [ ] Run complete citizen/business and officer/operator journeys end to end in synthetic mode.
-- [ ] Verify monitoring, CORS, rate limits, security headers, privacy disclosures, accessibility and support ownership.
+## Go/no-go checklist
+
+- [x] Candidate branch and PR #20 established; kept draft and unmerged.
+- [x] Candidate backend tests, frontend typecheck/build and combined CI passed.
+- [x] Netlify PR preview deployment reached `ready` for the candidate commit.
+- [x] Existing Supabase Free project, schema, RLS, runtime role and private bucket previously inspected.
+- [x] Public-demo service logs show embedded worker ticks; no work execution was demonstrated by the sampled logs.
+- [ ] Set the `aether_runtime` password in Supabase and matching Render secret; verify candidate `/ready` returns HTTP 200 with `database_role_valid=true`.
+- [ ] Deploy the candidate to an isolated staging API and matching frontend without replacing the existing services or sharing a production database.
+- [ ] Configure staging URL variables and read-only API-key secret; run the actual staging-smoke job to completion.
+- [ ] Verify Supabase Auth, private document upload/read, encryption and tenant isolation against staging.
+- [ ] Exercise worker dispatch with synthetic work; verify processing, durable recovery, retries and notification outbox behavior.
+- [ ] Complete synthetic citizen/business and officer/operator journeys against the deployed candidate.
+- [ ] Verify preview-to-API CORS, security headers, rate limits, privacy disclosures, accessibility and feedback submission.
 - [ ] Demonstrate rollback to a known-good backend/frontend pair.
-- [ ] Only then review and merge PR #11 to `main`.
+- [ ] Only after all applicable gates pass, review PR #20 for merge to `main`.
 
 ## Release policy
 
-Do not merge PR #11, switch to production mode or enable live government connectors merely because CI passes. First configure and deploy staging, verify the least-privilege database identity and private storage, run authenticated end-to-end smoke tests, prove worker behavior and rollback. The initial release remains a synthetic/sandbox GovOS; each live government connector requires written authorization, approved credentials/endpoints, authoritative effective-dated rules, certification and system-of-record reconciliation.
+Do not merge PR #20, promote the candidate to production, or enable live government connectors solely because CI or the Netlify build passes. Preserve the synthetic-only boundary and disclose Free-tier availability limits. Treat each government integration as a separate authorized, tested and reconciled release.
