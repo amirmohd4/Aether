@@ -73,7 +73,7 @@ The Render connector does not expose environment-variable values. The database i
 
 ## Required deployment boundary
 
-Do not repoint production Render service `aether-backend` or publish the candidate Netlify build as production until the release gates pass. PR #11 remains open and unmerged; PR #20 remains a draft. Keep production `main` unchanged until the candidate's complete diff is reviewed and the release owner approves the exact deployment.
+Do not repoint production Render service `aether-backend` or publish the candidate Netlify build as production until the release gates pass. PR #11 remains open and unmerged; PR #20 was closed as superseded by PR #11. Keep production `main` unchanged until the candidate's complete diff is reviewed and the release owner approves the exact deployment.
 
 Keep `AETHER_ENABLE_PRODUCTION_CONNECTORS=false`. Do not use real citizen documents or claim official government authority in a synthetic pilot.
 
