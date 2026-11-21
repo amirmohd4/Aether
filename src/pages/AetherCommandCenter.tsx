@@ -114,6 +114,16 @@ type OperatorBrief = {
 };
 
 type CaseResponse = {
+  jurisdiction_process?: {
+    status: string;
+    current_profile?: {
+      status?: string;
+      authority?: string | null;
+      source_url?: string | null;
+      effective_date?: string | null;
+      verified_at?: string | null;
+    };
+  };
   execution_provenance?: {
     case_mode: string;
     task_modes: Record<string, string>;
@@ -204,8 +214,8 @@ export const AetherCommandCenter: React.FC = () => {
   const [objective, setObjective] = useState('I want to open a restaurant');
   const [customerType, setCustomerType] = useState('business');
   const [country, setCountry] = useState('India');
-  const [state, setState] = useState('Jammu and Kashmir');
-  const [district, setDistrict] = useState('Jammu');
+  const [state, setState] = useState('');
+  const [district, setDistrict] = useState('');
   const [caseData, setCaseData] = useState<CaseResponse | null>(null);
   const [preflightSimulation, setPreflightSimulation] = useState<{
     status: string;
@@ -259,7 +269,6 @@ export const AetherCommandCenter: React.FC = () => {
   const [error, setError] = useState('');
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
-  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const [authMessage, setAuthMessage] = useState('');
   const [useDemoEvidence, setUseDemoEvidence] = useState(false);
   const [missingDocuments, setMissingDocuments] = useState<string[]>([]);
@@ -267,7 +276,7 @@ export const AetherCommandCenter: React.FC = () => {
   const [uploadDocumentType, setUploadDocumentType] = useState('');
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [intakeNotice, setIntakeNotice] = useState('');
-  const { session, loading: authLoading, required: authRequired, signIn, signUp, signOut } = useAuth();
+  const { session, loading: authLoading, required: authRequired, signIn, signOut } = useAuth();
 
   React.useEffect(() => {
     if (session?.access_token) {
@@ -470,10 +479,8 @@ export const AetherCommandCenter: React.FC = () => {
 
   async function submitAuth() {
     setAuthMessage('');
-    const message = authMode === 'signin'
-      ? await signIn(authEmail, authPassword)
-      : await signUp(authEmail, authPassword);
-    setAuthMessage(message || (authMode === 'signin' ? 'Signed in.' : 'Account created. Check your email if confirmation is enabled.'));
+    const message = await signIn(authEmail, authPassword);
+    setAuthMessage(message || 'Signed in. If access is denied, ask the Aether team to provision your pilot workspace.');
   }
 
   async function startCase() {
@@ -736,7 +743,7 @@ export const AetherCommandCenter: React.FC = () => {
           <div className="mb-6">
             <p className="text-sm font-semibold text-cyan-300">Aether GovOS</p>
             <h1 className="mt-2 text-2xl font-bold">Secure workspace</h1>
-            <p className="mt-2 text-sm text-slate-400">Sign in before accessing government case data.</p>
+            <p className="mt-2 text-sm text-slate-400">This is an invite-only pilot workspace. Sign in with an account provisioned by the Aether team. Public visitors can explore the overview and product sandbox without accessing case data.</p>
           </div>
           <input
             type="email"
@@ -753,26 +760,12 @@ export const AetherCommandCenter: React.FC = () => {
             className="w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm"
           />
           {authMessage && <p className="mt-3 text-xs text-cyan-200">{authMessage}</p>}
-                    <button
-            type="button"
-            onClick={simulateProcess}
-            disabled={!objective.trim() || loading}
-            className="mr-2 rounded-xl border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-[10px] font-semibold text-cyan-100 hover:bg-cyan-300/15 disabled:opacity-50"
-          >
-            Pre-check journey
-          </button>
 <button
             onClick={submitAuth}
             disabled={authLoading || !authEmail || !authPassword}
             className="mt-5 w-full rounded-xl bg-cyan-400 px-4 py-3 text-sm font-bold text-slate-950 disabled:opacity-50"
           >
-            {authMode === 'signin' ? 'Sign in' : 'Create account'}
-          </button>
-          <button
-            onClick={() => setAuthMode(authMode === 'signin' ? 'signup' : 'signin')}
-            className="mt-3 w-full rounded-xl border border-white/10 px-4 py-2 text-xs text-slate-300"
-          >
-            {authMode === 'signin' ? 'Create a new account' : 'Back to sign in'}
+            Sign in
           </button>
         </section>
       </main>
@@ -883,10 +876,20 @@ export const AetherCommandCenter: React.FC = () => {
               <option value="citizen">Citizen</option>
             </select>
 
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              <input value={country} onChange={(e) => setCountry(e.target.value)} className="rounded-lg border border-white/10 bg-slate-900 p-2 text-xs" />
-              <input value={state} onChange={(e) => setState(e.target.value)} className="rounded-lg border border-white/10 bg-slate-900 p-2 text-xs" />
-              <input value={district} onChange={(e) => setDistrict(e.target.value)} className="rounded-lg border border-white/10 bg-slate-900 p-2 text-xs" />
+            <div className="mt-4">
+              <p className="mb-2 text-xs font-semibold text-slate-300">Where does this service apply?</p>
+              <p className="mb-3 text-[11px] text-slate-500">Enter the location of the property, business, person or activity involved. This may differ from your current home address. Aether uses it to look up the relevant government process.</p>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                <label className="text-[10px] text-slate-400">Country
+                  <input aria-label="Service country" value={country} onChange={(e) => setCountry(e.target.value)} placeholder="India" className="mt-1 w-full rounded-lg border border-white/10 bg-slate-900 p-2 text-xs text-slate-100" />
+                </label>
+                <label className="text-[10px] text-slate-400">State / UT
+                  <input aria-label="Service State or Union Territory" value={state} onChange={(e) => setState(e.target.value)} placeholder="Enter State / UT" className="mt-1 w-full rounded-lg border border-white/10 bg-slate-900 p-2 text-xs text-slate-100" />
+                </label>
+                <label className="text-[10px] text-slate-400">District
+                  <input aria-label="Service district" value={district} onChange={(e) => setDistrict(e.target.value)} placeholder="Enter district" className="mt-1 w-full rounded-lg border border-white/10 bg-slate-900 p-2 text-xs text-slate-100" />
+                </label>
+              </div>
             </div>
 
             <label className="mt-4 flex items-center gap-2 text-xs text-slate-300">
@@ -1099,7 +1102,7 @@ export const AetherCommandCenter: React.FC = () => {
                   <Activity className="mx-auto h-10 w-10 text-cyan-300" />
                   <h2 className="mt-4 text-xl font-semibold">No active case</h2>
                   <p className="mt-2 text-sm text-slate-400">
-                    Try a restaurant, property-loan, factory/project, licence, certificate, or other service from the 34-service MVP catalog.
+                    Try a government service from Aether's national service catalogue. Jurisdiction-specific rules are shown only when verified.
                   </p>
                 </div>
               </div>
@@ -1124,6 +1127,23 @@ export const AetherCommandCenter: React.FC = () => {
                       ) : null}
                     </div>
                     <span className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-cyan-200">{caseData.summary.status}</span>
+                  </div>
+                  <div className="mt-4 rounded-xl border border-white/10 bg-slate-950/30 p-3">
+                    <p className="text-[11px] font-semibold text-slate-200">Applicable government rules</p>
+                    <p className="mt-1 text-[11px] text-slate-400">
+                      Service location: {[country, state, district].filter(Boolean).join(', ')}
+                    </p>
+                    {caseData.jurisdiction_process?.current_profile?.status === 'ready' ? (
+                      <>
+                        <p className="mt-2 text-[11px] text-emerald-200">Verified process profile loaded for this service and location.</p>
+                        {caseData.jurisdiction_process.current_profile.authority && <p className="mt-1 text-[10px] text-slate-400">Authority: {caseData.jurisdiction_process.current_profile.authority}</p>}
+                        {caseData.jurisdiction_process.current_profile.effective_date && <p className="mt-1 text-[10px] text-slate-400">Effective from: {caseData.jurisdiction_process.current_profile.effective_date}</p>}
+                        {caseData.jurisdiction_process.current_profile.verified_at && <p className="mt-1 text-[10px] text-slate-400">Last verified: {caseData.jurisdiction_process.current_profile.verified_at}</p>}
+                        {caseData.jurisdiction_process.current_profile.source_url && <a className="mt-2 inline-block text-[10px] text-cyan-300 underline" href={caseData.jurisdiction_process.current_profile.source_url} target="_blank" rel="noreferrer">View official source</a>}
+                      </>
+                    ) : (
+                      <p className="mt-2 text-[11px] text-amber-200">No complete verified process profile is available for this service and location. Aether will not invent local fees, deadlines or legal requirements; this case remains a controlled workflow.</p>
+                    )}
                   </div>
                   <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/10">
                     <div className="h-full bg-cyan-400 transition-all" style={{ width: `${completedPercent}%` }} />
