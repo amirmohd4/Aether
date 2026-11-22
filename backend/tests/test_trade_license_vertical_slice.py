@@ -47,3 +47,21 @@ def test_trade_license_workflow_pauses_at_authorised_municipal_decision():
     paused = engine.execute_until_pause(case.case_id)
     assert paused.status == "waiting_for_human"
     assert any(action["task_id"] == "final_approval" for action in paused.human_actions)
+
+
+
+def test_jk_trade_license_profile_is_source_backed_and_effective_dated():
+    from aether_core.jurisdiction_process_profiles import JurisdictionProcessRegistry
+
+    registry = JurisdictionProcessRegistry()
+    readiness = registry.readiness(
+        "trade_license",
+        {"country": "India", "state": "Jammu and Kashmir", "district": "Jammu"},
+    )
+
+    assert readiness["status"] == "ready"
+    assert readiness["effective_date"] == "2022-10-29"
+    assert readiness["verified_at"] == "2026-11-22"
+    assert "singlewindow.jk.gov.in" in readiness["source_url"]
+    assert len(readiness["required_documents"]) == 3
+    assert readiness["service_level"]["days"] == 30
