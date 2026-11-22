@@ -211,7 +211,7 @@ function taskList(tasks: CaseResponse['tasks']): Task[] {
 }
 
 export const AetherCommandCenter: React.FC = () => {
-  const [objective, setObjective] = useState('I want to open a restaurant');
+  const [objective, setObjective] = useState('I want to open a retail shop and apply for a municipal trade licence');
   const [customerType, setCustomerType] = useState('business');
   const [country, setCountry] = useState('India');
   const [state, setState] = useState('');
