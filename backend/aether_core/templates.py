@@ -599,6 +599,8 @@ def infer_template(objective: str, customer_type: str, service: ServiceDefinitio
     # specialized workflow. A service being related to a domain is not enough;
     # this prevents a simple trade licence or property registration request
     # from silently becoming a restaurant/project workflow.
+    if service and service.template == "trade_license":
+        return "trade_license" if any(x in text for x in ["trade license", "trade licence", "business license", "business licence", "retail shop", "shop"]) else "generic"
     if service and service.template == "restaurant":
         return "restaurant" if any(x in text for x in ["restaurant", "cafe", "food business", "food license", "fssai"]) else "generic"
     if service and service.template == "property_loan":
