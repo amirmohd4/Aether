@@ -1206,7 +1206,7 @@ export const AetherCommandCenter: React.FC = () => {
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <p className="text-xs font-semibold uppercase tracking-wider text-emerald-200">Jurisdiction rule pack</p>
                       <span className="rounded-full border border-emerald-300/20 px-2 py-1 text-[10px] text-emerald-100">
-                        {caseData.jurisdiction_process.current_profile.status === 'ready' ? 'Source-backed profile loaded' : 'Verification incomplete'}
+                        {caseData.jurisdiction_process.current_profile.status === 'ready' ? 'Core source-backed profile' : 'Verification incomplete'}
                       </span>
                     </div>
                     <p className="mt-2 text-xs leading-5 text-emerald-100/90">
@@ -1214,6 +1214,9 @@ export const AetherCommandCenter: React.FC = () => {
                     </p>
                     <p className="mt-1 text-[10px] text-emerald-100/70">
                       Effective: {caseData.jurisdiction_process.current_profile.effective_date || 'Not stated'} · Verified: {caseData.jurisdiction_process.current_profile.verified_at || 'Not recorded'}
+                    </p>
+                    <p className="mt-2 text-[10px] leading-5 text-emerald-100/70">
+                      The cited core documents and published service period are source-backed. Confirm the current designated officer, appellate authority, activity-specific clearances and any newspaper-publication condition with the competent authority before live submissions.
                     </p>
                     {caseData.jurisdiction_process.current_profile.required_documents?.length ? (
                       <ul className="mt-3 list-disc space-y-1 pl-4 text-xs text-emerald-100/80">
