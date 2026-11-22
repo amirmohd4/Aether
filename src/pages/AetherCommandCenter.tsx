@@ -122,6 +122,8 @@ type CaseResponse = {
       source_url?: string | null;
       effective_date?: string | null;
       verified_at?: string | null;
+      required_documents?: string[];
+      service_level?: { days?: number; basis?: string };
     };
   };
   execution_provenance?: {
@@ -1213,6 +1215,16 @@ export const AetherCommandCenter: React.FC = () => {
                     <p className="mt-1 text-[10px] text-emerald-100/70">
                       Effective: {caseData.jurisdiction_process.current_profile.effective_date || 'Not stated'} · Verified: {caseData.jurisdiction_process.current_profile.verified_at || 'Not recorded'}
                     </p>
+                    {caseData.jurisdiction_process.current_profile.required_documents?.length ? (
+                      <ul className="mt-3 list-disc space-y-1 pl-4 text-xs text-emerald-100/80">
+                        {caseData.jurisdiction_process.current_profile.required_documents.map((item) => <li key={item}>{item}</li>)}
+                      </ul>
+                    ) : null}
+                    {caseData.jurisdiction_process.current_profile.service_level?.days ? (
+                      <p className="mt-2 text-xs text-emerald-100/80">
+                        Published service period: {caseData.jurisdiction_process.current_profile.service_level.days} days. {caseData.jurisdiction_process.current_profile.service_level.basis}
+                      </p>
+                    ) : null}
                     {caseData.jurisdiction_process.current_profile.source_url && (
                       <a href={caseData.jurisdiction_process.current_profile.source_url} target="_blank" rel="noreferrer" className="mt-2 inline-flex text-xs font-semibold text-emerald-200 underline underline-offset-2">
                         View official process source
