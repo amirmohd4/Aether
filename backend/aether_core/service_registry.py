@@ -117,7 +117,7 @@ SERVICE_DEFINITIONS = [
     ("mutation_copy", "Certified Copy of Mutation", "Revenue", ["citizen", "business", "developer", "bank"], ["copy of mutation", "mutation copy", "certified mutation copy"], None, "mutation_copy"),
     ("inheritance_mutation", "Inheritance / Succession Mutation", "Revenue", ["citizen", "business"], ["inheritance mutation", "warasat mutation", "succession mutation", "mutation after death"], None, "inheritance_mutation_order"),
     ("lien_mark_cancellation", "Land Lien Marking / Cancellation", "Revenue", ["citizen", "business", "developer", "bank"], ["lien marking", "mark lien on land", "lien cancellation", "cancellation of lien"], None, "lien_status_record"),
-    ("trade_license", "Trade License", "Municipal", ["citizen", "business", "developer"], ["trade license", "business license", "commercial license"], "restaurant", "trade_license"),
+    ("trade_license", "Trade License", "Municipal", ["citizen", "business", "developer"], ["trade license", "business license", "commercial license"], "trade_license", "trade_license"),
     ("building_permit", "Building Permit", "Municipal", ["citizen", "business", "developer"], ["building permit", "building permission"], "commercial_project", "building_permission"),
     ("water_connection", "Water Connection", "Municipal", ["citizen", "business"], ["water connection"], None, "water_connection"),
     ("birth_certificate", "Birth Certificate", "Health", ["citizen"], ["birth certificate"], None, "birth_certificate"),
