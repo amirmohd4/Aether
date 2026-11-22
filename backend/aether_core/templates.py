@@ -495,8 +495,99 @@ def generic_requirements(service: ServiceDefinition) -> List[Dict]:
     }]
 
 
+def trade_license_requirements() -> List[Dict]:
+    """Illustrative intake slots; not a legally verified J&K document checklist."""
+    return [
+        {
+            "id": "business_identity",
+            "name": "Applicant and business identity",
+            "documents": ["identity_document", "business_registration"],
+            "confidence": "jurisdiction-verification-required",
+            "reason": "Collect only what the competent authority confirms. This template does not establish mandatory documents.",
+        },
+        {
+            "id": "premises",
+            "name": "Business premises and occupancy",
+            "documents": ["lease_or_ownership", "address_proof"],
+            "confidence": "jurisdiction-verification-required",
+            "reason": "Premises evidence is an intake slot; accepted evidence and applicability must be confirmed against the current local rule pack.",
+        },
+        {
+            "id": "activity",
+            "name": "Business activity and operating details",
+            "documents": ["business_activity_details"],
+            "confidence": "jurisdiction-verification-required",
+            "reason": "Activity classification determines which additional clearances, if any, apply.",
+        },
+    ]
+
+
+def trade_license_tasks() -> List[TaskDefinition]:
+    """A municipal trade-licence workflow that preserves unverified rule and authority boundaries."""
+    return [
+        TaskDefinition("document_intake", "Validate applicant-supplied trade-licence evidence", "Aether", "DocumentWorker", operation="document"),
+        TaskDefinition("entity_check", "Review applicant and business identity evidence", "Municipal", "MunicipalWorker", ["document_intake"], operation="business_identity"),
+        TaskDefinition("premises_check", "Review premises and occupancy evidence", "Municipal", "MunicipalWorker", ["document_intake"], operation="premises"),
+        TaskDefinition("activity_check", "Classify declared business activity and location", "Municipal", "MunicipalWorker", ["document_intake"], operation="activity"),
+        TaskDefinition(
+            "applicable_clearance_screen",
+            "Identify additional clearances required by the verified local rule pack",
+            "Aether",
+            "ReconciliationWorker",
+            ["entity_check", "premises_check", "activity_check"],
+            operation="clearance_screen",
+            description="Do not assume fire, food-safety, labour, environmental or other approvals apply; resolve applicability from the current jurisdiction rule pack.",
+        ),
+        TaskDefinition(
+            "case_reconciliation",
+            "Reconcile evidence, jurisdiction and outstanding exceptions",
+            "Aether",
+            "ReconciliationWorker",
+            ["entity_check", "premises_check", "activity_check", "applicable_clearance_screen"],
+            operation="reconciliation",
+        ),
+        TaskDefinition(
+            "decision_package",
+            "Prepare evidence-backed municipal decision packet",
+            "Aether",
+            "DecisionWorker",
+            ["case_reconciliation"],
+            operation="decision_package",
+        ),
+        TaskDefinition(
+            "final_approval",
+            "Municipal officer decision and signature",
+            "Authorised Authority",
+            "HumanAuthorityWorker",
+            ["decision_package"],
+            authority_required=True,
+            description="Only an officer authorised by the competent municipal authority may make the statutory decision.",
+            operation="final_approval",
+        ),
+        TaskDefinition(
+            "record_update",
+            "Synchronise the decision with the official municipal record",
+            "Municipal",
+            "MunicipalWorker",
+            ["final_approval"],
+            operation="record_update",
+            description="Requires an authorised departmental connector; sandbox execution is not an official record update.",
+        ),
+        TaskDefinition(
+            "licence_output",
+            "Prepare licence output and applicant notification",
+            "Aether",
+            "OutcomeWorker",
+            ["record_update"],
+            operation="outcome",
+            description="A licence is issued only when the competent authority's official system confirms issuance.",
+        ),
+    ]
+
+
 TEMPLATES = {
     "restaurant": (restaurant_requirements, restaurant_tasks),
+    "trade_license": (trade_license_requirements, trade_license_tasks),
     "property_loan": (property_loan_requirements, property_loan_tasks),
     "commercial_project": (lambda: [], commercial_project_tasks),
 }
