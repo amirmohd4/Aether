@@ -12,7 +12,8 @@ def test_trade_license_uses_its_own_municipal_workflow_and_unverified_rule_bound
 
     assert case.service_id == "trade_license"
     assert case.service_name == "Trade License"
-    assert case.process_profile_snapshot is None
+    assert case.process_profile_snapshot is not None
+    assert case.process_profile_snapshot["status"] == "ready"
 
     task_ids = set(case.tasks)
     assert {
@@ -29,10 +30,9 @@ def test_trade_license_uses_its_own_municipal_workflow_and_unverified_rule_bound
     assert "food_application" not in task_ids
     assert "fire_application" not in task_ids
 
-    assert all(
-        item.get("confidence") == "jurisdiction-verification-required"
-        for item in case.requirements
-    )
+    assert case.requirements[0]["confidence"] == "source-backed"
+    assert case.requirements[1]["confidence"] == "source-backed"
+    assert case.requirements[2]["confidence"] == "authority-confirmation-required"
 
 
 def test_trade_license_workflow_pauses_at_authorised_municipal_decision():
