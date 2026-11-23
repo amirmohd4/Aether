@@ -65,3 +65,36 @@ def test_jk_trade_license_profile_is_source_backed_and_effective_dated():
     assert "singlewindow.jk.gov.in" in readiness["source_url"]
     assert len(readiness["required_documents"]) == 3
     assert readiness["service_level"]["days"] == 30
+
+
+def test_trade_license_preflight_uses_source_backed_jk_requirements():
+    from aether_core.requirements_engine import RequirementEngine
+
+    requirements = RequirementEngine().discover(
+        "I want to open a retail shop and apply for a municipal trade licence",
+        "business",
+        {"country": "India", "state": "Jammu and Kashmir", "district": "Jammu"},
+        {"documents": []},
+    )
+
+    by_id = {item.id: item for item in requirements}
+    assert {"business_identity", "premises", "activity"}.issubset(by_id)
+    assert by_id["business_identity"].authority_status == "source_backed"
+    assert by_id["premises"].authority_status == "source_backed"
+    assert by_id["activity"].authority_status == "unverified"
+
+
+def test_trade_license_requirements_do_not_claim_jk_rules_for_other_states():
+    from aether_core.requirements_engine import RequirementEngine
+
+    requirements = RequirementEngine().discover(
+        "I want to open a retail shop and apply for a municipal trade licence",
+        "business",
+        {"country": "India", "state": "Punjab", "district": "Gurdaspur"},
+        {"documents": []},
+    )
+
+    assert len(requirements) == 1
+    assert requirements[0].id == "service_intake"
+    assert requirements[0].authority_status == "registry_baseline"
+    assert requirements[0].confidence == "service-registry-mvp"
