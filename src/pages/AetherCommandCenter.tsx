@@ -122,6 +122,8 @@ type CaseResponse = {
       source_url?: string | null;
       effective_date?: string | null;
       verified_at?: string | null;
+      required_documents?: string[];
+      service_level?: { days?: number; basis?: string };
     };
   };
   execution_provenance?: {
@@ -211,11 +213,11 @@ function taskList(tasks: CaseResponse['tasks']): Task[] {
 }
 
 export const AetherCommandCenter: React.FC = () => {
-  const [objective, setObjective] = useState('I want to open a restaurant');
+  const [objective, setObjective] = useState('I want to open a retail shop and apply for a municipal trade licence');
   const [customerType, setCustomerType] = useState('business');
   const [country, setCountry] = useState('India');
-  const [state, setState] = useState('');
-  const [district, setDistrict] = useState('');
+  const [state, setState] = useState('Jammu and Kashmir');
+  const [district, setDistrict] = useState('Jammu');
   const [caseData, setCaseData] = useState<CaseResponse | null>(null);
   const [preflightSimulation, setPreflightSimulation] = useState<{
     status: string;
@@ -1274,6 +1276,41 @@ export const AetherCommandCenter: React.FC = () => {
                       This case runs against simulated government systems and fictional demo records. A completed task or outcome demonstrates Aether workflow behavior only; it does not submit an application, change an official record, or create a government approval.
                     </p>
                     <p className="mt-2 text-[10px] text-amber-100/70">{caseData.execution_provenance.note}</p>
+                  </div>
+                )}
+
+                {caseData.jurisdiction_process?.current_profile && (
+                  <div className="rounded-2xl border border-emerald-300/20 bg-emerald-300/5 p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-emerald-200">Jurisdiction rule pack</p>
+                      <span className="rounded-full border border-emerald-300/20 px-2 py-1 text-[10px] text-emerald-100">
+                        {caseData.jurisdiction_process.current_profile.status === 'ready' ? 'Core source-backed profile' : 'Verification incomplete'}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-xs leading-5 text-emerald-100/90">
+                      {caseData.jurisdiction_process.current_profile.authority || 'Responsible authority not confirmed'}
+                    </p>
+                    <p className="mt-1 text-[10px] text-emerald-100/70">
+                      Effective: {caseData.jurisdiction_process.current_profile.effective_date || 'Not stated'} · Verified: {caseData.jurisdiction_process.current_profile.verified_at || 'Not recorded'}
+                    </p>
+                    <p className="mt-2 text-[10px] leading-5 text-emerald-100/70">
+                      The cited core documents and published service period are source-backed. Confirm the current designated officer, appellate authority, activity-specific clearances and any newspaper-publication condition with the competent authority before live submissions.
+                    </p>
+                    {caseData.jurisdiction_process.current_profile.required_documents?.length ? (
+                      <ul className="mt-3 list-disc space-y-1 pl-4 text-xs text-emerald-100/80">
+                        {caseData.jurisdiction_process.current_profile.required_documents.map((item) => <li key={item}>{item}</li>)}
+                      </ul>
+                    ) : null}
+                    {caseData.jurisdiction_process.current_profile.service_level?.days ? (
+                      <p className="mt-2 text-xs text-emerald-100/80">
+                        Published service period: {caseData.jurisdiction_process.current_profile.service_level.days} days. {caseData.jurisdiction_process.current_profile.service_level.basis}
+                      </p>
+                    ) : null}
+                    {caseData.jurisdiction_process.current_profile.source_url && (
+                      <a href={caseData.jurisdiction_process.current_profile.source_url} target="_blank" rel="noreferrer" className="mt-2 inline-flex text-xs font-semibold text-emerald-200 underline underline-offset-2">
+                        View official process source
+                      </a>
+                    )}
                   </div>
                 )}
 
