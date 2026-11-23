@@ -270,13 +270,19 @@ export const AetherCommandCenter: React.FC = () => {
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
   const [authMessage, setAuthMessage] = useState('');
+  const [authMode, setAuthMode] = useState<'signin' | 'reset' | 'update'>('signin');
+  const [authNewPassword, setAuthNewPassword] = useState('');
   const [useDemoEvidence, setUseDemoEvidence] = useState(false);
   const [missingDocuments, setMissingDocuments] = useState<string[]>([]);
   const [selectedDocuments, setSelectedDocuments] = useState<string[]>([]);
   const [uploadDocumentType, setUploadDocumentType] = useState('');
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [intakeNotice, setIntakeNotice] = useState('');
-  const { session, loading: authLoading, required: authRequired, signIn, signOut } = useAuth();
+  const { session, loading: authLoading, required: authRequired, signIn, signOut, requestPasswordReset, updatePassword, passwordRecovery } = useAuth();
+
+  React.useEffect(() => {
+    if (passwordRecovery) setAuthMode('update');
+  }, [passwordRecovery]);
 
   React.useEffect(() => {
     if (session?.access_token) {
@@ -479,8 +485,25 @@ export const AetherCommandCenter: React.FC = () => {
 
   async function submitAuth() {
     setAuthMessage('');
-    const message = await signIn(authEmail, authPassword);
+    const message = await signIn(authEmail.trim(), authPassword);
     setAuthMessage(message || 'Signed in. If access is denied, ask the Aether team to provision your pilot workspace.');
+  }
+
+  async function submitPasswordReset() {
+    setAuthMessage('');
+    const message = await requestPasswordReset(authEmail.trim());
+    setAuthMessage(message || 'If an account exists for this email, a password-reset link has been sent. Check your inbox and spam folder.');
+  }
+
+  async function submitPasswordUpdate() {
+    setAuthMessage('');
+    if (authNewPassword.length < 12) {
+      setAuthMessage('Use a password with at least 12 characters.');
+      return;
+    }
+    const message = await updatePassword(authNewPassword);
+    setAuthMessage(message || 'Password updated. You can now continue to your workspace.');
+    if (!message) setAuthMode('signin');
   }
 
   async function startCase() {
@@ -772,28 +795,83 @@ export const AetherCommandCenter: React.FC = () => {
             <h1 className="mt-2 text-2xl font-bold">Secure workspace</h1>
             <p className="mt-2 text-sm text-slate-400">This is an invite-only pilot workspace. Sign in with an account provisioned by the Aether team. Public visitors can explore the overview and product sandbox without accessing case data.</p>
           </div>
-          <input
-            type="email"
-            value={authEmail}
-            onChange={(e) => setAuthEmail(e.target.value)}
-            placeholder="Email"
-            className="mb-3 w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm"
-          />
-          <input
-            type="password"
-            value={authPassword}
-            onChange={(e) => setAuthPassword(e.target.value)}
-            placeholder="Password"
-            className="w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm"
-          />
-          {authMessage && <p className="mt-3 text-xs text-cyan-200">{authMessage}</p>}
-<button
-            onClick={submitAuth}
-            disabled={authLoading || !authEmail || !authPassword}
-            className="mt-5 w-full rounded-xl bg-cyan-400 px-4 py-3 text-sm font-bold text-slate-950 disabled:opacity-50"
-          >
-            Sign in
-          </button>
+          {authMode === 'reset' ? (
+            <>
+              <p className="mb-3 text-sm text-slate-300">Enter your account email. We will send a secure password-reset link if the account exists.</p>
+              <input
+                type="email"
+                value={authEmail}
+                onChange={(e) => setAuthEmail(e.target.value)}
+                placeholder="Email"
+                autoComplete="email"
+                className="mb-3 w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm"
+              />
+              {authMessage && <p role="status" className="mt-3 text-sm text-cyan-200">{authMessage}</p>}
+              <button
+                onClick={submitPasswordReset}
+                disabled={authLoading || !authEmail}
+                className="mt-5 w-full rounded-xl bg-cyan-400 px-4 py-3 text-sm font-bold text-slate-950 disabled:opacity-50"
+              >
+                Send reset link
+              </button>
+              <button onClick={() => { setAuthMode('signin'); setAuthMessage(''); }} className="mt-3 w-full rounded-xl border border-white/10 px-4 py-3 text-sm text-slate-200">
+                Back to sign in
+              </button>
+            </>
+          ) : authMode === 'update' ? (
+            <>
+              <p className="mb-3 text-sm text-slate-300">Choose a new password with at least 12 characters.</p>
+              <input
+                type="password"
+                value={authNewPassword}
+                onChange={(e) => setAuthNewPassword(e.target.value)}
+                placeholder="New password"
+                autoComplete="new-password"
+                className="w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm"
+              />
+              {authMessage && <p role="status" className="mt-3 text-sm text-cyan-200">{authMessage}</p>}
+              <button
+                onClick={submitPasswordUpdate}
+                disabled={authLoading || authNewPassword.length < 12}
+                className="mt-5 w-full rounded-xl bg-cyan-400 px-4 py-3 text-sm font-bold text-slate-950 disabled:opacity-50"
+              >
+                Update password
+              </button>
+            </>
+          ) : (
+            <>
+              <input
+                type="email"
+                value={authEmail}
+                onChange={(e) => setAuthEmail(e.target.value)}
+                placeholder="Email"
+                autoComplete="email"
+                className="mb-3 w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm"
+              />
+              <input
+                type="password"
+                value={authPassword}
+                onChange={(e) => setAuthPassword(e.target.value)}
+                placeholder="Password"
+                autoComplete="current-password"
+                className="w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm"
+              />
+              {authMessage && <p role="status" className="mt-3 text-sm text-cyan-200">{authMessage}</p>}
+              <button
+                onClick={submitAuth}
+                disabled={authLoading || !authEmail || !authPassword}
+                className="mt-5 w-full rounded-xl bg-cyan-400 px-4 py-3 text-sm font-bold text-slate-950 disabled:opacity-50"
+              >
+                Sign in
+              </button>
+              <button
+                onClick={() => { setAuthMode('reset'); setAuthMessage(''); }}
+                className="mt-3 w-full text-sm font-medium text-cyan-200 underline underline-offset-4"
+              >
+                Forgot password?
+              </button>
+            </>
+          )}
         </section>
       </main>
     );
