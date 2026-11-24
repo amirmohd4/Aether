@@ -11,6 +11,7 @@ on:
     branches:
       - aether-mvp-build
       - main
+      - integration-check/public-preview-into-hardened
 
 jobs:
   backend:
@@ -31,6 +32,13 @@ jobs:
           AETHER_AUTH_MODE: none
           PYTHONPATH: .:..
         run: pytest -q
+      - name: Verify release smoke fails closed without authentication
+        run: |
+          set +e
+          env -u AETHER_API_TOKEN -u AETHER_API_KEY python ../scripts/release_smoke_test.py
+          status=$?
+          set -e
+          test "$status" -eq 2
 
   frontend:
     runs-on: ubuntu-latest

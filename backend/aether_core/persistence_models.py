@@ -137,6 +137,64 @@ class AetherNotificationRecord(Base):
     sent_at = Column(DateTime(timezone=True), nullable=True)
 
 
+class AetherAdminActionRecord(Base):
+    """Durable administrative work queue with idempotency, leases and outcomes."""
+    __tablename__ = "aether_v2_admin_actions"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "idempotency_key", name="uq_aether_admin_action_tenant_key"),
+        {"schema": PERSISTENCE_SCHEMA},
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    action_id = Column(String(64), nullable=False, unique=True, index=True)
+    tenant_id = Column(String(128), nullable=False, index=True)
+    case_id = Column(String(64), nullable=False, index=True)
+    action_type = Column(String(128), nullable=False, index=True)
+    status = Column(String(32), nullable=False, index=True)
+    priority = Column(String(16), nullable=False, default="normal")
+    idempotency_key = Column(String(256), nullable=False)
+    payload = Column(JSON, nullable=False, default=dict)
+    outcome = Column(JSON, nullable=True)
+    attempts = Column(Integer, nullable=False, default=0)
+    available_at = Column(DateTime(timezone=True), nullable=False, index=True)
+    locked_by = Column(String(128), nullable=True, index=True)
+    lease_until = Column(DateTime(timezone=True), nullable=True, index=True)
+    last_error = Column(Text, nullable=True)
+    requested_by = Column(String(128), nullable=False)
+    approved_by = Column(String(128), nullable=True)
+    approved_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False)
+    updated_at = Column(DateTime(timezone=True), nullable=False)
+    verified_at = Column(DateTime(timezone=True), nullable=True)
+
+
+class AetherAdminWorkItemRecord(Base):
+    """Actionable internal follow-up created by the automation dispatcher."""
+    __tablename__ = "aether_v2_admin_work_items"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "idempotency_key", name="uq_aether_admin_work_item_tenant_key"),
+        {"schema": PERSISTENCE_SCHEMA},
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    work_item_id = Column(String(64), nullable=False, unique=True, index=True)
+    tenant_id = Column(String(128), nullable=False, index=True)
+    case_id = Column(String(64), nullable=False, index=True)
+    source_action_id = Column(String(64), nullable=False, index=True)
+    idempotency_key = Column(String(256), nullable=False)
+    title = Column(String(512), nullable=False)
+    department = Column(String(128), nullable=False, default="unassigned")
+    priority = Column(String(16), nullable=False, default="normal")
+    status = Column(String(32), nullable=False, default="open", index=True)
+    required_evidence = Column(JSON, nullable=False, default=list)
+    details = Column(JSON, nullable=False, default=dict)
+    assigned_to = Column(String(128), nullable=True, index=True)
+    created_at = Column(DateTime(timezone=True), nullable=False)
+    updated_at = Column(DateTime(timezone=True), nullable=False)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    completion_evidence = Column(JSON, nullable=False, default=list)
+
+
 class AetherPaymentRecord(Base):
     __tablename__ = "aether_v2_payments"
     __table_args__ = (

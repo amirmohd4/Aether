@@ -2,7 +2,7 @@
 
 ## Verdict
 
-The repository is a release candidate for a controlled/sandbox Aether GovOS MVP. The software path from real-world objective to executable, auditable government workflow is implemented across the shared 34-service catalog.
+The repository is a release candidate for a controlled/sandbox Aether GovOS MVP. The software path from real-world objective to executable, auditable government workflow is implemented across the shared national service catalogue (61 core service-family definitions plus an extended India-wide taxonomy).
 
 This is not a declaration of live government authority.
 
@@ -10,7 +10,7 @@ This is not a declaration of live government authority.
 
 - Objective understanding with ranked candidates and clarification stop
 - Requirement discovery with source provenance and an explicit authority-status distinction
-- 34-service shared registry with customer eligibility and reusable process graphs
+- 61 core service-family definitions and extended India-wide service taxonomy with customer eligibility and reusable process graphs
 - Government ontology and dependency-aware work graph
 - Parallel task execution with stable idempotency keys and bounded retries
 - Durable task queue, task checkpoints and restart recovery

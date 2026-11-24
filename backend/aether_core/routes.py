@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Response
 import hashlib
+import os
+import re
 import secrets
 
 from .api_models import DocumentSubmissionRequest, HumanDecisionRequest, StartCaseRequest
@@ -25,8 +27,40 @@ from .preflight_simulator import simulate_submission
 from .document_reuse import build_document_reuse_candidates
 from .workload_intelligence import build_workload_snapshot
 from .rule_change_impact import diff_process_profiles
+from .administrative_intelligence import AdministrativeIntelligence
 from backend.database import SessionLocal
 from sqlalchemy import text
+
+def _validate_synthetic_document_upload(document_type: str, filename: str, mime_type: str | None, content: bytes) -> None:
+    """In synthetic-only preview mode, accept only the exact in-app generated fixture."""
+    enabled = os.getenv("AETHER_SYNTHETIC_ONLY_DOCUMENTS", "false").strip().lower() in {"1", "true", "yes"}
+    if not enabled:
+        return
+
+    safe_type = re.sub(r"[^a-z0-9_-]", "_", document_type, flags=re.IGNORECASE)
+    expected_filename = f"AETHER-SYNTHETIC-{safe_type}.txt"
+    expected_text = "\n".join([
+        "AETHER SYNTHETIC SAMPLE — NOT VALID FOR OFFICIAL USE",
+        "THIS FILE CONTAINS FICTIONAL TEST DATA ONLY.",
+        "",
+        f"Document type: {document_type}",
+        "Applicant: Demo Person 001 (fictional)",
+        "Organisation: Example Test Enterprise (fictional)",
+        "Address: 1 Example Lane, Sample Nagar, Demo State, India (fictional)",
+        "Reference: AETHER-DEMO-0001",
+        "Issue date: 2026-01-15 (illustrative only)",
+        "Status: TEST DATA — NO LEGAL OR GOVERNMENT EFFECT",
+        "",
+        "No real person, business, identity number, bank account, property, or government record is represented.",
+        "Do not alter this file to impersonate an official document.",
+    ]).encode("utf-8")
+
+    if mime_type != "text/plain" or filename != expected_filename or content != expected_text:
+        raise HTTPException(
+            status_code=400,
+            detail="Synthetic preview accepts only the exact in-app generated sample file. Real or third-party documents are not accepted.",
+        )
+
 
 router = APIRouter(prefix="/api/aether/v2", tags=["Aether V2"], dependencies=[Depends(require_principal)])
 requirements_engine = RequirementEngine()
@@ -46,10 +80,37 @@ def serialize(case, include_tasks: bool = True):
         case.customer_type,
         case.jurisdiction,
     )
+    task_execution_modes = {
+        task_id: (
+            "configured_external_connector"
+            if engine.workers.production_connector(state.definition.department)
+            else "synthetic"
+        )
+        for task_id, state in case.tasks.items()
+    }
     response = {
         "summary": case.summary(),
+        "execution_provenance": {
+            "case_mode": (
+                "configured_external_connector"
+                if task_execution_modes and all(
+                    mode == "configured_external_connector"
+                    for mode in task_execution_modes.values()
+                )
+                else "mixed"
+                if any(mode == "configured_external_connector" for mode in task_execution_modes.values())
+                else "synthetic"
+            ),
+            "task_modes": task_execution_modes,
+            "official_outcome_verified": False,
+            "note": (
+                "Configured connector presence does not itself prove official acceptance. "
+                "Official outcome verification requires a source-of-truth reconciliation contract."
+            ),
+        },
         "understanding": understanding.as_dict(),
         "requirements": case.requirements,
+        "jurisdiction_process": engine.process_profile_status(case),
         "human_actions": case.human_actions,
         "exceptions": case.exceptions,
         "evidence": case.evidence,
@@ -83,6 +144,35 @@ def serialize(case, include_tasks: bool = True):
             for task_id, state in case.tasks.items()
         }
     return response
+
+
+admin_intelligence = AdministrativeIntelligence()
+
+
+@router.get("/admin-intelligence/overview")
+def admin_intelligence_overview(principal: Principal = Depends(require_scope("cases:read"))):
+    """India-wide discovery overview; seed counts are not legal coverage claims."""
+    return admin_intelligence.overview()
+
+
+@router.get("/admin-intelligence/departments")
+def admin_intelligence_departments(principal: Principal = Depends(require_scope("cases:read"))):
+    """Department taxonomy with services matched from the shared India registry."""
+    return {"departments": admin_intelligence.departments()}
+
+
+@router.get("/admin-intelligence/journeys")
+def admin_intelligence_journeys(principal: Principal = Depends(require_scope("cases:read"))):
+    """Illustrative cross-department journey templates, never statutory checklists."""
+    return {"journeys": admin_intelligence.journeys()}
+
+
+@router.get("/admin-intelligence/journeys/{journey_id}")
+def admin_intelligence_journey(journey_id: str, principal: Principal = Depends(require_scope("cases:read"))):
+    journey = next((item for item in admin_intelligence.journeys() if item["id"] == journey_id), None)
+    if journey is None:
+        raise HTTPException(status_code=404, detail="Journey template not found")
+    return journey
 
 
 @router.post("/process/rule-impact")
@@ -148,15 +238,33 @@ def release_readiness():
         and record.get("verified_at")
         and record.get("effective_date")
     ]
+    try:
+        from backend.database import engine as database_engine
+        if database_engine.dialect.name == "sqlite":
+            from sqlalchemy import inspect
+            from .case_store import DatabaseCaseStore
+            DatabaseCaseStore().ensure_schema()
+            table_names = set(inspect(database_engine).get_table_names())
+            admin_action_queue_schema = {
+                "aether_v2_admin_actions",
+                "aether_v2_admin_work_items",
+            }.issubset(table_names)
+        else:
+            with SessionLocal() as db:
+                admin_action_queue_schema = bool(db.execute(text(
+                    "SELECT to_regclass('aether_internal.aether_v2_admin_actions') IS NOT NULL "
+                    "AND to_regclass('aether_internal.aether_v2_admin_work_items') IS NOT NULL"
+                )).scalar())
+    except Exception:
+        admin_action_queue_schema = False
+
     checks = {
         "database_url": bool(os.getenv("DATABASE_URL")),
         "supabase_auth": os.getenv("AETHER_AUTH_MODE", "none").strip().lower() == "supabase",
         "encryption_key": bool(os.getenv("AETHER_ENCRYPTION_KEY")),
-        "private_document_storage": (
-            document_store.storage_ready()
-            if production
-            else bool(os.getenv("SUPABASE_URL") and os.getenv("SUPABASE_SERVICE_ROLE_KEY"))
-        ),
+        "admin_action_queue_schema": admin_action_queue_schema,
+        # Verify the actual private bucket, server-enforced size limit and MIME allowlist.
+        "private_document_storage": document_store.storage_ready(),
         "production_connectors": engine.workers.production_connectors_configured(),
         "authoritative_rule_coverage": (
             {record["service_id"] for record in authoritative_rules}
@@ -169,10 +277,34 @@ def release_readiness():
             or os.getenv("AETHER_NOTIFICATION_SMS_URL")
         ),
         "payment_provider": bool(os.getenv("AETHER_PAYMENT_PROVIDER_URL")),
-        "worker_command_configured": bool(os.getenv("AETHER_WORKER_INTERVAL_SECONDS", "5")),
+        # A default polling interval is not proof that a worker process is configured.
+        "worker_command_configured": (
+            os.getenv("AETHER_EMBED_WORKER", "false").strip().lower() == "true"
+            or bool(os.getenv("AETHER_WORKER_COMMAND", "").strip())
+        ),
         "legacy_api_quarantined": os.getenv("AETHER_ENABLE_LEGACY_API", "true").strip().lower() == "false",
         "synthetic_mode": not engine.workers.production_connectors_configured(),
     }
+    controlled_blockers = []
+    for check, message in [
+        ("database_url", "DATABASE_URL is not configured"),
+        ("supabase_auth", "AETHER_AUTH_MODE must be supabase"),
+        ("encryption_key", "AETHER_ENCRYPTION_KEY is not configured"),
+        ("admin_action_queue_schema", "Administrative action queue migrations are not applied"),
+        ("private_document_storage", "Private document storage is missing or upload limits are not enforced"),
+        ("legacy_api_quarantined", "Legacy API routes are not quarantined"),
+        ("worker_command_configured", "Durable worker command is not configured"),
+        ("synthetic_mode", "Controlled beta must use synthetic government systems"),
+    ]:
+        if not checks[check]:
+            controlled_blockers.append(message)
+    if os.getenv("AETHER_WORKER_DISABLED", "").strip().lower() == "true":
+        controlled_blockers.append("Durable worker runtime is disabled")
+    if checks["encryption_key"]:
+        from .document_crypto import encryption_key_ready
+        if not encryption_key_ready():
+            controlled_blockers.append("AETHER_ENCRYPTION_KEY is invalid")
+
     blockers = []
     if production and not checks["database_url"]:
         blockers.append("DATABASE_URL is not configured")
@@ -184,8 +316,10 @@ def release_readiness():
         from .document_crypto import encryption_key_ready
         if not encryption_key_ready():
             blockers.append("AETHER_ENCRYPTION_KEY is invalid")
+    if production and not checks["admin_action_queue_schema"]:
+        blockers.append("Administrative action queue migrations are not applied")
     if production and not checks["private_document_storage"]:
-        blockers.append("Private Supabase document storage is not configured")
+        blockers.append("Private Supabase document storage is missing or upload limits are not enforced")
     if production and not checks["production_connectors"]:
         blockers.append("No live government connectors are configured")
     if production and not checks["authoritative_rule_coverage"]:
@@ -199,11 +333,12 @@ def release_readiness():
 
     return {
         "mode": "production" if production else "development_or_staging",
-        "ready_for_controlled_mvp": True,
+        "ready_for_controlled_mvp": not controlled_blockers,
+        "controlled_mvp_blockers": controlled_blockers,
         "ready_for_production": production and not blockers,
         "checks": checks,
         "blockers": blockers,
-        "note": "Controlled MVP can run against deterministic synthetic government systems. Production readiness requires authorized live connectors and authoritative rule coverage."
+        "note": "Controlled MVP readiness requires authentication, encrypted private storage, a durable worker and quarantined legacy routes; it uses synthetic government systems. Production readiness additionally requires authorized live connectors and authoritative effective-dated rule coverage."
     }
 
 
@@ -452,16 +587,31 @@ def list_api_keys(principal: Principal = Depends(require_scope("cases:read"))):
         raise HTTPException(status_code=503, detail="API key store unavailable") from exc
 
 
+def _require_tenant_admin(principal: Principal, target_tenant_id: str | None = None) -> str:
+    """Require a real Supabase-authenticated admin bound to the target tenant."""
+    if (
+        principal.auth_mode != "supabase"
+        or principal.role.lower() != "admin"
+        or not principal.tenant_id
+    ):
+        raise HTTPException(status_code=403, detail="Tenant administrator membership required")
+    if target_tenant_id is not None and target_tenant_id != principal.tenant_id:
+        raise HTTPException(status_code=403, detail="Administrators may manage memberships in their own tenant only")
+    return principal.tenant_id
+
+
 @router.get("/admin/memberships")
 def list_memberships(principal: Principal = Depends(require_role("admin"))):
+    tenant_id = _require_tenant_admin(principal)
     if engine.store is None:
         raise HTTPException(status_code=503, detail="Membership store unavailable")
     try:
         with SessionLocal() as db:
             rows = db.execute(text(
                 "SELECT user_id, tenant_id, role, status, department, jurisdiction, created_at, updated_at "
-                "FROM public.aether_memberships ORDER BY created_at DESC LIMIT 500"
-            )).mappings().all()
+                "FROM public.aether_memberships WHERE tenant_id = :tenant_id "
+                "ORDER BY created_at DESC LIMIT 500"
+            ), {"tenant_id": tenant_id}).mappings().all()
             return {"memberships": [dict(row) for row in rows]}
     except Exception as exc:
         raise HTTPException(status_code=503, detail="Membership store unavailable") from exc
@@ -472,10 +622,14 @@ def set_membership(data: Dict[str, Any], principal: Principal = Depends(require_
     required = {"user_id", "tenant_id", "role"}
     if not required.issubset(data):
         raise HTTPException(status_code=400, detail="user_id, tenant_id and role are required")
+    tenant_id = _require_tenant_admin(principal, str(data["tenant_id"]))
     allowed_roles = {"user", "citizen", "business", "bank", "developer", "insurer", "enterprise", "officer", "department_admin", "admin"}
     role = str(data["role"]).lower()
     if role not in allowed_roles:
         raise HTTPException(status_code=400, detail="Unsupported Aether role")
+    status = str(data.get("status", "active")).lower()
+    if status not in {"active", "inactive", "suspended"}:
+        raise HTTPException(status_code=400, detail="Membership status must be active, inactive, or suspended")
     try:
         with SessionLocal() as db:
             db.execute(text(
@@ -487,14 +641,14 @@ def set_membership(data: Dict[str, Any], principal: Principal = Depends(require_
                 "jurisdiction = EXCLUDED.jurisdiction, updated_at = now()"
             ), {
                 "user_id": data["user_id"],
-                "tenant_id": data["tenant_id"],
+                "tenant_id": tenant_id,
                 "role": role,
-                "status": str(data.get("status", "active")),
+                "status": status,
                 "department": data.get("department"),
                 "jurisdiction": __import__("json").dumps(data.get("jurisdiction") or {}),
             })
             db.commit()
-        return {"status": "updated", "user_id": data["user_id"], "tenant_id": data["tenant_id"], "role": role}
+        return {"status": "updated", "user_id": data["user_id"], "tenant_id": tenant_id, "role": role}
     except Exception as exc:
         raise HTTPException(status_code=503, detail="Membership store unavailable") from exc
 
@@ -544,6 +698,12 @@ def upload_case_document(
                 status_code=413,
                 detail="Document exceeds the configured upload limit",
             )
+        _validate_synthetic_document_upload(
+            document_type,
+            file.filename or "",
+            file.content_type,
+            content,
+        )
         stored = document_store.save(
             case_id=case_id,
             tenant_id=case.tenant_id or principal.tenant_id,
@@ -594,7 +754,8 @@ def upload_case_document(
             "case_status": resumed.status,
             "missing_documents": [],
             "document": document_summary(stored),
-            "case": serialize(resumed, include_tasks=False),
+            # The browser needs the resumed task graph to render the live case state.
+            "case": serialize(resumed, include_tasks=True),
         }
     except KeyError:
         raise HTTPException(status_code=404, detail="Case not found")
@@ -951,18 +1112,25 @@ def start_case(request: StartCaseRequest, principal: Principal = Depends(require
 
 
 def _authorize_case(case, principal: Principal) -> None:
-    if principal.auth_mode == "none" or principal.role.lower() == "admin":
+    if principal.auth_mode == "none":
         return
     same_owner = case.owner_user_id and case.owner_user_id == principal.subject
     same_tenant = case.tenant_id and principal.tenant_id and case.tenant_id == principal.tenant_id
+    # Admin is a tenant-scoped role, not a platform-wide superuser.
+    if principal.role.lower() == "admin":
+        if same_tenant:
+            return
+        raise HTTPException(status_code=404, detail="Case not found")
     if principal.auth_mode == "api_key" and same_tenant:
         return
     if principal.role.lower() in {"officer", "department_admin"} and same_tenant:
-        if principal.department and case.service_department:
-            if principal.department.lower() != case.service_department.lower():
-                raise HTTPException(status_code=404, detail="Case not found")
+        if principal.department and (
+            not case.service_department
+            or principal.department.lower() != case.service_department.lower()
+        ):
+            raise HTTPException(status_code=404, detail="Case not found")
         for key, value in (principal.jurisdiction or {}).items():
-            if value and case.jurisdiction.get(key) and case.jurisdiction.get(key) != value:
+            if value and case.jurisdiction.get(key) != value:
                 raise HTTPException(status_code=404, detail="Case not found")
         return
     if same_owner and (not case.tenant_id or not principal.tenant_id or same_tenant):
@@ -976,8 +1144,18 @@ def _list_visible_cases(
     limit: int = 50,
 ):
     safe_limit = max(1, min(limit, 100))
-    if principal.role.lower() == "admin" or principal.auth_mode == "none":
+    if principal.auth_mode == "none":
         return engine.store.list(status=status, limit=safe_limit)
+
+    # Tenant administrators may see all departments in their own tenant only.
+    if principal.role.lower() == "admin":
+        if not principal.tenant_id:
+            return []
+        return engine.store.list(
+            tenant_id=principal.tenant_id,
+            status=status,
+            limit=safe_limit,
+        )
 
     if principal.role.lower() in {"officer", "department_admin"} and principal.tenant_id:
         candidates = engine.store.list(

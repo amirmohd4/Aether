@@ -61,7 +61,63 @@ class JurisdictionProcessRegistry:
     """
 
     def __init__(self, profiles: List[JurisdictionProcessProfile] | None = None):
-        self._profiles = profiles or []
+        self._profiles = list(profiles or [])
+        if profiles is None:
+            self._profiles.append(JurisdictionProcessProfile(
+                service_id="trade_license",
+                country="India",
+                state="Jammu and Kashmir",
+                authority="J&K Housing & Urban Development Department / concerned Municipal Corporation; designated officer to be confirmed against SRO-247",
+                receiving_portal="https://jansugam.jk.gov.in/getServiceDesc.html?serviceId=16810006",
+                official_form_reference="J&K Housing & Urban Development Department circular HUD-PLANOCSS/34/2021-01 dated 29-10-2022; JanSugam service 16810006",
+                source_url="https://singlewindow.jk.gov.in/uploads/files/act_0434650001667037275.pdf",
+                effective_date="2022-10-29",
+                verified_at="2026-11-22",
+                steps=[
+                    {
+                        "name": "Applicant intake",
+                        "description": "JanSugam lists online, by-hand and kiosk submission for the municipal-corporation commercial-establishment NOC service.",
+                        "source_url": "https://jansugam.jk.gov.in/getServiceDesc.html?serviceId=16810006",
+                    },
+                    {
+                        "name": "Evidence preflight",
+                        "description": "Check proof of identity and one applicable legal-occupancy/land document. The 29-10-2022 circular lists commercial building permission, site plan, parking plan, or lease/rent deed if applicable under the occupancy evidence category.",
+                        "source_url": "https://singlewindow.jk.gov.in/uploads/files/act_0434650001667037275.pdf",
+                    },
+                    {
+                        "name": "Entity authority check",
+                        "description": "For a firm/company, confirm the application/authorization form is signed by an authorized person. Confirm applicability of any newspaper-publication requirement with the competent authority before treating it as a blocker.",
+                        "source_url": "https://singlewindow.jk.gov.in/uploads/files/act_0434650001667037275.pdf",
+                    },
+                    {
+                        "name": "Municipal scrutiny and decision",
+                        "description": "Route to the concerned Municipal Corporation's designated officer. Officer identity, delegation and detailed scrutiny sequence must be confirmed from the current SRO-247/departmental order.",
+                        "source_url": "https://singlewindow.jk.gov.in/uploads/files/act_0434650001667037275.pdf",
+                    },
+                    {
+                        "name": "Outcome reconciliation",
+                        "description": "Show an issued licence only after an authorised official system confirms the decision and licence record.",
+                        "source_url": "https://jmc.jk.gov.in/pddeservices.html",
+                    },
+                ],
+                required_documents=[
+                    "Proof of identity: one accepted document listed in the 29-10-2022 J&K circular (Electoral Identity Card, Passport, Driving Licence, Ration Card, government-agency photo identity card, PAN or Aadhaar).",
+                    "Legal occupancy/land evidence: the applicable document category listed in the circular (commercial building permission, site plan, parking plan, or lease/rent deed if applicable).",
+                    "For a firm/company: application/authorization form signed by an authorized person.",
+                ],
+                service_level={
+                    "days": 30,
+                    "basis": "JanSugam service 16810006 lists 30 days for the municipal-corporation commercial-establishment NOC; government holidays are excluded.",
+                    "source_url": "https://jansugam.jk.gov.in/getServiceDesc.html?serviceId=16810006",
+                },
+                authority_matrix=[
+                    {
+                        "role": "designated_officer",
+                        "authority": "Competent officer designated under the applicable J&K Public Services Guarantee notification/SRO-247",
+                        "verification_required": "Confirm current officer name, delegation and appellate authority with the department before pilot activation.",
+                    },
+                ],
+            ))
         path = os.getenv("AETHER_PROCESS_PROFILE_PATH", "").strip()
         if path:
             self._profiles.extend(self._load(Path(path)))
@@ -108,7 +164,17 @@ class JurisdictionProcessRegistry:
         def specificity(profile: JurisdictionProcessProfile) -> int:
             return int(bool(profile.state)) + int(bool(profile.district))
 
-        return max(candidates, key=specificity)
+        # Prefer the most jurisdiction-specific profile; when equally specific
+        # versions coexist, use the latest effective/verified record so a
+        # newly published rule revision is visible to open cases.
+        return max(
+            candidates,
+            key=lambda profile: (
+                specificity(profile),
+                profile.effective_date or "",
+                profile.verified_at or "",
+            ),
+        )
 
     def all(self) -> List[JurisdictionProcessProfile]:
         return list(self._profiles)

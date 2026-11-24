@@ -139,5 +139,95 @@ INDIA_PROCESS_PLAYBOOK = {
 }
 
 
+GENERIC_PROCESS_PLAYBOOK: Dict[str, Any] = {
+    "stages": [
+        "submission",
+        "case_registration",
+        "identity_and_eligibility",
+        "document_scrutiny",
+        "department_record_checks",
+        "cross_record_reconciliation",
+        "deficiency_or_query_if_needed",
+        "authorised_human_decision",
+        "post_decision_record_update",
+        "outcome_and_follow_up",
+    ],
+    "employee_work": [
+        "diarise",
+        "classify_service_and_jurisdiction",
+        "validate_evidence",
+        "route_department_checks",
+        "reconcile_responses",
+        "prepare_deficiency_or_query",
+        "assemble_decision_packet",
+        "track_authorised_decision",
+        "verify_post_decision_completion",
+    ],
+    "parallelizable": [
+        "identity_and_eligibility",
+        "document_validation",
+        "independent_department_record_checks",
+    ],
+    "citizen_wait_points": [
+        "missing_evidence_or_query",
+        "physical_or_in_person_action_if_required",
+        "authorised_decision",
+    ],
+    "human_boundary": [
+        "statutory_or_discretionary_decision_by_competent_authority",
+        "physical_action_if_required",
+    ],
+    "coverage": "generic_operational_archetype",
+    "disclaimer": "Generic execution pattern only. It is not a service-specific statutory sequence or official checklist; resolve applicable steps from a verified jurisdiction rule pack.",
+}
+
+
+MULTI_DEPARTMENT_PROCESS_PLAYBOOK: Dict[str, Any] = {
+    "stages": [
+        "submission",
+        "case_registration_and_routing",
+        "lead_department_scrutiny",
+        "parallel_contributor_department_checks",
+        "dependency_and_response_tracking",
+        "cross_department_reconciliation",
+        "consolidated_deficiency_or_query_if_needed",
+        "lead_authority_decision",
+        "post_decision_handoffs",
+        "outcome_and_follow_up",
+    ],
+    "employee_work": [
+        "assign_lead_department",
+        "create_department_work_packets",
+        "dispatch_parallel_checks",
+        "track_sla_and_dependencies",
+        "reconcile_conflicting_responses",
+        "prepare_consolidated_query",
+        "assemble_decision_brief",
+        "track_authority_decision",
+        "confirm_downstream_handoffs",
+    ],
+    "parallelizable": [
+        "identity_and_document_validation",
+        "independent_department_checks",
+        "technical_and_record_checks",
+    ],
+    "citizen_wait_points": [
+        "consolidated_deficiency_or_query",
+        "inspection_or_field_action_if_required",
+        "lead_authority_decision",
+    ],
+    "human_boundary": [
+        "statutory_decision_by_competent_lead_authority",
+        "physical_action_if_required",
+    ],
+    "coverage": "multi_department_operational_archetype",
+    "disclaimer": "Cross-department operating pattern only. Department participation, dependencies and legal sequence must be confirmed by a verified jurisdiction rule pack.",
+}
+
+
 def playbook_for(process_key: str) -> Dict[str, Any]:
-    return dict(INDIA_PROCESS_PLAYBOOK.get(process_key, INDIA_PROCESS_PLAYBOOK["certificate"]))
+    if process_key == "multi_department":
+        return dict(MULTI_DEPARTMENT_PROCESS_PLAYBOOK)
+    if process_key in INDIA_PROCESS_PLAYBOOK:
+        return dict(INDIA_PROCESS_PLAYBOOK[process_key])
+    return dict(GENERIC_PROCESS_PLAYBOOK)

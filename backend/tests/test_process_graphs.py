@@ -61,3 +61,25 @@ def test_work_graph_preserves_task_operation_metadata():
     graph = WorkGraphBuilder().build(service, tasks)
     assert graph.nodes["department_processing"].operation == "service_processing"
     assert graph.nodes["verification"].operation == "reconciliation"
+
+
+def test_unknown_service_playbook_uses_neutral_generic_archetype_not_certificate():
+    from aether_core.india_process_playbook import playbook_for
+
+    playbook = playbook_for("regulated_professional_license")
+
+    assert playbook["coverage"] == "generic_operational_archetype"
+    assert "deficiency_or_query_if_needed" in playbook["stages"]
+    assert "certificate" not in playbook["stages"]
+    assert "not a service-specific statutory sequence" in playbook["disclaimer"]
+
+
+def test_multi_department_playbook_exposes_parallel_handoffs_and_reconciliation():
+    from aether_core.india_process_playbook import playbook_for
+
+    playbook = playbook_for("multi_department")
+
+    assert playbook["coverage"] == "multi_department_operational_archetype"
+    assert "parallel_contributor_department_checks" in playbook["stages"]
+    assert "cross_department_reconciliation" in playbook["stages"]
+    assert "lead_authority_decision" in playbook["stages"]

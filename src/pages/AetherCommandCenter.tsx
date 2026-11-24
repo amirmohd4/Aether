@@ -114,6 +114,24 @@ type OperatorBrief = {
 };
 
 type CaseResponse = {
+  jurisdiction_process?: {
+    status: string;
+    current_profile?: {
+      status?: string;
+      authority?: string | null;
+      source_url?: string | null;
+      effective_date?: string | null;
+      verified_at?: string | null;
+      required_documents?: string[];
+      service_level?: { days?: number; basis?: string };
+    };
+  };
+  execution_provenance?: {
+    case_mode: string;
+    task_modes: Record<string, string>;
+    official_outcome_verified: boolean;
+    note: string;
+  };
   summary: {
     case_id: string;
     objective: string;
@@ -195,7 +213,7 @@ function taskList(tasks: CaseResponse['tasks']): Task[] {
 }
 
 export const AetherCommandCenter: React.FC = () => {
-  const [objective, setObjective] = useState('I want to open a restaurant');
+  const [objective, setObjective] = useState('I want to open a retail shop and apply for a municipal trade licence');
   const [customerType, setCustomerType] = useState('business');
   const [country, setCountry] = useState('India');
   const [state, setState] = useState('Jammu and Kashmir');
@@ -253,15 +271,20 @@ export const AetherCommandCenter: React.FC = () => {
   const [error, setError] = useState('');
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
-  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const [authMessage, setAuthMessage] = useState('');
-  const [useDemoEvidence, setUseDemoEvidence] = useState(true);
+  const [authMode, setAuthMode] = useState<'signin' | 'reset' | 'update'>('signin');
+  const [authNewPassword, setAuthNewPassword] = useState('');
+  const [useDemoEvidence, setUseDemoEvidence] = useState(false);
   const [missingDocuments, setMissingDocuments] = useState<string[]>([]);
   const [selectedDocuments, setSelectedDocuments] = useState<string[]>([]);
   const [uploadDocumentType, setUploadDocumentType] = useState('');
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [intakeNotice, setIntakeNotice] = useState('');
-  const { session, loading: authLoading, required: authRequired, signIn, signUp, signOut } = useAuth();
+  const { session, loading: authLoading, required: authRequired, signIn, signOut, requestPasswordReset, updatePassword, passwordRecovery } = useAuth();
+
+  React.useEffect(() => {
+    if (passwordRecovery) setAuthMode('update');
+  }, [passwordRecovery]);
 
   React.useEffect(() => {
     if (session?.access_token) {
@@ -464,10 +487,25 @@ export const AetherCommandCenter: React.FC = () => {
 
   async function submitAuth() {
     setAuthMessage('');
-    const message = authMode === 'signin'
-      ? await signIn(authEmail, authPassword)
-      : await signUp(authEmail, authPassword);
-    setAuthMessage(message || (authMode === 'signin' ? 'Signed in.' : 'Account created. Check your email if confirmation is enabled.'));
+    const message = await signIn(authEmail.trim(), authPassword);
+    setAuthMessage(message || 'Signed in. If access is denied, ask the Aether team to provision your pilot workspace.');
+  }
+
+  async function submitPasswordReset() {
+    setAuthMessage('');
+    const message = await requestPasswordReset(authEmail.trim());
+    setAuthMessage(message || 'If an account exists for this email, a password-reset link has been sent. Check your inbox and spam folder.');
+  }
+
+  async function submitPasswordUpdate() {
+    setAuthMessage('');
+    if (authNewPassword.length < 12) {
+      setAuthMessage('Use a password with at least 12 characters.');
+      return;
+    }
+    const message = await updatePassword(authNewPassword);
+    setAuthMessage(message || 'Password updated. You can now continue to your workspace.');
+    if (!message) setAuthMode('signin');
   }
 
   async function startCase() {
@@ -484,13 +522,17 @@ export const AetherCommandCenter: React.FC = () => {
           customer_type: customerType,
           jurisdiction: { country, state, district },
           inputs: {
-            documents: useDemoEvidence ? DEMO_DOCUMENTS : selectedDocuments,
-            owner_name: 'Demo Owner',
-            parcel_id: 'PARCEL-DEMO-001',
-            property_id: 'PROPERTY-DEMO-001',
-            company_id: 'COMPANY-DEMO-001',
-            project_id: 'PROJECT-DEMO-001',
+            // Only the explicit synthetic path may seed placeholder evidence and IDs.
+            // Guided intake starts with no submitted evidence; applicants upload real files.
+            documents: useDemoEvidence ? DEMO_DOCUMENTS : [],
             demo_mode: useDemoEvidence,
+            ...(useDemoEvidence ? {
+              owner_name: 'Demo Owner',
+              parcel_id: 'PARCEL-DEMO-001',
+              property_id: 'PROPERTY-DEMO-001',
+              company_id: 'COMPANY-DEMO-001',
+              project_id: 'PROJECT-DEMO-001',
+            } : {}),
           },
         }),
       });
@@ -521,6 +563,33 @@ export const AetherCommandCenter: React.FC = () => {
     if (!response.ok) return;
     const body = await response.json();
     setMissingDocuments(body.missing_documents || []);
+  }
+
+  function generateSyntheticSample() {
+    if (!uploadDocumentType) return;
+    const safeType = uploadDocumentType.replace(/[^a-z0-9_-]/gi, '_');
+    const sample = [
+      'AETHER SYNTHETIC SAMPLE — NOT VALID FOR OFFICIAL USE',
+      'THIS FILE CONTAINS FICTIONAL TEST DATA ONLY.',
+      '',
+      'Document type: ' + uploadDocumentType,
+      'Applicant: Demo Person 001 (fictional)',
+      'Organisation: Example Test Enterprise (fictional)',
+      'Address: 1 Example Lane, Sample Nagar, Demo State, India (fictional)',
+      'Reference: AETHER-DEMO-0001',
+      'Issue date: 2026-01-15 (illustrative only)',
+      'Status: TEST DATA — NO LEGAL OR GOVERNMENT EFFECT',
+      '',
+      'No real person, business, identity number, bank account, property, or government record is represented.',
+      'Do not alter this file to impersonate an official document.',
+    ].join('\n');
+    const generated = new File([sample], 'AETHER-SYNTHETIC-' + safeType + '.txt', {
+      type: 'text/plain',
+      lastModified: Date.now(),
+    });
+    setUploadFile(generated);
+    setIntakeNotice('Synthetic sample generated. It contains fictional data only and is not an official document.');
+    setError('');
   }
 
   async function uploadDocument() {
@@ -726,44 +795,85 @@ export const AetherCommandCenter: React.FC = () => {
           <div className="mb-6">
             <p className="text-sm font-semibold text-cyan-300">Aether GovOS</p>
             <h1 className="mt-2 text-2xl font-bold">Secure workspace</h1>
-            <p className="mt-2 text-sm text-slate-400">Sign in before accessing government case data.</p>
+            <p className="mt-2 text-sm text-slate-400">This is an invite-only pilot workspace. Sign in with an account provisioned by the Aether team. Public visitors can explore the overview and product sandbox without accessing case data.</p>
           </div>
-          <input
-            type="email"
-            value={authEmail}
-            onChange={(e) => setAuthEmail(e.target.value)}
-            placeholder="Email"
-            className="mb-3 w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm"
-          />
-          <input
-            type="password"
-            value={authPassword}
-            onChange={(e) => setAuthPassword(e.target.value)}
-            placeholder="Password"
-            className="w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm"
-          />
-          {authMessage && <p className="mt-3 text-xs text-cyan-200">{authMessage}</p>}
-                    <button
-            type="button"
-            onClick={simulateProcess}
-            disabled={!objective.trim() || loading}
-            className="mr-2 rounded-xl border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-[10px] font-semibold text-cyan-100 hover:bg-cyan-300/15 disabled:opacity-50"
-          >
-            Pre-check journey
-          </button>
-<button
-            onClick={submitAuth}
-            disabled={authLoading || !authEmail || !authPassword}
-            className="mt-5 w-full rounded-xl bg-cyan-400 px-4 py-3 text-sm font-bold text-slate-950 disabled:opacity-50"
-          >
-            {authMode === 'signin' ? 'Sign in' : 'Create account'}
-          </button>
-          <button
-            onClick={() => setAuthMode(authMode === 'signin' ? 'signup' : 'signin')}
-            className="mt-3 w-full rounded-xl border border-white/10 px-4 py-2 text-xs text-slate-300"
-          >
-            {authMode === 'signin' ? 'Create a new account' : 'Back to sign in'}
-          </button>
+          {authMode === 'reset' ? (
+            <>
+              <p className="mb-3 text-sm text-slate-300">Enter your account email. We will send a secure password-reset link if the account exists.</p>
+              <input
+                type="email"
+                value={authEmail}
+                onChange={(e) => setAuthEmail(e.target.value)}
+                placeholder="Email"
+                autoComplete="email"
+                className="mb-3 w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm"
+              />
+              {authMessage && <p role="status" className="mt-3 text-sm text-cyan-200">{authMessage}</p>}
+              <button
+                onClick={submitPasswordReset}
+                disabled={authLoading || !authEmail}
+                className="mt-5 w-full rounded-xl bg-cyan-400 px-4 py-3 text-sm font-bold text-slate-950 disabled:opacity-50"
+              >
+                Send reset link
+              </button>
+              <button onClick={() => { setAuthMode('signin'); setAuthMessage(''); }} className="mt-3 w-full rounded-xl border border-white/10 px-4 py-3 text-sm text-slate-200">
+                Back to sign in
+              </button>
+            </>
+          ) : authMode === 'update' ? (
+            <>
+              <p className="mb-3 text-sm text-slate-300">Choose a new password with at least 12 characters.</p>
+              <input
+                type="password"
+                value={authNewPassword}
+                onChange={(e) => setAuthNewPassword(e.target.value)}
+                placeholder="New password"
+                autoComplete="new-password"
+                className="w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm"
+              />
+              {authMessage && <p role="status" className="mt-3 text-sm text-cyan-200">{authMessage}</p>}
+              <button
+                onClick={submitPasswordUpdate}
+                disabled={authLoading || authNewPassword.length < 12}
+                className="mt-5 w-full rounded-xl bg-cyan-400 px-4 py-3 text-sm font-bold text-slate-950 disabled:opacity-50"
+              >
+                Update password
+              </button>
+            </>
+          ) : (
+            <>
+              <input
+                type="email"
+                value={authEmail}
+                onChange={(e) => setAuthEmail(e.target.value)}
+                placeholder="Email"
+                autoComplete="email"
+                className="mb-3 w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm"
+              />
+              <input
+                type="password"
+                value={authPassword}
+                onChange={(e) => setAuthPassword(e.target.value)}
+                placeholder="Password"
+                autoComplete="current-password"
+                className="w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm"
+              />
+              {authMessage && <p role="status" className="mt-3 text-sm text-cyan-200">{authMessage}</p>}
+              <button
+                onClick={submitAuth}
+                disabled={authLoading || !authEmail || !authPassword}
+                className="mt-5 w-full rounded-xl bg-cyan-400 px-4 py-3 text-sm font-bold text-slate-950 disabled:opacity-50"
+              >
+                Sign in
+              </button>
+              <button
+                onClick={() => { setAuthMode('reset'); setAuthMessage(''); }}
+                className="mt-3 w-full text-sm font-medium text-cyan-200 underline underline-offset-4"
+              >
+                Forgot password?
+              </button>
+            </>
+          )}
         </section>
       </main>
     );
@@ -873,10 +983,20 @@ export const AetherCommandCenter: React.FC = () => {
               <option value="citizen">Citizen</option>
             </select>
 
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              <input value={country} onChange={(e) => setCountry(e.target.value)} className="rounded-lg border border-white/10 bg-slate-900 p-2 text-xs" />
-              <input value={state} onChange={(e) => setState(e.target.value)} className="rounded-lg border border-white/10 bg-slate-900 p-2 text-xs" />
-              <input value={district} onChange={(e) => setDistrict(e.target.value)} className="rounded-lg border border-white/10 bg-slate-900 p-2 text-xs" />
+            <div className="mt-4">
+              <p className="mb-2 text-xs font-semibold text-slate-300">Where does this service apply?</p>
+              <p className="mb-3 text-[11px] text-slate-500">Enter the location of the property, business, person or activity involved. This may differ from your current home address. Aether uses it to look up the relevant government process.</p>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                <label className="text-[10px] text-slate-400">Country
+                  <input aria-label="Service country" value={country} onChange={(e) => setCountry(e.target.value)} placeholder="India" className="mt-1 w-full rounded-lg border border-white/10 bg-slate-900 p-2 text-xs text-slate-100" />
+                </label>
+                <label className="text-[10px] text-slate-400">State / UT
+                  <input aria-label="Service State or Union Territory" value={state} onChange={(e) => setState(e.target.value)} placeholder="Enter State / UT" className="mt-1 w-full rounded-lg border border-white/10 bg-slate-900 p-2 text-xs text-slate-100" />
+                </label>
+                <label className="text-[10px] text-slate-400">District
+                  <input aria-label="Service district" value={district} onChange={(e) => setDistrict(e.target.value)} placeholder="Enter district" className="mt-1 w-full rounded-lg border border-white/10 bg-slate-900 p-2 text-xs text-slate-100" />
+                </label>
+              </div>
             </div>
 
             <label className="mt-4 flex items-center gap-2 text-xs text-slate-300">
@@ -898,7 +1018,7 @@ export const AetherCommandCenter: React.FC = () => {
             <div className="mt-3 rounded-xl border border-cyan-300/10 bg-cyan-300/5 p-3 text-[11px] text-cyan-100">
               {useDemoEvidence
                 ? 'Demo mode supplies synthetic document types so the execution graph can be exercised end-to-end.'
-                : 'Guided intake mode creates the real case first and lets you record required document types before Aether executes.'}
+                : 'Guided intake creates an Aether workspace case only; it does not submit anything to a government authority.'}
             </div>
 
             <button
@@ -1089,7 +1209,7 @@ export const AetherCommandCenter: React.FC = () => {
                   <Activity className="mx-auto h-10 w-10 text-cyan-300" />
                   <h2 className="mt-4 text-xl font-semibold">No active case</h2>
                   <p className="mt-2 text-sm text-slate-400">
-                    Try a restaurant, property-loan, factory/project, licence, certificate, or other service from the 34-service MVP catalog.
+                    Try a government service from Aether's national service catalogue. Jurisdiction-specific rules are shown only when verified.
                   </p>
                 </div>
               </div>
@@ -1115,6 +1235,23 @@ export const AetherCommandCenter: React.FC = () => {
                     </div>
                     <span className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-cyan-200">{caseData.summary.status}</span>
                   </div>
+                  <div className="mt-4 rounded-xl border border-white/10 bg-slate-950/30 p-3">
+                    <p className="text-[11px] font-semibold text-slate-200">Applicable government rules</p>
+                    <p className="mt-1 text-[11px] text-slate-400">
+                      Service location: {[country, state, district].filter(Boolean).join(', ')}
+                    </p>
+                    {caseData.jurisdiction_process?.current_profile?.status === 'ready' ? (
+                      <>
+                        <p className="mt-2 text-[11px] text-emerald-200">Verified process profile loaded for this service and location.</p>
+                        {caseData.jurisdiction_process.current_profile.authority && <p className="mt-1 text-[10px] text-slate-400">Authority: {caseData.jurisdiction_process.current_profile.authority}</p>}
+                        {caseData.jurisdiction_process.current_profile.effective_date && <p className="mt-1 text-[10px] text-slate-400">Effective from: {caseData.jurisdiction_process.current_profile.effective_date}</p>}
+                        {caseData.jurisdiction_process.current_profile.verified_at && <p className="mt-1 text-[10px] text-slate-400">Last verified: {caseData.jurisdiction_process.current_profile.verified_at}</p>}
+                        {caseData.jurisdiction_process.current_profile.source_url && <a className="mt-2 inline-block text-[10px] text-cyan-300 underline" href={caseData.jurisdiction_process.current_profile.source_url} target="_blank" rel="noreferrer">View official source</a>}
+                      </>
+                    ) : (
+                      <p className="mt-2 text-[11px] text-amber-200">No complete verified process profile is available for this service and location. Aether will not invent local fees, deadlines or legal requirements; this case remains a controlled workflow.</p>
+                    )}
+                  </div>
                   <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/10">
                     <div className="h-full bg-cyan-400 transition-all" style={{ width: `${completedPercent}%` }} />
                   </div>
@@ -1124,6 +1261,58 @@ export const AetherCommandCenter: React.FC = () => {
                     <div>Human work remaining: <span className="text-slate-200">{caseData.summary.human_work_remaining} min (demo estimate)</span></div>
                   </div>
                 </div>
+
+                {caseData.execution_provenance && (
+                  <div className="rounded-2xl border border-amber-300/20 bg-amber-300/5 p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-amber-200">
+                        {caseData.execution_provenance.case_mode === 'synthetic' ? 'Synthetic sandbox execution' : 'Execution provenance'}
+                      </p>
+                      <span className="rounded-full border border-amber-300/20 px-2 py-1 text-[10px] text-amber-100">
+                        {caseData.execution_provenance.official_outcome_verified ? 'Authority verified' : 'Not government-verified'}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-xs leading-5 text-amber-100/90">
+                      This case runs against simulated government systems and fictional demo records. A completed task or outcome demonstrates Aether workflow behavior only; it does not submit an application, change an official record, or create a government approval.
+                    </p>
+                    <p className="mt-2 text-[10px] text-amber-100/70">{caseData.execution_provenance.note}</p>
+                  </div>
+                )}
+
+                {caseData.jurisdiction_process?.current_profile && (
+                  <div className="rounded-2xl border border-emerald-300/20 bg-emerald-300/5 p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-emerald-200">Jurisdiction rule pack</p>
+                      <span className="rounded-full border border-emerald-300/20 px-2 py-1 text-[10px] text-emerald-100">
+                        {caseData.jurisdiction_process.current_profile.status === 'ready' ? 'Core source-backed profile' : 'Verification incomplete'}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-xs leading-5 text-emerald-100/90">
+                      {caseData.jurisdiction_process.current_profile.authority || 'Responsible authority not confirmed'}
+                    </p>
+                    <p className="mt-1 text-[10px] text-emerald-100/70">
+                      Effective: {caseData.jurisdiction_process.current_profile.effective_date || 'Not stated'} · Verified: {caseData.jurisdiction_process.current_profile.verified_at || 'Not recorded'}
+                    </p>
+                    <p className="mt-2 text-[10px] leading-5 text-emerald-100/70">
+                      The cited core documents and published service period are source-backed. Confirm the current designated officer, appellate authority, activity-specific clearances and any newspaper-publication condition with the competent authority before live submissions.
+                    </p>
+                    {caseData.jurisdiction_process.current_profile.required_documents?.length ? (
+                      <ul className="mt-3 list-disc space-y-1 pl-4 text-xs text-emerald-100/80">
+                        {caseData.jurisdiction_process.current_profile.required_documents.map((item) => <li key={item}>{item}</li>)}
+                      </ul>
+                    ) : null}
+                    {caseData.jurisdiction_process.current_profile.service_level?.days ? (
+                      <p className="mt-2 text-xs text-emerald-100/80">
+                        Published service period: {caseData.jurisdiction_process.current_profile.service_level.days} days. {caseData.jurisdiction_process.current_profile.service_level.basis}
+                      </p>
+                    ) : null}
+                    {caseData.jurisdiction_process.current_profile.source_url && (
+                      <a href={caseData.jurisdiction_process.current_profile.source_url} target="_blank" rel="noreferrer" className="mt-2 inline-flex text-xs font-semibold text-emerald-200 underline underline-offset-2">
+                        View official process source
+                      </a>
+                    )}
+                  </div>
+                )}
 
                 {caseData.operator?.friction?.bottleneck && (
                   <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
@@ -1306,7 +1495,7 @@ export const AetherCommandCenter: React.FC = () => {
                       <div>
                         <h3 className="font-semibold">Guided document intake</h3>
                         <p className="mt-1 text-xs text-slate-400">
-                          Select the document types you have supplied. Aether records intake metadata, supports real file upload, and uses extracted text in the document worker when available.
+                          Select sample document types to exercise Aether's intake and validation workflow. This is a sandbox case, not a government filing.
                         </p>
                       </div>
                       <span className="text-xs text-amber-200">{missingDocuments.length} missing</span>
@@ -1339,23 +1528,25 @@ export const AetherCommandCenter: React.FC = () => {
                     </button>
 
                     <div className="mt-4 rounded-xl border border-white/10 bg-slate-950/40 p-3">
-                      <p className="text-[11px] font-semibold text-slate-200">Upload actual document</p>
+                      <p className="text-[11px] font-semibold text-slate-200">Upload a sample document</p>
                       <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
                         <select
                           value={uploadDocumentType}
-                          onChange={(e) => setUploadDocumentType(e.target.value)}
+                          onChange={(e) => { setUploadDocumentType(e.target.value); setUploadFile(null); }}
                           className="rounded-lg border border-white/10 bg-slate-900 p-2 text-xs"
                         >
-                          <option value="">Choose required type</option>
+                          <option value="">Choose sample type</option>
                           {missingDocuments.map((document) => (
                             <option key={document} value={document}>{document}</option>
                           ))}
                         </select>
                         <input
                           type="file"
+                          accept=".txt,text/plain"
                           onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
                           className="rounded-lg border border-white/10 bg-slate-900 p-2 text-xs text-slate-300"
                         />
+                        <p className="mt-2 text-[10px] leading-4 text-amber-200/80">Synthetic preview accepts only Aether-generated .txt sample files. Do not upload Aadhaar, PAN, bank, health, tax, land, or any real personal or confidential record.</p>
                         <button
                           onClick={uploadDocument}
                           disabled={loading || !uploadDocumentType || !uploadFile}
@@ -1363,6 +1554,17 @@ export const AetherCommandCenter: React.FC = () => {
                         >
                           Upload
                         </button>
+                      </div>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={generateSyntheticSample}
+                          disabled={loading || !uploadDocumentType}
+                          className="rounded-lg border border-emerald-300/30 px-3 py-2 text-xs font-semibold text-emerald-100 disabled:opacity-50"
+                        >
+                          Generate synthetic sample file
+                        </button>
+                        {uploadFile && <span className="text-[10px] text-emerald-200">Selected: {uploadFile.name}</span>}
                       </div>
                     </div>
                   </div>
@@ -1409,7 +1611,10 @@ export const AetherCommandCenter: React.FC = () => {
                   <div className="rounded-2xl border border-violet-300/20 bg-violet-300/5 p-5">
                     <div className="flex items-center gap-2">
                       <UserRound className="h-5 w-5 text-violet-300" />
-                      <h3 className="font-semibold">Human authority boundary</h3>
+                      <h3 className="font-semibold">Simulated human-review checkpoint</h3>
+                      <p className="mt-2 text-xs text-violet-100/80">
+                        These controls record a demo decision inside Aether only. They do not represent a real government officer, statutory approval, or official rejection.
+                      </p>
                     </div>
                     {caseData.human_actions.map((action) => (
                       <div key={action.task_id} className="mt-4 flex flex-col gap-3 rounded-xl bg-black/20 p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -1437,14 +1642,14 @@ export const AetherCommandCenter: React.FC = () => {
                                 disabled={loading}
                                 className="rounded-lg bg-violet-300 px-4 py-2 text-xs font-bold text-slate-950 disabled:opacity-50"
                               >
-                                Approve / continue
+                                Record simulated approval
                               </button>
                               <button
                                 onClick={() => continueHumanTask(action.task_id, false)}
                                 disabled={loading}
                                 className="rounded-lg border border-red-300/20 bg-red-300/10 px-4 py-2 text-xs font-bold text-red-100 disabled:opacity-50"
                               >
-                                Reject
+                                Record simulated rejection
                               </button>
                             </div>
                           </div>

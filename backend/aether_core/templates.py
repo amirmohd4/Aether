@@ -495,8 +495,104 @@ def generic_requirements(service: ServiceDefinition) -> List[Dict]:
     }]
 
 
+def trade_license_requirements() -> List[Dict]:
+    """Illustrative intake slots; not a legally verified J&K document checklist."""
+    return [
+        {
+            "id": "business_identity",
+            "name": "Proof of identity and entity authority",
+            "documents": ["identity_document", "business_registration"],
+            "source": "J&K Housing & Urban Development Department circular dated 29-10-2022",
+            "confidence": "source-backed",
+            "authority_status": "source_backed",
+            "reason": "The circular lists accepted identity proof and requires a firm/company application or authorization form to be signed by an authorised person. Confirm the exact entity evidence with the receiving office.",
+        },
+        {
+            "id": "premises",
+            "name": "Legal occupancy / land evidence",
+            "documents": ["lease_or_ownership", "site_plan", "building_plan"],
+            "source": "J&K Housing & Urban Development Department circular dated 29-10-2022",
+            "confidence": "source-backed",
+            "authority_status": "source_backed",
+            "reason": "The circular identifies the applicable legal-occupancy/land document category, including commercial building permission, site plan, parking plan, or lease/rent deed if applicable. These are alternatives/applicable items, not a blanket requirement to upload every item.",
+        },
+        {
+            "id": "activity",
+            "name": "Business activity and any conditional notice / clearance",
+            "documents": [],
+            "confidence": "authority-confirmation-required",
+            "authority_status": "unverified",
+            "reason": "Confirm activity-specific clearances and any newspaper-publication requirement with the competent municipal authority; do not infer them from this general trade-licence circular.",
+        },
+    ]
+
+
+def trade_license_tasks() -> List[TaskDefinition]:
+    """A municipal trade-licence workflow that preserves unverified rule and authority boundaries."""
+    return [
+        TaskDefinition("document_intake", "Validate applicant-supplied trade-licence evidence", "Aether", "DocumentWorker", operation="document"),
+        TaskDefinition("entity_check", "Review applicant and business identity evidence", "Municipal", "MunicipalWorker", ["document_intake"], operation="business_identity"),
+        TaskDefinition("premises_check", "Review premises and occupancy evidence", "Municipal", "MunicipalWorker", ["document_intake"], operation="premises"),
+        TaskDefinition("activity_check", "Classify declared business activity and location", "Municipal", "MunicipalWorker", ["document_intake"], operation="activity"),
+        TaskDefinition(
+            "applicable_clearance_screen",
+            "Identify additional clearances required by the verified local rule pack",
+            "Aether",
+            "ReconciliationWorker",
+            ["entity_check", "premises_check", "activity_check"],
+            operation="clearance_screen",
+            description="Do not assume fire, food-safety, labour, environmental or other approvals apply; resolve applicability from the current jurisdiction rule pack.",
+        ),
+        TaskDefinition(
+            "case_reconciliation",
+            "Reconcile evidence, jurisdiction and outstanding exceptions",
+            "Aether",
+            "ReconciliationWorker",
+            ["entity_check", "premises_check", "activity_check", "applicable_clearance_screen"],
+            operation="reconciliation",
+        ),
+        TaskDefinition(
+            "decision_package",
+            "Prepare evidence-backed municipal decision packet",
+            "Aether",
+            "DecisionWorker",
+            ["case_reconciliation"],
+            operation="decision_package",
+        ),
+        TaskDefinition(
+            "final_approval",
+            "Municipal officer decision and signature",
+            "Authorised Authority",
+            "HumanAuthorityWorker",
+            ["decision_package"],
+            authority_required=True,
+            description="Only an officer authorised by the competent municipal authority may make the statutory decision.",
+            operation="final_approval",
+        ),
+        TaskDefinition(
+            "record_update",
+            "Synchronise the decision with the official municipal record",
+            "Municipal",
+            "MunicipalWorker",
+            ["final_approval"],
+            operation="record_update",
+            description="Requires an authorised departmental connector; sandbox execution is not an official record update.",
+        ),
+        TaskDefinition(
+            "licence_output",
+            "Prepare licence output and applicant notification",
+            "Aether",
+            "OutcomeWorker",
+            ["record_update"],
+            operation="outcome",
+            description="A licence is issued only when the competent authority's official system confirms issuance.",
+        ),
+    ]
+
+
 TEMPLATES = {
     "restaurant": (restaurant_requirements, restaurant_tasks),
+    "trade_license": (trade_license_requirements, trade_license_tasks),
     "property_loan": (property_loan_requirements, property_loan_tasks),
     "commercial_project": (lambda: [], commercial_project_tasks),
 }
@@ -508,6 +604,10 @@ def infer_template(objective: str, customer_type: str, service: ServiceDefinitio
     # specialized workflow. A service being related to a domain is not enough;
     # this prevents a simple trade licence or property registration request
     # from silently becoming a restaurant/project workflow.
+    if service and service.template == "trade_license":
+        has_trade_licence_intent = any(x in text for x in ["trade license", "trade licence", "business license", "business licence"])
+        has_retail_shop_context = any(x in text for x in ["retail shop", "open a shop", "open shop", "shop premises"])
+        return "trade_license" if has_trade_licence_intent and has_retail_shop_context else "generic"
     if service and service.template == "restaurant":
         return "restaurant" if any(x in text for x in ["restaurant", "cafe", "food business", "food license", "fssai"]) else "generic"
     if service and service.template == "property_loan":

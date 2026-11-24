@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 
 from .rule_registry import RuleRegistry
 from .service_registry import ServiceRegistry
-from .templates import generic_requirements, property_loan_requirements, restaurant_requirements
+from .templates import TEMPLATES, generic_requirements, infer_template
 
 
 @dataclass
@@ -50,10 +50,18 @@ class RequirementEngine:
         service = self.registry.resolve(objective, customer_type)
         text = f"{objective} {customer_type}".lower()
 
-        if "restaurant" in text or "cafe" in text or "food business" in text:
-            raw = restaurant_requirements()
-        elif any(x in text for x in ["loan", "bank", "mortgage", "property verification"]) and service:
-            raw = property_loan_requirements()
+        template_name = infer_template(objective, customer_type, service)
+        if template_name in TEMPLATES:
+            requirement_fn, _ = TEMPLATES[template_name]
+            raw = requirement_fn()
+            # A trade-licence profile is currently source-backed only for J&K.
+            # Other jurisdictions receive a clearly labelled registry baseline.
+            if template_name == "trade_license" and jurisdiction.get("state") != "Jammu and Kashmir":
+                raw = generic_requirements(service) if service else []
+            # The commercial-project template intentionally has no universal
+            # document checklist; retain its service-specific baseline instead.
+            if not raw and service:
+                raw = generic_requirements(service)
         elif service:
             raw = generic_requirements(service)
         else:
@@ -88,7 +96,7 @@ class RequirementEngine:
                 verified_at=req.get("verified_at") or (rule.verified_at if rule else None),
                 confidence=req.get("confidence", "mvp"),
                 rule_id=rule.rule_id if rule else None,
-                authority_status="source_backed" if rule else "registry_baseline",
+                authority_status=req.get("authority_status") or ("source_backed" if rule else "registry_baseline"),
             ))
         return decisions
 

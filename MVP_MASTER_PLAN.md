@@ -10,11 +10,11 @@ Objective → understand → discover requirements → create case → build gov
 
 ## Controlled-MVP status
 
-**Controlled/sandbox MVP: COMPLETE.**
+**Core software scope: IMPLEMENTED. Controlled-beta launch gate: NOT YET VERIFIED.**
 
-The planned controlled-MVP software and deployment gate are complete. Aether can run deterministic, non-authoritative government execution scenarios using the unified Command Center, persistent case/work-graph engine, worker runtime, private document storage, audit trail, RBAC and service marketplace.
+The repository contains the planned controlled-MVP software capabilities and a passing development-branch CI baseline. However, a successful code build is not proof that the current release candidate is deployed or operating end to end. As of 2026-11-13, the existing Supabase Free project has been restored and its schema/RLS/private bucket are verified, but Render still deploys older commits from separate branches. Deployed environment configuration, live readiness, staging E2E, worker execution and rollback are not yet verified.
 
-This is a release status for the controlled/sandbox product, not a claim of live government authority.
+This is a software-scope status for synthetic/sandbox workflows, not a public-launch approval or a claim of live government authority. The current go/no-go decision is maintained in `docs/RELEASE_READINESS.md`.
 
 ## Completed product backbone
 
@@ -43,30 +43,24 @@ This is a release status for the controlled/sandbox product, not a claim of live
 - Supabase RLS/security hardening
 - Automated backend/frontend CI and deployed smoke testing
 
-## Deployment validation completed
+## Deployment validation history (re-verify before launch)
 
 ### GitHub
-The final release line has passing backend tests, frontend build/typecheck and deployment smoke testing.
+The integrated development release candidate has passing backend tests, frontend lint/build and combined CI. Always re-run and verify workflows on the exact release commit before merge.
 
 ### Supabase
-The connected Aether project has the required persistence/operational migrations applied, the private document bucket, RLS enabled on the exposed legacy and internal execution data, explicit server-only runtime policies, and no current security-advisor lints.
+The existing Free project was restored to ACTIVE_HEALTHY on 2026-11-13. Live database inspection confirmed ten applied migrations, 13 public application tables, ten internal execution tables, RLS enabled across those application tables, a restricted `aether_runtime` role, a private `aether-documents` bucket and no Security/Health Advisor lints. These database checks do not prove the deployed Render backend has working credentials or that its auth/storage operations succeed.
 
 The runtime database role has only the access needed by the Aether server/worker and does not require database/schema creation privileges.
 
-### Render
-The Aether backend is live at the configured Render URL.
+### Render and frontend
+Historical deployment checks in this document are stale until repeated against the current release. The connected Render workspace currently has:
+- `aether-backend` on `main`, latest recorded live commit `f64148aad10a5f8f586efde0cefe7a817fe6d996` (2026-10-15).
+- `aether-public-demo` on `launch/public-research-preview`, latest recorded live commit `eb148e6dc6866ea0a5214b01d9f908a89d94a264` (2026-10-29).
+- No separate `aether-worker` service, despite its declaration in `render.yaml`.
+- Current release-candidate branch is not deployed to either service. No fresh health/readiness, worker-tick or staging E2E evidence is available.
 
-Verified:
-- Docker release starts successfully
-- `/health` returns HTTP 200
-- `/ready` reports the database ready
-- worker connects to Supabase successfully
-- worker produces successful durable ticks
-- managed PostgreSQL is migration-owned; runtime no longer attempts schema creation
-- worker failure backoff protects the service from connection storms
-
-### Vercel
-The Aether Command Center frontend is deployed successfully through the connected Vercel projects. Netlify is no longer part of the official deployment stack.
+The repository contains frontend deployment configuration, but the currently active frontend provider, deployment commit and frontend/backend pairing must be independently verified.
 
 ## Controlled-MVP boundaries
 

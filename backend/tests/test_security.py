@@ -37,8 +37,46 @@ def test_cross_tenant_user_cannot_access_case():
         raise AssertionError("cross-tenant access should be rejected")
 
 
-def test_admin_can_access_case():
-    _authorize_case(_case(), Principal("admin-1", "admin", "tenant-x", "supabase"))
+def test_admin_can_access_case_within_own_tenant():
+    _authorize_case(_case(), Principal("admin-1", "admin", "tenant-1", "supabase"))
+
+
+def test_admin_cannot_access_case_in_another_tenant():
+    try:
+        _authorize_case(_case(), Principal("admin-1", "admin", "tenant-x", "supabase"))
+    except HTTPException as exc:
+        assert exc.status_code == 404
+    else:
+        raise AssertionError("tenant admin must not access another tenant's case")
+
+
+def test_admin_case_listing_is_limited_to_own_tenant(monkeypatch):
+    from aether_core.routes import _list_visible_cases
+
+    captured = {}
+
+    def fake_list(**kwargs):
+        captured.update(kwargs)
+        return [{"case_id": "A-TENANT-1"}]
+
+    monkeypatch.setattr("aether_core.routes.engine.store.list", fake_list)
+    visible = _list_visible_cases(
+        Principal("admin-1", "admin", "tenant-1", "supabase"),
+        limit=10,
+    )
+
+    assert visible == [{"case_id": "A-TENANT-1"}]
+    assert captured["tenant_id"] == "tenant-1"
+
+
+def test_admin_without_tenant_cannot_list_cases(monkeypatch):
+    from aether_core.routes import _list_visible_cases
+
+    def forbidden_list(**kwargs):
+        raise AssertionError("tenantless admin must not query cases")
+
+    monkeypatch.setattr("aether_core.routes.engine.store.list", forbidden_list)
+    assert _list_visible_cases(Principal("admin-1", "admin", None, "supabase")) == []
 
 
 def test_officer_cannot_access_case_outside_authorized_department():
@@ -63,6 +101,34 @@ def test_officer_cannot_access_case_outside_authorized_jurisdiction():
         assert exc.status_code == 404
     else:
         raise AssertionError("cross-jurisdiction officer access should be rejected")
+
+
+def test_officer_cannot_access_case_when_department_metadata_is_missing():
+    case = _case()
+    case.service_department = None
+    try:
+        _authorize_case(
+            case,
+            Principal("officer-4", "officer", "tenant-1", "supabase", "Revenue"),
+        )
+    except HTTPException as exc:
+        assert exc.status_code == 404
+    else:
+        raise AssertionError("missing department metadata must fail closed")
+
+
+def test_officer_cannot_access_case_when_scoped_jurisdiction_is_missing():
+    case = _case()
+    case.jurisdiction = {"country": "India"}
+    try:
+        _authorize_case(
+            case,
+            Principal("officer-5", "officer", "tenant-1", "supabase", "Revenue", {"country": "India", "state": "Jammu and Kashmir"}),
+        )
+    except HTTPException as exc:
+        assert exc.status_code == 404
+    else:
+        raise AssertionError("missing scoped jurisdiction must fail closed")
 
 
 
@@ -111,3 +177,76 @@ def test_officer_case_listing_filters_department_and_jurisdiction(monkeypatch):
     )
 
     assert [item["case_id"] for item in visible] == [allowed.case_id]
+
+
+def test_staging_static_api_key_works_alongside_supabase_and_is_read_scoped(monkeypatch):
+    from starlette.requests import Request
+    from aether_core.security import require_principal
+
+    monkeypatch.setenv("AETHER_AUTH_MODE", "supabase")
+    monkeypatch.setenv("AETHER_ENV", "staging")
+    monkeypatch.setenv("AETHER_ALLOW_STATIC_STAGING_API_KEY", "true")
+    monkeypatch.setenv("AETHER_API_KEY", "staging-test-secret")
+    monkeypatch.delenv("AETHER_API_KEY_SCOPES", raising=False)
+
+    request = Request({
+        "type": "http",
+        "headers": [(b"x-aether-api-key", b"staging-test-secret")],
+    })
+    principal = require_principal(request)
+
+    assert principal.auth_mode == "api_key"
+    assert principal.role == "service"
+    assert principal.subject == "staging-smoke"
+    assert principal.scopes == frozenset({"cases:read"})
+
+
+def test_static_staging_api_key_is_not_enabled_by_default(monkeypatch):
+    from starlette.requests import Request
+    import aether_core.security as security
+
+    monkeypatch.setenv("AETHER_AUTH_MODE", "supabase")
+    monkeypatch.setenv("AETHER_ENV", "production")
+    monkeypatch.setenv("AETHER_ALLOW_STATIC_STAGING_API_KEY", "true")
+    monkeypatch.setenv("AETHER_API_KEY", "staging-test-secret")
+
+    called = {}
+    def fake_api_key_principal(request, *, allow_static=False):
+        called["allow_static"] = allow_static
+        raise HTTPException(status_code=401, detail="invalid")
+
+    monkeypatch.setattr(security, "_api_key_principal", fake_api_key_principal)
+    request = Request({
+        "type": "http",
+        "headers": [(b"x-aether-api-key", b"staging-test-secret")],
+    })
+    try:
+        security.require_principal(request)
+    except HTTPException as exc:
+        assert exc.status_code == 401
+    else:
+        raise AssertionError("production must not accept the static staging key")
+    assert called["allow_static"] is False
+
+
+
+def test_tenant_admin_membership_scope_rejects_cross_tenant_and_non_human_admins():
+    from aether_core.routes import _require_tenant_admin
+
+    assert _require_tenant_admin(
+        Principal("admin-1", "admin", "tenant-1", "supabase"),
+        "tenant-1",
+    ) == "tenant-1"
+
+    for principal, target in [
+        (Principal("admin-1", "admin", "tenant-1", "supabase"), "tenant-2"),
+        (Principal("admin-1", "admin", None, "supabase"), None),
+        (Principal("service-key", "admin", "tenant-1", "api_key"), "tenant-1"),
+        (Principal("demo", "demo", "demo", "none"), "demo"),
+    ]:
+        try:
+            _require_tenant_admin(principal, target)
+        except HTTPException as exc:
+            assert exc.status_code == 403
+        else:
+            raise AssertionError("membership administration must be tenant-bound to a human admin")
