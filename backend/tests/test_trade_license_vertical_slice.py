@@ -98,3 +98,17 @@ def test_trade_license_requirements_do_not_claim_jk_rules_for_other_states():
     assert requirements[0].id == "service_intake"
     assert requirements[0].authority_status == "registry_baseline"
     assert requirements[0].confidence == "service-registry-mvp"
+
+
+def test_case_creation_uses_same_jurisdictional_rule_provenance_as_preflight():
+    engine = AetherExecutionEngine()
+    case = engine.create_case(
+        "I want to open a retail shop and apply for a municipal trade licence",
+        "business",
+        {"country": "India", "state": "Punjab", "district": "Gurdaspur"},
+        {"documents": ["identity_document", "business_registration", "lease_or_ownership"]},
+    )
+
+    assert case.service_id == "trade_license"
+    assert all(item["authority_status"] != "source_backed" for item in case.requirements)
+    assert all(item["confidence"] == "service-registry-mvp" for item in case.requirements)
