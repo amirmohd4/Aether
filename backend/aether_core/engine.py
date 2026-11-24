@@ -15,6 +15,7 @@ from .ontology import GovernmentOntologyBuilder, WorkGraphBuilder
 from .reliability import RetryPolicy
 from .synthetic_government import SyntheticGovernmentSystem
 from .templates import TEMPLATES, generic_tasks, infer_template
+from .requirements_engine import RequirementEngine
 from .service_registry import ServiceRegistry
 from .government_process_kernel import build_administrative_tasks, infer_process_profile
 from .process_work_recipes import work_recipe
@@ -61,11 +62,30 @@ class AetherExecutionEngine:
         enriched_inputs = {**(inputs or {}), "customer_type": customer_type}
 
         if template in TEMPLATES:
-            requirements_fn, tasks_fn = TEMPLATES[template]
-            requirements = requirements_fn()
+            _, tasks_fn = TEMPLATES[template]
+            # Resolve requirements through the same jurisdiction-aware engine
+            # used by preflight. Never attach a source-backed rule pack to a
+            # case merely because its service selected a specialised task graph.
+            requirements = [
+                item.__dict__
+                for item in RequirementEngine(registry=self.services).discover(
+                    objective,
+                    customer_type,
+                    jurisdiction,
+                    enriched_inputs,
+                )
+            ] if service else []
             task_definitions = tasks_fn()
         elif service:
-            requirements = []
+            requirements = [
+                item.__dict__
+                for item in RequirementEngine(registry=self.services).discover(
+                    objective,
+                    customer_type,
+                    jurisdiction,
+                    enriched_inputs,
+                )
+            ]
             task_definitions = generic_tasks(service)
         else:
             requirements = []
